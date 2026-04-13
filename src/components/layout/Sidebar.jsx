@@ -99,7 +99,7 @@ function SidebarLinkItem({ item, onNavigate, nested = false }) {
             sx={{
               minHeight: nested ? 38 : 42,
               borderRadius: 2,
-              px: nested ? 1.5 : 1.5,
+              px: 1.5,
               py: nested ? 0.7 : 1,
               pl: nested ? 5.5 : 1.5,
               backgroundColor: isActive ? 'rgba(25,118,210,0.18)' : 'transparent',
@@ -246,7 +246,7 @@ export default function Sidebar({ onNavigate }) {
         </Box>
 
         <Typography sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#fff' }}>
-          ERP Suite
+          SOCIOSOFT ERP
         </Typography>
       </Box>
 
@@ -324,7 +324,7 @@ export default function Sidebar({ onNavigate }) {
         </Avatar>
 
         <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#fff' }}>
-          Juan Ríos
+          Tester
         </Typography>
 
         <IconButton
