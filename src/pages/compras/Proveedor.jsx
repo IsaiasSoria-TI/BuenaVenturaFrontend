@@ -22,6 +22,7 @@ import {
     Grid,
     Chip,
     CircularProgress,
+    MenuItem,
 } from '@mui/material';
 import { proveedorService } from '../../services/proveedorService';
 
@@ -41,6 +42,15 @@ const Icon = ({ name, size = 20, color = 'inherit' }) => (
         {name}
     </span>
 );
+
+const BANCOS = [
+    { id: 1, nombre: 'BCP' },
+    { id: 2, nombre: 'BBVA' },
+    { id: 3, nombre: 'Interbank' },
+    { id: 4, nombre: 'Scotiabank' },
+    { id: 5, nombre: 'Banco de la Nación' },
+    { id: 6, nombre: 'Otros' },
+];
 
 const initialForm = {
     idProveedor: null,
@@ -63,6 +73,8 @@ export default function Proveedor() {
     const [editing, setEditing] = React.useState(false);
     const [form, setForm] = React.useState(initialForm);
     const [errors, setErrors] = React.useState({});
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [selectedDelete, setSelectedDelete] = React.useState(null);
 
     const cargarProveedores = React.useCallback(async () => {
         try {
@@ -98,9 +110,9 @@ export default function Proveedor() {
             correo: proveedor.correo || '',
             direccion: proveedor.direccion || '',
             representante: proveedor.representante || '',
-            idBanco: '',
-            cuentaBancaria: '',
-            cuentaInterbancaria: '',
+            idBanco: proveedor.idBanco ?? '',
+            cuentaBancaria: proveedor.cuentaBancaria || '',
+            cuentaInterbancaria: proveedor.cuentaInterbancaria || '',
         });
         setOpen(true);
     };
@@ -132,9 +144,11 @@ export default function Proveedor() {
         if (!form.ruc.trim()) newErrors.ruc = 'El RUC es obligatorio';
         if (!form.razonSocial.trim()) newErrors.razonSocial = 'La razón social es obligatoria';
         if (!form.telefono.trim()) newErrors.telefono = 'El teléfono es obligatorio';
-        if (!/^[0-9]{9}$/.test(form.telefono.trim())) {
+
+        if (form.telefono.trim() && !/^[0-9]{9}$/.test(form.telefono.trim())) {
             newErrors.telefono = 'El teléfono debe tener 9 dígitos';
         }
+
         if (!form.direccion.trim()) newErrors.direccion = 'La dirección es obligatoria';
         if (!form.representante.trim()) newErrors.representante = 'El representante es obligatorio';
 
@@ -143,6 +157,10 @@ export default function Proveedor() {
             if (!emailRegex.test(form.correo.trim())) {
                 newErrors.correo = 'El correo no es válido';
             }
+        }
+
+        if (!form.idBanco) {
+            newErrors.idBanco = 'Seleccione un banco';
         }
 
         setErrors(newErrors);
@@ -184,12 +202,22 @@ export default function Proveedor() {
         }
     };
 
-    const handleDelete = async (idProveedor) => {
-        const confirmado = window.confirm('¿Seguro que deseas eliminar este proveedor?');
-        if (!confirmado) return;
+    const handleOpenDeleteDialog = (proveedor) => {
+        setSelectedDelete(proveedor);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleCloseDeleteDialog = () => {
+        setSelectedDelete(null);
+        setDeleteDialogOpen(false);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!selectedDelete?.idProveedor) return;
 
         try {
-            await proveedorService.eliminar(idProveedor);
+            await proveedorService.eliminar(selectedDelete.idProveedor);
+            handleCloseDeleteDialog();
             await cargarProveedores();
         } catch (error) {
             console.error('Error al eliminar proveedor:', error);
@@ -250,6 +278,9 @@ export default function Proveedor() {
                                     <TableCell sx={{ fontWeight: 700 }}>DIRECCIÓN</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>TELÉFONO</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>CONTACTO</TableCell>
+                                    <TableCell sx={{ fontWeight: 700 }}>BANCO</TableCell>
+                                    <TableCell sx={{ fontWeight: 700 }}>CUENTA BANCARIA</TableCell>
+                                    <TableCell sx={{ fontWeight: 700 }}>CUENTA INTERBANCARIA</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>ESTADO</TableCell>
                                     <TableCell sx={{ fontWeight: 700, textAlign: 'center' }}>ACCIONES</TableCell>
                                 </TableRow>
@@ -258,13 +289,13 @@ export default function Proveedor() {
                             <TableBody>
                                 {loading ? (
                                     <TableRow>
-                                        <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                                        <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
                                             <CircularProgress size={28} />
                                         </TableCell>
                                     </TableRow>
                                 ) : proveedores.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={8} align="center" sx={{ py: 4, color: '#64748b' }}>
+                                        <TableCell colSpan={11} align="center" sx={{ py: 4, color: '#64748b' }}>
                                             No hay proveedores registrados.
                                         </TableCell>
                                     </TableRow>
@@ -277,6 +308,9 @@ export default function Proveedor() {
                                             <TableCell>{proveedor.direccion}</TableCell>
                                             <TableCell>{proveedor.telefono}</TableCell>
                                             <TableCell>{proveedor.representante}</TableCell>
+                                            <TableCell>{proveedor.nombreBanco || '-'}</TableCell>
+                                            <TableCell>{proveedor.cuentaBancaria || '-'}</TableCell>
+                                            <TableCell>{proveedor.cuentaInterbancaria || '-'}</TableCell>
                                             <TableCell>
                                                 <Chip
                                                     label={proveedor.flgActivo ? 'Activo' : 'Inactivo'}
@@ -292,7 +326,7 @@ export default function Proveedor() {
                                                 <IconButton onClick={() => handleOpenEdit(proveedor)}>
                                                     <Icon name="edit" size={20} color="#1976d2" />
                                                 </IconButton>
-                                                <IconButton onClick={() => handleDelete(proveedor.idProveedor)}>
+                                                <IconButton onClick={() => handleOpenDeleteDialog(proveedor)}>
                                                     <Icon name="delete" size={20} color="#ef4444" />
                                                 </IconButton>
                                             </TableCell>
@@ -380,11 +414,23 @@ export default function Proveedor() {
 
                         <Grid item xs={12} md={4}>
                             <TextField
+                                select
                                 fullWidth
-                                label="Id banco"
+                                label="Banco"
                                 value={form.idBanco}
                                 onChange={handleChange('idBanco')}
-                            />
+                                error={!!errors.idBanco}
+                                helperText={errors.idBanco}
+                            >
+                                <MenuItem value="">
+                                    <em>Seleccione</em>
+                                </MenuItem>
+                                {BANCOS.map((banco) => (
+                                    <MenuItem key={banco.id} value={banco.id}>
+                                        {banco.nombre}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
                         </Grid>
 
                         <Grid item xs={12} md={4}>
@@ -418,6 +464,33 @@ export default function Proveedor() {
                         sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
                     >
                         {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Registrar'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
+                <DialogTitle sx={{ fontWeight: 700 }}>Confirmar eliminación</DialogTitle>
+                <DialogContent>
+                    <Typography sx={{ color: '#475569' }}>
+                        ¿Seguro que deseas eliminar este proveedor?
+                    </Typography>
+                    {selectedDelete && (
+                        <Typography sx={{ mt: 1, fontWeight: 700, color: '#0f172a' }}>
+                            {selectedDelete.razonSocial}
+                        </Typography>
+                    )}
+                </DialogContent>
+                <DialogActions sx={{ px: 3, py: 2 }}>
+                    <Button onClick={handleCloseDeleteDialog} sx={{ textTransform: 'none' }}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        onClick={handleConfirmDelete}
+                        sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
+                    >
+                        Eliminar
                     </Button>
                 </DialogActions>
             </Dialog>
