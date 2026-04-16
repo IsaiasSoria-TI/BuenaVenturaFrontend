@@ -66,9 +66,10 @@ const NAV_SECTIONS = [
 ];
 
 const Icon = ({ name, size = 22, color = 'inherit' }) => (
-  <span
+  <Box
+    component="span"
     className="material-symbols-rounded"
-    style={{
+    sx={{
       fontSize: size,
       color,
       lineHeight: 1,
@@ -80,7 +81,7 @@ const Icon = ({ name, size = 22, color = 'inherit' }) => (
     }}
   >
     {name}
-  </span>
+  </Box>
 );
 
 function SidebarLinkItem({ item, onNavigate, nested = false }) {
@@ -92,7 +93,11 @@ function SidebarLinkItem({ item, onNavigate, nested = false }) {
         mb: 0.25,
       }}
     >
-      <NavLink to={item.to} style={{ textDecoration: 'none', width: '100%' }}>
+      <NavLink
+        to={item.to}
+        end={item.to === '/dashboard'}
+        style={{ textDecoration: 'none', width: '100%' }}
+      >
         {({ isActive }) => (
           <ListItemButton
             onClick={onNavigate}
@@ -209,16 +214,43 @@ export default function Sidebar({ onNavigate }) {
   const location = useLocation();
   const pathname = location.pathname;
 
+  const username =
+    localStorage.getItem('username') ||
+    localStorage.getItem('usuario') ||
+    'Usuario';
+
+  const initials = username
+    .trim()
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
   const [openMenus, setOpenMenus] = React.useState({
     inventarios: pathname.startsWith('/dashboard/inventarios'),
     compras: pathname.startsWith('/dashboard/compras'),
   });
+
+  React.useEffect(() => {
+    setOpenMenus((prev) => ({
+      ...prev,
+      inventarios: pathname.startsWith('/dashboard/inventarios') || prev.inventarios,
+      compras: pathname.startsWith('/dashboard/compras') || prev.compras,
+    }));
+  }, [pathname]);
 
   const handleToggle = (key) => {
     setOpenMenus((prev) => ({
       ...prev,
       [key]: !prev[key],
     }));
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
   };
 
   return (
@@ -320,16 +352,16 @@ export default function Sidebar({ onNavigate }) {
             bgcolor: '#1d4ed8',
           }}
         >
-          JR
+          {initials || 'US'}
         </Avatar>
 
         <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#fff' }}>
-          Tester
+          {username}
         </Typography>
 
         <IconButton
           size="small"
-          onClick={() => navigate('/login')}
+          onClick={handleLogout}
           sx={{
             ml: 'auto',
             color: '#94a3b8',

@@ -3,6 +3,10 @@ import Login from '../pages/auth/Login';
 import Proveedor from '../pages/compras/Proveedor';
 import Dashboard from '../pages/dashboard/Dashboard';
 import DashboardHome from '../pages/dashboard/DashboardHome';
+import Articulo from '../pages/inventario/Articulo';
+import GestionarCompras from '../pages/compras/GestionarCompras';
+import Recepciones from '../pages/compras/Recepciones';
+import CuentasPagar from '../pages/cuentaspagar/CuentasPagar';
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token');
@@ -25,6 +29,10 @@ function AppRouter() {
         >
           <Route index element={<DashboardHome />} />
           <Route path="compras/proveedor" element={<Proveedor />} />
+          <Route path="compras/gestionar" element={<GestionarCompras />} />
+          <Route path="compras/recepciones" element={<Recepciones />} />
+          <Route path="inventarios/articulos" element={<Articulo />} />
+          <Route path="pagar" element={<CuentasPagar />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/login" replace />} />

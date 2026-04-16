@@ -19,7 +19,6 @@ import {
     DialogContent,
     DialogActions,
     TextField,
-    Grid,
     Chip,
     CircularProgress,
     MenuItem,
@@ -83,6 +82,8 @@ export default function Proveedor() {
             setProveedores(data);
         } catch (error) {
             console.error('Error al listar proveedores:', error);
+            console.error('status:', error?.response?.status);
+            console.error('data:', error?.response?.data);
         } finally {
             setLoading(false);
         }
@@ -141,16 +142,31 @@ export default function Proveedor() {
     const validate = () => {
         const newErrors = {};
 
-        if (!form.ruc.trim()) newErrors.ruc = 'El RUC es obligatorio';
-        if (!form.razonSocial.trim()) newErrors.razonSocial = 'La razón social es obligatoria';
-        if (!form.telefono.trim()) newErrors.telefono = 'El teléfono es obligatorio';
+        if (!form.ruc.trim()) {
+            newErrors.ruc = 'El RUC es obligatorio';
+        } else if (!/^[0-9]{11}$/.test(form.ruc.trim())) {
+            newErrors.ruc = 'El RUC debe tener 11 dígitos';
+        }
+
+        if (!form.razonSocial.trim()) {
+            newErrors.razonSocial = 'La razón social es obligatoria';
+        }
+
+        if (!form.telefono.trim()) {
+            newErrors.telefono = 'El teléfono es obligatorio';
+        }
 
         if (form.telefono.trim() && !/^[0-9]{9}$/.test(form.telefono.trim())) {
             newErrors.telefono = 'El teléfono debe tener 9 dígitos';
         }
 
-        if (!form.direccion.trim()) newErrors.direccion = 'La dirección es obligatoria';
-        if (!form.representante.trim()) newErrors.representante = 'El representante es obligatorio';
+        if (!form.direccion.trim()) {
+            newErrors.direccion = 'La dirección es obligatoria';
+        }
+
+        if (!form.representante.trim()) {
+            newErrors.representante = 'El representante es obligatorio';
+        }
 
         if (form.correo.trim()) {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -197,6 +213,8 @@ export default function Proveedor() {
             await cargarProveedores();
         } catch (error) {
             console.error('Error al guardar proveedor:', error);
+            console.error('status:', error?.response?.status);
+            console.error('data:', error?.response?.data);
         } finally {
             setSaving(false);
         }
@@ -221,6 +239,8 @@ export default function Proveedor() {
             await cargarProveedores();
         } catch (error) {
             console.error('Error al eliminar proveedor:', error);
+            console.error('status:', error?.response?.status);
+            console.error('data:', error?.response?.data);
         }
     };
 
@@ -339,14 +359,20 @@ export default function Proveedor() {
                 </CardContent>
             </Card>
 
-            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
+            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="lg">
                 <DialogTitle sx={{ fontWeight: 700 }}>
                     {editing ? 'Editar proveedor' : 'Nuevo proveedor'}
                 </DialogTitle>
 
-                <DialogContent dividers>
-                    <Grid container spacing={2} sx={{ mt: 0.2 }}>
-                        <Grid item xs={12} md={6}>
+                <DialogContent dividers sx={{ pt: 2.5 }}>
+                    <Stack spacing={2}>
+                        <Box
+                            sx={{
+                                display: 'grid',
+                                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr 1fr' },
+                                gap: 2,
+                            }}
+                        >
                             <TextField
                                 fullWidth
                                 label="RUC"
@@ -354,10 +380,9 @@ export default function Proveedor() {
                                 onChange={handleChange('ruc')}
                                 error={!!errors.ruc}
                                 helperText={errors.ruc}
+                                inputProps={{ maxLength: 11 }}
                             />
-                        </Grid>
 
-                        <Grid item xs={12} md={6}>
                             <TextField
                                 fullWidth
                                 label="Razón social"
@@ -366,9 +391,7 @@ export default function Proveedor() {
                                 error={!!errors.razonSocial}
                                 helperText={errors.razonSocial}
                             />
-                        </Grid>
 
-                        <Grid item xs={12} md={6}>
                             <TextField
                                 fullWidth
                                 label="Teléfono"
@@ -377,9 +400,7 @@ export default function Proveedor() {
                                 error={!!errors.telefono}
                                 helperText={errors.telefono}
                             />
-                        </Grid>
 
-                        <Grid item xs={12} md={6}>
                             <TextField
                                 fullWidth
                                 label="Correo"
@@ -388,9 +409,15 @@ export default function Proveedor() {
                                 error={!!errors.correo}
                                 helperText={errors.correo}
                             />
-                        </Grid>
+                        </Box>
 
-                        <Grid item xs={12}>
+                        <Box
+                            sx={{
+                                display: 'grid',
+                                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr 1fr' },
+                                gap: 2,
+                            }}
+                        >
                             <TextField
                                 fullWidth
                                 label="Dirección"
@@ -399,9 +426,7 @@ export default function Proveedor() {
                                 error={!!errors.direccion}
                                 helperText={errors.direccion}
                             />
-                        </Grid>
 
-                        <Grid item xs={12}>
                             <TextField
                                 fullWidth
                                 label="Representante"
@@ -410,9 +435,7 @@ export default function Proveedor() {
                                 error={!!errors.representante}
                                 helperText={errors.representante}
                             />
-                        </Grid>
 
-                        <Grid item xs={12} md={4}>
                             <TextField
                                 select
                                 fullWidth
@@ -421,6 +444,15 @@ export default function Proveedor() {
                                 onChange={handleChange('idBanco')}
                                 error={!!errors.idBanco}
                                 helperText={errors.idBanco}
+                                SelectProps={{
+                                    MenuProps: {
+                                        PaperProps: {
+                                            sx: {
+                                                maxHeight: 280,
+                                            },
+                                        },
+                                    },
+                                }}
                             >
                                 <MenuItem value="">
                                     <em>Seleccione</em>
@@ -431,26 +463,30 @@ export default function Proveedor() {
                                     </MenuItem>
                                 ))}
                             </TextField>
-                        </Grid>
 
-                        <Grid item xs={12} md={4}>
                             <TextField
                                 fullWidth
                                 label="Cuenta bancaria"
                                 value={form.cuentaBancaria}
                                 onChange={handleChange('cuentaBancaria')}
                             />
-                        </Grid>
+                        </Box>
 
-                        <Grid item xs={12} md={4}>
+                        <Box
+                            sx={{
+                                display: 'grid',
+                                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr 1fr' },
+                                gap: 2,
+                            }}
+                        >
                             <TextField
                                 fullWidth
                                 label="Cuenta interbancaria"
                                 value={form.cuentaInterbancaria}
                                 onChange={handleChange('cuentaInterbancaria')}
                             />
-                        </Grid>
-                    </Grid>
+                        </Box>
+                    </Stack>
                 </DialogContent>
 
                 <DialogActions sx={{ px: 3, py: 2 }}>
