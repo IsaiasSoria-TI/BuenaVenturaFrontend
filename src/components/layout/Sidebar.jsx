@@ -12,6 +12,7 @@ import {
   Divider,
 } from '@mui/material';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import logoErp from '../../assets/Logoerp.png';
 
 const SIDEBAR_W = 256;
 
@@ -214,10 +215,9 @@ export default function Sidebar({ onNavigate }) {
   const location = useLocation();
   const pathname = location.pathname;
 
-  const username =
-    localStorage.getItem('username') ||
-    localStorage.getItem('usuario') ||
-    'Usuario';
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+  const username = user.nombreCompleto || user.usuario || 'Usuario';
 
   const initials = username
     .trim()
@@ -250,6 +250,8 @@ export default function Sidebar({ onNavigate }) {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    localStorage.removeItem('user');
     navigate('/login');
   };
 
@@ -263,19 +265,18 @@ export default function Sidebar({ onNavigate }) {
         backgroundColor: '#0f172a',
       }}
     >
-      <Box sx={{ px: 3, py: 3, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      {/* 🔥 SOLO CAMBIO AQUÍ */}
+      <Box sx={{ px: 3, py: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
         <Box
+          component="img"
+          src={logoErp}
+          alt="Logo ERP"
           sx={{
-            width: 36,
-            height: 36,
-            borderRadius: 2,
-            background: 'linear-gradient(135deg,#1976d2,#42a5f5)',
-            display: 'grid',
-            placeItems: 'center',
+            width: 44,
+            height: 44,
+            objectFit: 'contain',
           }}
-        >
-          <Icon name="bolt" size={20} color="#fff" />
-        </Box>
+        />
 
         <Typography sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#fff' }}>
           SOCIOSOFT ERP
@@ -284,30 +285,10 @@ export default function Sidebar({ onNavigate }) {
 
       <Divider sx={{ borderColor: '#1e293b' }} />
 
-      <Box
-        sx={{
-          flex: 1,
-          overflowY: 'auto',
-          py: 1.5,
-          '&::-webkit-scrollbar': { width: 4 },
-          '&::-webkit-scrollbar-track': { background: 'transparent' },
-          '&::-webkit-scrollbar-thumb': { background: '#1e293b', borderRadius: 4 },
-        }}
-      >
+      <Box sx={{ flex: 1, overflowY: 'auto', py: 1.5 }}>
         {NAV_SECTIONS.map((section) => (
           <Box key={section.label} sx={{ mb: 0.5 }}>
-            <Typography
-              sx={{
-                px: 3,
-                pt: 2,
-                pb: 0.5,
-                fontSize: '0.65rem',
-                fontWeight: 700,
-                color: '#94a3b8',
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-              }}
-            >
+            <Typography sx={{ px: 3, pt: 2, pb: 0.5, fontSize: '0.65rem', color: '#94a3b8' }}>
               {section.label}
             </Typography>
 
@@ -342,16 +323,8 @@ export default function Sidebar({ onNavigate }) {
 
       <Divider sx={{ borderColor: '#1e293b' }} />
 
-      <Box sx={{ px: 2, py: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Avatar
-          sx={{
-            width: 34,
-            height: 34,
-            fontSize: '0.8rem',
-            fontWeight: 700,
-            bgcolor: '#1d4ed8',
-          }}
-        >
+      <Box sx={{ px: 3, py: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Avatar sx={{ width: 34, height: 34, bgcolor: '#1d4ed8' }}>
           {initials || 'US'}
         </Avatar>
 
@@ -359,18 +332,7 @@ export default function Sidebar({ onNavigate }) {
           {username}
         </Typography>
 
-        <IconButton
-          size="small"
-          onClick={handleLogout}
-          sx={{
-            ml: 'auto',
-            color: '#94a3b8',
-            '&:hover': {
-              color: '#ef4444',
-              backgroundColor: 'rgba(239,68,68,0.08)',
-            },
-          }}
-        >
+        <IconButton onClick={handleLogout} sx={{ ml: 'auto', color: '#94a3b8' }}>
           <Icon name="logout" size={17} />
         </IconButton>
       </Box>

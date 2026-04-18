@@ -18,12 +18,11 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
   Chip,
   CircularProgress,
-  MenuItem,
 } from '@mui/material';
-import { articuloService } from '../../services/articuloService';
+import { articuloService } from '../../../services/articuloService';
+import ModalArticulo from './ModalArticulo';
 
 const Icon = ({ name, size = 20, color = 'inherit' }) => (
   <Box
@@ -311,90 +310,16 @@ export default function Articulo() {
         </CardContent>
       </Card>
 
-      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ fontWeight: 700 }}>
-          {editing ? 'Editar artículo' : 'Nuevo artículo'}
-        </DialogTitle>
-
-        <DialogContent dividers sx={{ pt: 2.5 }}>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', md: '1.4fr 1fr 1fr' },
-              gap: 2,
-              alignItems: 'start',
-            }}
-          >
-            <TextField
-              fullWidth
-              label="Descripción"
-              value={form.descripcion}
-              onChange={handleChange('descripcion')}
-              error={!!errors.descripcion}
-              helperText={errors.descripcion}
-            />
-
-            <TextField
-              select
-              fullWidth
-              label="Medida"
-              value={form.medida}
-              onChange={handleChange('medida')}
-              error={!!errors.medida}
-              helperText={errors.medida || 'Seleccione la unidad'}
-            >
-              <MenuItem value="">
-                <em>Seleccione</em>
-              </MenuItem>
-              {MEDIDAS.map((medida) => (
-                <MenuItem key={medida.value} value={medida.value}>
-                  {medida.label}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              fullWidth
-              type="number"
-              label="Stock"
-              value={form.stock}
-              onChange={handleChange('stock')}
-              error={!!errors.stock}
-              helperText={errors.stock || 'Opcional. Si lo dejas vacío, se guardará en 0.'}
-              inputProps={{ min: 0, step: '0.01' }}
-            />
-          </Box>
-
-          {editing && (
-            <Box sx={{ mt: 2 }}>
-              <TextField
-                select
-                fullWidth
-                label="Estado"
-                value={form.estado}
-                onChange={handleChange('estado')}
-              >
-                <MenuItem value="Activo">Activo</MenuItem>
-                <MenuItem value="Inactivo">Inactivo</MenuItem>
-              </TextField>
-            </Box>
-          )}
-        </DialogContent>
-
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button onClick={handleClose} disabled={saving} sx={{ textTransform: 'none' }}>
-            Cancelar
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleSubmit}
-            disabled={saving}
-            sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
-          >
-            {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Registrar'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ModalArticulo
+        open={open}
+        onClose={handleClose}
+        editing={editing}
+        form={form}
+        errors={errors}
+        saving={saving}
+        onChange={handleChange}
+        onSubmit={handleSubmit}
+      />
 
       <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
         <DialogTitle sx={{ fontWeight: 700 }}>Confirmar eliminación</DialogTitle>

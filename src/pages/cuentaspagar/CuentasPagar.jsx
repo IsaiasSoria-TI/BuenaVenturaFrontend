@@ -15,6 +15,8 @@ import {
   Paper,
   Chip,
   CircularProgress,
+  Alert,
+  TablePagination,
 } from '@mui/material';
 
 import { cuentaPagarService } from '../../services/cuentaPagarService';
@@ -82,16 +84,34 @@ export default function CuentasPagar() {
   const [cuentas, setCuentas] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [open, setOpen] = React.useState(false);
+  const [serverError, setServerError] = React.useState('');
+  const [serverSuccess, setServerSuccess] = React.useState('');
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(5);
 
   const cargarCuentas = React.useCallback(async () => {
     try {
       setLoading(true);
+      setServerError('');
+
       const data = await cuentaPagarService.listar();
-      setCuentas(data);
+      setCuentas(Array.isArray(data) ? data : []);
+      setPage(0);
     } catch (error) {
       console.error('Error al listar cuentas por pagar:', error);
       console.error('status:', error?.response?.status);
       console.error('data:', error?.response?.data);
+
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        'No se pudo listar las cuentas por pagar.';
+
+      setServerError(
+        typeof message === 'string'
+          ? message
+          : 'No se pudo listar las cuentas por pagar.'
+      );
     } finally {
       setLoading(false);
     }
@@ -102,6 +122,8 @@ export default function CuentasPagar() {
   }, [cargarCuentas]);
 
   const handleOpenCreate = React.useCallback(() => {
+    setServerError('');
+    setServerSuccess('');
     setOpen(true);
   }, []);
 
@@ -111,8 +133,31 @@ export default function CuentasPagar() {
 
   const handleSaved = React.useCallback(async () => {
     setOpen(false);
+    setServerError('');
+    setServerSuccess('Cuenta por pagar registrada correctamente.');
     await cargarCuentas();
   }, [cargarCuentas]);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const cuentasOrdenadas = React.useMemo(() => {
+    return [...cuentas].sort(
+      (a, b) => new Date(b.fechaCreacion) - new Date(a.fechaCreacion)
+    );
+  }, [cuentas]);
+
+  const cuentasPaginadas = React.useMemo(() => {
+    const inicio = page * rowsPerPage;
+    const fin = inicio + rowsPerPage;
+    return cuentasOrdenadas.slice(inicio, fin);
+  }, [cuentasOrdenadas, page, rowsPerPage]);
 
   return (
     <Box>
@@ -164,13 +209,25 @@ export default function CuentasPagar() {
             </Stack>
           </Stack>
 
+          {serverSuccess && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              {serverSuccess}
+            </Alert>
+          )}
+
+          {serverError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {serverError}
+            </Alert>
+          )}
+
           <TableContainer
             component={Paper}
             elevation={0}
             sx={{
               border: '1px solid #e2e8f0',
               borderRadius: 2.5,
-              overflow: 'hidden',
+              overflowX: 'auto',
             }}
           >
             <Table>
@@ -204,7 +261,7 @@ export default function CuentasPagar() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  cuentas.map((cuenta) => (
+                  cuentasPaginadas.map((cuenta) => (
                     <TableRow key={cuenta.idCuentaPagar} hover>
                       <TableCell>{cuenta.idCuentaPagar}</TableCell>
                       <TableCell>{cuenta.idCompras}</TableCell>
@@ -231,6 +288,19 @@ export default function CuentasPagar() {
                 )}
               </TableBody>
             </Table>
+
+            {!loading && cuentas.length > 0 && (
+              <TablePagination
+                component="div"
+                count={cuentas.length}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPageOptions={[5, 10, 20]}
+                labelRowsPerPage="Filas por página:"
+              />
+            )}
           </TableContainer>
         </CardContent>
       </Card>

@@ -185,6 +185,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
   const [form, setForm] = React.useState(initialForm);
   const [errors, setErrors] = React.useState({});
   const [serverError, setServerError] = React.useState('');
+  const [serverSuccess, setServerSuccess] = React.useState('');
 
   const cargarComprasValidas = React.useCallback(async () => {
     try {
@@ -195,6 +196,17 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
       console.error('Error al listar compras válidas:', error);
       console.error('status:', error?.response?.status);
       console.error('data:', error?.response?.data);
+
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        'No se pudo listar las compras válidas.';
+
+      setServerError(
+        typeof message === 'string'
+          ? message
+          : 'No se pudo listar las compras válidas.'
+      );
     } finally {
       setComprasLoading(false);
     }
@@ -205,6 +217,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
       setForm(initialForm);
       setErrors({});
       setServerError('');
+      setServerSuccess('');
       setSelectedCompra(null);
       setDetalleCompra(null);
       setSelectedRecepciones([]);
@@ -221,16 +234,22 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
         [field]: value,
       }));
 
-      setErrors((prev) => ({
-        ...prev,
-        [field]: '',
-      }));
+      if (errors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: '',
+        }));
+      }
 
       if (serverError) {
         setServerError('');
       }
+
+      if (serverSuccess) {
+        setServerSuccess('');
+      }
     },
-    [serverError]
+    [errors, serverError, serverSuccess]
   );
 
   const cargarDetalleCompra = React.useCallback(async (idCompras) => {
@@ -239,6 +258,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
       setDetalleCompra(null);
       setSelectedRecepciones([]);
       setServerError('');
+      setServerSuccess('');
 
       const data = await cuentaPagarService.verDetalleCompra(idCompras);
       setDetalleCompra(data);
@@ -368,11 +388,16 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
     try {
       setSaving(true);
       setServerError('');
+      setServerSuccess('');
 
       const payload = buildPayload();
       await cuentaPagarService.registrar(payload);
 
-      onSaved();
+      setServerSuccess('Cuenta por pagar registrada correctamente.');
+
+      setTimeout(() => {
+        onSaved();
+      }, 500);
     } catch (error) {
       console.error('Error al registrar cuenta por pagar:', error);
       console.error('status:', error?.response?.status);
@@ -400,6 +425,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
       <DialogContent dividers sx={{ pt: 2.5 }}>
         <Stack spacing={2}>
           {serverError && <Alert severity="error">{serverError}</Alert>}
+          {serverSuccess && <Alert severity="success">{serverSuccess}</Alert>}
 
           {comprasLoading ? (
             <Box sx={{ py: 4, display: 'flex', justifyContent: 'center' }}>
@@ -416,6 +442,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
                   setDetalleCompra(null);
                   setSelectedRecepciones([]);
                   setServerError('');
+                  setServerSuccess('');
 
                   if (newValue?.idCompras) {
                     cargarDetalleCompra(newValue.idCompras);

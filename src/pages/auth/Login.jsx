@@ -1,5 +1,5 @@
 import * as React from 'react';
-import logoImg from '../../assets/logo.png';
+import logoImg from '../../assets/BUENAVENTURA SAC.png';
 import { login } from '../../services/authService';
 import {
     Box,
@@ -10,8 +10,6 @@ import {
     Button,
     FormControlLabel,
     Checkbox,
-    Link,
-    Divider,
 } from '@mui/material';
 
 export default function LoginPage() {
@@ -23,6 +21,7 @@ export default function LoginPage() {
 
     const handleChange = (event) => {
         const { name, value, checked, type } = event.target;
+
         setForm((prev) => ({
             ...prev,
             [name]: type === 'checkbox' ? checked : value,
@@ -31,21 +30,29 @@ export default function LoginPage() {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+
         try {
             const response = await login(form.usuario, form.contrasena);
+
             localStorage.setItem('token', response.token);
+            localStorage.setItem('username', response.nombreCompleto || response.usuario);
+            localStorage.setItem('user', JSON.stringify(response));
+
             window.location.href = '/dashboard';
         } catch (error) {
             console.error('Error al iniciar sesión:', error);
+            console.error('Respuesta del backend:', error?.response?.data);
             alert('Usuario o contraseña incorrectos');
         }
     };
+
     return (
         <Box
             sx={{
                 minHeight: '100vh',
-                display: 'grid',
-                placeItems: 'center',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 px: 2,
                 background: 'linear-gradient(180deg, #edf2f7 0%, #e7edf5 100%)',
             }}
@@ -54,48 +61,49 @@ export default function LoginPage() {
                 elevation={0}
                 sx={{
                     width: '100%',
-                    maxWidth: 460,
+                    maxWidth: 430,
                     borderRadius: 4,
                     border: '1px solid #d9e2ec',
                     boxShadow: '0 18px 45px rgba(15, 23, 42, 0.12)',
-                    overflow: 'hidden',
                     backgroundColor: '#ffffff',
+                    overflow: 'hidden',
                 }}
             >
-                <Box
+                <CardContent
                     sx={{
                         px: 4,
-                        pt: 4,
-                        pb: 3,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: '#ffffff',
+                        py: -5,
                     }}
                 >
                     <Box
-                        component="img"
-                        src={logoImg}
-                        alt="Logo"
                         sx={{
-                            maxWidth: 180,
-                            width: '100%',
-                            height: 'auto',
-                            objectFit: 'contain',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            mb: -5,
                         }}
-                    />
-                </Box>
+                    >
+                        <Box
+                            component="img"
+                            src={logoImg}
+                            alt="Logo Buenaventura"
+                            sx={{
+                                width: 300,
+                                maxWidth: '100%',
+                                height: 'auto',
+                                objectFit: 'contain',
+                                display: 'block',
+                            }}
+                        />
+                    </Box>
 
-                <Divider />
-
-                <CardContent sx={{ px: 4, py: 4 }}>
                     <Typography
-                        variant="h5"
+                        variant="h4"
                         sx={{
-                            mb: 0.75,
-                            fontWeight: 600,
+                            textAlign: 'center',
+                            fontWeight: 700,
                             color: '#0f172a',
-                            textAlign: 'center'
+                            mb: 1,
+                            fontSize: { xs: '1.9rem', sm: '2.2rem' },
                         }}
                     >
                         Bienvenido
@@ -103,10 +111,10 @@ export default function LoginPage() {
 
                     <Typography
                         sx={{
-                            mb: 3,
-                            fontSize: '0.95rem',
+                            textAlign: 'center',
                             color: '#64748b',
-                            textAlign: 'center'
+                            fontSize: '1rem',
+                            mb: 3.5,
                         }}
                     >
                         Ingresa tus credenciales para continuar
@@ -123,10 +131,13 @@ export default function LoginPage() {
                             margin="normal"
                             autoComplete="username"
                             sx={{
+                                mb: 1,
                                 '& .MuiOutlinedInput-root': {
                                     borderRadius: 2.5,
+                                    backgroundColor: '#fff',
                                     '& input': {
-                                        py: 1.8,
+                                        py: 1.5,
+                                        fontSize: '1rem',
                                     },
                                 },
                             }}
@@ -148,7 +159,7 @@ export default function LoginPage() {
                                     borderRadius: 2.5,
                                     backgroundColor: '#fff',
                                     '& input': {
-                                        py: 1.8,
+                                        py: 1.5,
                                         fontSize: '1rem',
                                     },
                                 },
@@ -158,12 +169,9 @@ export default function LoginPage() {
                         <Box
                             sx={{
                                 mt: 0.5,
-                                mb: 2.5,
+                                mb: 3,
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'space-between',
-                                flexWrap: 'wrap',
-                                gap: 1,
                             }}
                         >
                             <FormControlLabel
@@ -179,7 +187,12 @@ export default function LoginPage() {
                                     />
                                 }
                                 label={
-                                    <Typography sx={{ fontSize: '0.96rem', color: '#334155' }}>
+                                    <Typography
+                                        sx={{
+                                            fontSize: '0.96rem',
+                                            color: '#334155',
+                                        }}
+                                    >
                                         Recordar sesión
                                     </Typography>
                                 }
@@ -208,20 +221,6 @@ export default function LoginPage() {
                         >
                             Iniciar sesión
                         </Button>
-
-                        <Box sx={{ textAlign: 'center', mt: 2.5 }}>
-                            <Link
-                                href="#"
-                                underline="hover"
-                                sx={{
-                                    fontSize: '0.95rem',
-                                    fontWeight: 500,
-                                    color: '#1976d2',
-                                }}
-                            >
-                                ¿Olvidaste tu contraseña?
-                            </Link>
-                        </Box>
                     </Box>
                 </CardContent>
             </Card>

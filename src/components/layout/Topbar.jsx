@@ -1,4 +1,56 @@
 import { Box, Avatar, IconButton, Typography } from '@mui/material';
+import { useLocation } from 'react-router-dom';
+
+/* 🔥 MISMO NAV_SECTIONS QUE TU SIDEBAR */
+const NAV_SECTIONS = [
+  {
+    label: 'Principal',
+    items: [{ to: '/dashboard', label: 'Dashboard', icon: 'dashboard' }],
+  },
+  {
+    label: 'Finanzas',
+    items: [
+      { to: '/dashboard/cobrar', label: 'Cuentas por Cobrar', icon: 'payments' },
+      { to: '/dashboard/pagar', label: 'Cuentas por Pagar', icon: 'receipt_long' },
+      { to: '/dashboard/costos', label: 'Costos', icon: 'monitoring' },
+      { to: '/dashboard/sunat', label: 'SUNAT', icon: 'account_balance' },
+    ],
+  },
+  {
+    label: 'Operaciones',
+    items: [
+      {
+        label: 'Inventarios',
+        icon: 'inventory_2',
+        children: [
+          { to: '/dashboard/inventarios/kardex', label: 'Kardex' },
+          { to: '/dashboard/inventarios/transferencia', label: 'Transferencia' },
+          { to: '/dashboard/inventarios/articulos', label: 'Artículos' },
+        ],
+      },
+      {
+        label: 'Compras',
+        icon: 'shopping_cart',
+        children: [
+          { to: '/dashboard/compras/gestionar', label: 'Gestionar Compra' },
+          { to: '/dashboard/compras/recepciones', label: 'Recepciones' },
+          { to: '/dashboard/compras/proveedor', label: 'Proveedor' },
+        ],
+      },
+    ],
+  },
+  {
+    label: 'Análisis',
+    items: [{ to: '/dashboard/reportes', label: 'Reportes', icon: 'bar_chart' }],
+  },
+  {
+    label: 'Sistema',
+    items: [
+      { to: '/dashboard/integraciones', label: 'Integraciones', icon: 'hub' },
+      { to: '/dashboard/configuracion', label: 'Configuración', icon: 'settings' },
+    ],
+  },
+];
 
 const Icon = ({ name, size = 22, color = 'inherit' }) => (
   <span
@@ -17,7 +69,35 @@ const Icon = ({ name, size = 22, color = 'inherit' }) => (
   </span>
 );
 
-export default function Topbar({ isMobile, onMenuClick, title = 'Panel Principal' }) {
+/* 🔥 FUNCIÓN INTELIGENTE */
+function getTitleFromPath(pathname) {
+  for (const section of NAV_SECTIONS) {
+    for (const item of section.items) {
+      // nivel simple
+      if (item.to && pathname === item.to) {
+        return item.label;
+      }
+
+      // nivel con hijos
+      if (item.children) {
+        for (const child of item.children) {
+          if (pathname === child.to) {
+            return child.label;
+          }
+        }
+      }
+    }
+  }
+
+  // fallback
+  return 'Panel Principal';
+}
+
+export default function Topbar({ isMobile, onMenuClick }) {
+  const location = useLocation();
+
+  const title = getTitleFromPath(location.pathname);
+
   return (
     <Box
       sx={{

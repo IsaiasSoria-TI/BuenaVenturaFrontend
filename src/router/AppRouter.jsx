@@ -1,11 +1,14 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+
 import Login from '../pages/auth/Login';
-import Proveedor from '../pages/compras/Proveedor';
+import Proveedor from '../pages/compras/proveedor/Proveedor';
+import GestionarCompras from '../pages/compras/gestionarcompras/GestionarCompras';
+import Recepciones from '../pages/compras/recepciones/Recepciones';
+
 import Dashboard from '../pages/dashboard/Dashboard';
 import DashboardHome from '../pages/dashboard/DashboardHome';
-import Articulo from '../pages/inventario/Articulo';
-import GestionarCompras from '../pages/compras/GestionarCompras';
-import Recepciones from '../pages/compras/Recepciones';
+
+import Articulo from '../pages/inventario/articulo/Articulo';
 import CuentasPagar from '../pages/cuentaspagar/CuentasPagar';
 
 const PrivateRoute = ({ children }) => {
