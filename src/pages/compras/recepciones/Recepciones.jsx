@@ -1,4 +1,5 @@
-import * as React from 'react';
+import React from 'react';
+import PropTypes from 'prop-types';
 
 import {
     Box,
@@ -22,24 +23,37 @@ import {
 import { recepcionService } from '../../../services/recepcionService';
 import ModalRecepcion from './ModalRecepcion';
 
-const Icon = ({ name, size = 20, color = 'inherit' }) => (
-    <Box
-        component="span"
-        className="material-symbols-rounded"
-        sx={{
-            fontSize: size,
-            color,
-            lineHeight: 1,
-            userSelect: 'none',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontVariationSettings: '"FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24',
-        }}
-    >
-        {name}
-    </Box>
-);
+function Icon({ name, size, color }) {
+    return (
+        <Box
+            component="span"
+            className="material-symbols-rounded"
+            sx={{
+                fontSize: size,
+                color,
+                lineHeight: 1,
+                userSelect: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontVariationSettings: '"FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24',
+            }}
+        >
+            {name}
+        </Box>
+    );
+}
+
+Icon.propTypes = {
+    name: PropTypes.string.isRequired,
+    size: PropTypes.number,
+    color: PropTypes.string,
+};
+
+Icon.defaultProps = {
+    size: 20,
+    color: 'inherit',
+};
 
 const initialForm = {
     idCompras: null,
@@ -74,22 +88,22 @@ function getEstadoChipStyles(estado) {
         };
     }
 
-    if (estado === 'Pendiente') {
+    if (estado === 'Completa parcial') {
         return {
-            backgroundColor: '#fef3c7',
-            color: '#d97706',
+            backgroundColor: '#dbeafe',
+            color: '#2563eb',
         };
     }
 
     return {
-        backgroundColor: '#fee2e2',
-        color: '#dc2626',
+        backgroundColor: '#fef3c7',
+        color: '#d97706',
     };
 }
 
 export default function Recepciones() {
     const [recepciones, setRecepciones] = React.useState([]);
-    const [comprasPendientes, setComprasPendientes] = React.useState([]);
+    const [comprasDisponibles, setComprasDisponibles] = React.useState([]);
     const [detalleCompra, setDetalleCompra] = React.useState(null);
 
     const [loading, setLoading] = React.useState(true);
@@ -121,13 +135,13 @@ export default function Recepciones() {
         }
     }, []);
 
-    const cargarComprasPendientes = React.useCallback(async () => {
+    const cargarComprasDisponibles = React.useCallback(async () => {
         try {
             setComprasLoading(true);
             const data = await recepcionService.listarComprasPendientes();
-            setComprasPendientes(data);
+            setComprasDisponibles(Array.isArray(data) ? data : []);
         } catch (error) {
-            console.error('Error al listar compras pendientes:', error);
+            console.error('Error al listar compras disponibles:', error);
             console.error('status:', error?.response?.status);
             console.error('data:', error?.response?.data);
         } finally {
@@ -137,8 +151,8 @@ export default function Recepciones() {
 
     React.useEffect(() => {
         cargarRecepciones();
-        cargarComprasPendientes();
-    }, [cargarRecepciones, cargarComprasPendientes]);
+        cargarComprasDisponibles();
+    }, [cargarRecepciones, cargarComprasDisponibles]);
 
     const handleOpenCreate = () => {
         setForm(initialForm);
@@ -210,7 +224,7 @@ export default function Recepciones() {
         const newErrors = {};
 
         if (!form.idCompras) {
-            newErrors.idCompras = 'Seleccione una compra pendiente';
+            newErrors.idCompras = 'Seleccione una compra disponible';
         }
 
         if (form.recibido === '' || Number(form.recibido) <= 0) {
@@ -249,7 +263,7 @@ export default function Recepciones() {
             await recepcionService.registrar(payload);
 
             handleClose();
-            await Promise.all([cargarRecepciones(), cargarComprasPendientes()]);
+            await Promise.all([cargarRecepciones(), cargarComprasDisponibles()]);
         } catch (error) {
             console.error('Error al registrar recepción:', error);
             console.error('status:', error?.response?.status);
@@ -270,7 +284,7 @@ export default function Recepciones() {
         }
     };
 
-    const handleChangePage = (event, newPage) => {
+    const handleChangePage = (_, newPage) => {
         setPage(newPage);
     };
 
@@ -284,6 +298,10 @@ export default function Recepciones() {
         const fin = inicio + rowsPerPage;
         return recepciones.slice(inicio, fin);
     }, [recepciones, page, rowsPerPage]);
+
+    const showLoading = loading;
+    const showEmpty = !loading && recepciones.length === 0;
+    const showRows = !loading && recepciones.length > 0;
 
     return (
         <Box>
@@ -301,7 +319,7 @@ export default function Recepciones() {
                                 Gestionar recepciones
                             </Typography>
                             <Typography sx={{ fontSize: '0.86rem', color: '#64748b', mt: 0.5 }}>
-                                Registra recepciones parciales o completas de compras pendientes.
+                                Registra recepciones parciales o completas de compras disponibles.
                             </Typography>
                         </Box>
 
@@ -348,20 +366,24 @@ export default function Recepciones() {
                             </TableHead>
 
                             <TableBody>
-                                {loading ? (
+                                {showLoading ? (
                                     <TableRow>
                                         <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
                                             <CircularProgress size={28} />
                                         </TableCell>
                                     </TableRow>
-                                ) : recepciones.length === 0 ? (
+                                ) : null}
+
+                                {showEmpty ? (
                                     <TableRow>
                                         <TableCell colSpan={11} align="center" sx={{ py: 4, color: '#64748b' }}>
                                             No hay recepciones registradas.
                                         </TableCell>
                                     </TableRow>
-                                ) : (
-                                    recepcionesPaginadas.map((recepcion) => (
+                                ) : null}
+
+                                {showRows
+                                    ? recepcionesPaginadas.map((recepcion) => (
                                         <TableRow key={recepcion.idRecepciones} hover>
                                             <TableCell>{recepcion.idRecepciones}</TableCell>
                                             <TableCell>{formatDateTimeForTable(recepcion.fechaRecepcion)}</TableCell>
@@ -394,11 +416,11 @@ export default function Recepciones() {
                                             </TableCell>
                                         </TableRow>
                                     ))
-                                )}
+                                    : null}
                             </TableBody>
                         </Table>
 
-                        {!loading && recepciones.length > 0 && (
+                        {showRows ? (
                             <TablePagination
                                 component="div"
                                 count={recepciones.length}
@@ -409,7 +431,7 @@ export default function Recepciones() {
                                 rowsPerPageOptions={[5, 10, 20]}
                                 labelRowsPerPage="Filas por página:"
                             />
-                        )}
+                        ) : null}
                     </TableContainer>
                 </CardContent>
             </Card>
@@ -420,7 +442,7 @@ export default function Recepciones() {
                 saving={saving}
                 comprasLoading={comprasLoading}
                 detalleLoading={detalleLoading}
-                comprasPendientes={comprasPendientes}
+                comprasPendientes={comprasDisponibles}
                 selectedCompra={selectedCompra}
                 setSelectedCompra={setSelectedCompra}
                 form={form}

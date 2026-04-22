@@ -92,6 +92,27 @@ function formatDateTimeForTable(value) {
   return date.toLocaleString();
 }
 
+function getEstadoStyles(estado) {
+  if (estado === 'Completo') {
+    return {
+      backgroundColor: '#dcfce7',
+      color: '#16a34a',
+    };
+  }
+
+  if (estado === 'Completa parcial') {
+    return {
+      backgroundColor: '#dbeafe',
+      color: '#2563eb',
+    };
+  }
+
+  return {
+    backgroundColor: '#fef3c7',
+    color: '#d97706',
+  };
+}
+
 export default function GestionarCompras() {
   const [compras, setCompras] = React.useState([]);
   const [proveedores, setProveedores] = React.useState([]);
@@ -148,10 +169,10 @@ export default function GestionarCompras() {
         pagoService.listar(),
       ]);
 
-      setProveedores(proveedoresData);
-      setArticulos(articulosData);
-      setImpuestos(impuestosData);
-      setPagos(pagosData);
+      setProveedores(Array.isArray(proveedoresData) ? proveedoresData : []);
+      setArticulos(Array.isArray(articulosData) ? articulosData : []);
+      setImpuestos(Array.isArray(impuestosData) ? impuestosData : []);
+      setPagos(Array.isArray(pagosData) ? pagosData : []);
     } catch (error) {
       console.error('Error al cargar catálogos:', error);
       console.error('status:', error?.response?.status);
@@ -175,6 +196,8 @@ export default function GestionarCompras() {
   };
 
   const handleOpenEdit = (compra) => {
+    if (compra.estado !== 'Pendiente') return;
+
     const proveedorEncontrado =
       proveedores.find((p) => p.idProveedor === compra.idProveedor) || null;
 
@@ -311,6 +334,7 @@ export default function GestionarCompras() {
   };
 
   const handleOpenDeleteDialog = (compra) => {
+    if (compra.estado !== 'Pendiente') return;
     setSelectedDelete(compra);
     setDeleteDialogOpen(true);
   };
@@ -339,7 +363,7 @@ export default function GestionarCompras() {
   };
 
   const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
+    setRowsPerPage(Number.parseInt(event.target.value, 10));
     setPage(0);
   };
 
@@ -410,20 +434,27 @@ export default function GestionarCompras() {
               </TableHead>
 
               <TableBody>
-                {loading ? (
+                {loading && (
                   <TableRow>
                     <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                       <CircularProgress size={28} />
                     </TableCell>
                   </TableRow>
-                ) : compras.length === 0 ? (
+                )}
+
+                {!loading && compras.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={9} align="center" sx={{ py: 4, color: '#64748b' }}>
                       No hay compras registradas.
                     </TableCell>
                   </TableRow>
-                ) : (
-                  comprasPaginadas.map((compra) => (
+                )}
+
+                {!loading && compras.length > 0 && comprasPaginadas.map((compra) => {
+                  const estadoStyles = getEstadoStyles(compra.estado);
+                  const puedeEditarOEliminar = compra.estado === 'Pendiente';
+
+                  return (
                     <TableRow key={compra.idCompras} hover>
                       <TableCell>{compra.idCompras}</TableCell>
                       <TableCell>{formatDateTimeForTable(compra.fechaCompras)}</TableCell>
@@ -438,32 +469,37 @@ export default function GestionarCompras() {
                           size="small"
                           sx={{
                             fontWeight: 700,
-                            backgroundColor:
-                              compra.estado === 'Completo'
-                                ? '#dcfce7'
-                                : compra.estado === 'Pendiente'
-                                  ? '#fef3c7'
-                                  : '#fee2e2',
-                            color:
-                              compra.estado === 'Completo'
-                                ? '#16a34a'
-                                : compra.estado === 'Pendiente'
-                                  ? '#d97706'
-                                  : '#dc2626',
+                            backgroundColor: estadoStyles.backgroundColor,
+                            color: estadoStyles.color,
                           }}
                         />
                       </TableCell>
                       <TableCell align="center">
-                        <IconButton onClick={() => handleOpenEdit(compra)}>
-                          <Icon name="edit" size={20} color="#1976d2" />
+                        <IconButton
+                          onClick={() => handleOpenEdit(compra)}
+                          disabled={!puedeEditarOEliminar}
+                        >
+                          <Icon
+                            name="edit"
+                            size={20}
+                            color={puedeEditarOEliminar ? '#1976d2' : '#94a3b8'}
+                          />
                         </IconButton>
-                        <IconButton onClick={() => handleOpenDeleteDialog(compra)}>
-                          <Icon name="delete" size={20} color="#ef4444" />
+
+                        <IconButton
+                          onClick={() => handleOpenDeleteDialog(compra)}
+                          disabled={!puedeEditarOEliminar}
+                        >
+                          <Icon
+                            name="delete"
+                            size={20}
+                            color={puedeEditarOEliminar ? '#ef4444' : '#94a3b8'}
+                          />
                         </IconButton>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
+                  );
+                })}
               </TableBody>
             </Table>
 

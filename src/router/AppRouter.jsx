@@ -4,6 +4,7 @@ import Login from '../pages/auth/Login';
 import Proveedor from '../pages/compras/proveedor/Proveedor';
 import GestionarCompras from '../pages/compras/gestionarcompras/GestionarCompras';
 import Recepciones from '../pages/compras/recepciones/Recepciones';
+import Configuracion from '../pages/configuracion/Configuracion';
 
 import Dashboard from '../pages/dashboard/Dashboard';
 import DashboardHome from '../pages/dashboard/DashboardHome';
@@ -36,6 +37,7 @@ function AppRouter() {
           <Route path="compras/recepciones" element={<Recepciones />} />
           <Route path="inventarios/articulos" element={<Articulo />} />
           <Route path="pagar" element={<CuentasPagar />} />
+          <Route path="configuracion" element={<Configuracion />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/login" replace />} />

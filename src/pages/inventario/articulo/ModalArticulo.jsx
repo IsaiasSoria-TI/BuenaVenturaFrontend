@@ -1,13 +1,14 @@
-import * as React from 'react';
+import React from 'react';
+import PropTypes from 'prop-types';
 import {
     Box,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    TextField,
     Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
     MenuItem,
+    TextField,
 } from '@mui/material';
 
 const MEDIDAS = [
@@ -25,11 +26,23 @@ export default function ModalArticulo({
     onChange,
     onSubmit,
 }) {
+    const helperDescripcion = errors.descripcion || '';
+    const helperMedida = errors.medida || 'Seleccione la unidad';
+    const helperStock =
+        errors.stock || 'Opcional. Si lo dejas vacío, se guardará en 0.';
+
+    const titulo = editing ? 'Editar artículo' : 'Nuevo artículo';
+    const textoBoton = saving
+        ? 'Guardando...'
+        : editing
+            ? 'Actualizar'
+            : 'Registrar';
+
+    const mostrarEstado = editing;
+
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-            <DialogTitle sx={{ fontWeight: 700 }}>
-                {editing ? 'Editar artículo' : 'Nuevo artículo'}
-            </DialogTitle>
+            <DialogTitle sx={{ fontWeight: 700 }}>{titulo}</DialogTitle>
 
             <DialogContent dividers sx={{ pt: 2.5 }}>
                 <Box
@@ -46,7 +59,7 @@ export default function ModalArticulo({
                         value={form.descripcion}
                         onChange={onChange('descripcion')}
                         error={!!errors.descripcion}
-                        helperText={errors.descripcion}
+                        helperText={helperDescripcion}
                     />
 
                     <TextField
@@ -56,11 +69,12 @@ export default function ModalArticulo({
                         value={form.medida}
                         onChange={onChange('medida')}
                         error={!!errors.medida}
-                        helperText={errors.medida || 'Seleccione la unidad'}
+                        helperText={helperMedida}
                     >
                         <MenuItem value="">
                             <em>Seleccione</em>
                         </MenuItem>
+
                         {MEDIDAS.map((medida) => (
                             <MenuItem key={medida.value} value={medida.value}>
                                 {medida.label}
@@ -71,16 +85,16 @@ export default function ModalArticulo({
                     <TextField
                         fullWidth
                         type="number"
-                        label="Stock"
+                        label="Stock De Seguridad"
                         value={form.stock}
                         onChange={onChange('stock')}
                         error={!!errors.stock}
-                        helperText={errors.stock || 'Opcional. Si lo dejas vacío, se guardará en 0.'}
+                        helperText={helperStock}
                         inputProps={{ min: 0, step: '0.01' }}
                     />
                 </Box>
 
-                {editing && (
+                {mostrarEstado ? (
                     <Box sx={{ mt: 2 }}>
                         <TextField
                             select
@@ -93,22 +107,44 @@ export default function ModalArticulo({
                             <MenuItem value="Inactivo">Inactivo</MenuItem>
                         </TextField>
                     </Box>
-                )}
+                ) : null}
             </DialogContent>
 
             <DialogActions sx={{ px: 3, py: 2 }}>
                 <Button onClick={onClose} disabled={saving} sx={{ textTransform: 'none' }}>
                     Cancelar
                 </Button>
+
                 <Button
                     variant="contained"
                     onClick={onSubmit}
                     disabled={saving}
                     sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
                 >
-                    {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Registrar'}
+                    {textoBoton}
                 </Button>
             </DialogActions>
         </Dialog>
     );
 }
+
+ModalArticulo.propTypes = {
+    open: PropTypes.bool.isRequired,
+    onClose: PropTypes.func.isRequired,
+    editing: PropTypes.bool.isRequired,
+    form: PropTypes.shape({
+        descripcion: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        medida: PropTypes.string,
+        stock: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        estado: PropTypes.string,
+    }).isRequired,
+    errors: PropTypes.shape({
+        descripcion: PropTypes.string,
+        medida: PropTypes.string,
+        stock: PropTypes.string,
+        estado: PropTypes.string,
+    }).isRequired,
+    saving: PropTypes.bool.isRequired,
+    onChange: PropTypes.func.isRequired,
+    onSubmit: PropTypes.func.isRequired,
+};

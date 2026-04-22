@@ -256,7 +256,7 @@ export default function Articulo() {
                   <TableCell sx={{ fontWeight: 700 }}>CÓDIGO</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>DESCRIPCIÓN</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>MEDIDA</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>STOCK</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>STOCK DE SEGURIDAD</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>ESTADO</TableCell>
                   <TableCell sx={{ fontWeight: 700, textAlign: 'center' }}>ACCIONES</TableCell>
                 </TableRow>

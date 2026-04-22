@@ -1,28 +1,29 @@
-import * as React from 'react';
+import React from 'react';
+import PropTypes from 'prop-types';
 import {
-  Box,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Stack,
-  TextField,
-  CircularProgress,
   Alert,
   Autocomplete,
-  Typography,
+  Box,
+  Button,
+  Checkbox,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
+  MenuItem,
+  Paper,
+  Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  Checkbox,
-  Chip,
-  MenuItem,
+  TextField,
+  Typography,
 } from '@mui/material';
 
 import { cuentaPagarService } from '../../services/cuentaPagarService';
@@ -47,8 +48,10 @@ function formatDateTimeForTable(value) {
 
 function formatNumber(value) {
   if (value === null || value === undefined || value === '') return '0.00';
+
   const number = Number(value);
   if (Number.isNaN(number)) return '0.00';
+
   return number.toFixed(2);
 }
 
@@ -60,35 +63,31 @@ function getEstadoChipStyles(estado) {
     };
   }
 
-  if (estado === 'Pagado') {
+  if (estado === 'Completa parcial') {
     return {
       backgroundColor: '#dbeafe',
       color: '#2563eb',
     };
   }
 
-  if (estado === 'Pendiente') {
-    return {
-      backgroundColor: '#fef3c7',
-      color: '#d97706',
-    };
-  }
-
   return {
-    backgroundColor: '#fee2e2',
-    color: '#dc2626',
+    backgroundColor: '#fef3c7',
+    color: '#d97706',
   };
 }
 
-const RecepcionesTable = React.memo(function RecepcionesTable({
+function RecepcionesTable({
   recepciones,
   selectedRecepciones,
   toggleRecepcion,
   isRecepcionSelected,
-  form,
+  tipoFactura,
   updateNumeroFacturaDetalle,
   errors,
 }) {
+  const mostrarFacturaPorRecepcion = tipoFactura === 'MULTIPLE';
+  const errorNumeroFacturaDetalle = !!errors.numeroFacturaDetalle;
+
   return (
     <TableContainer
       component={Paper}
@@ -107,69 +106,102 @@ const RecepcionesTable = React.memo(function RecepcionesTable({
             <TableCell sx={{ fontWeight: 700 }}>FECHA</TableCell>
             <TableCell sx={{ fontWeight: 700 }}>RECIBIDO</TableCell>
             <TableCell sx={{ fontWeight: 700 }}>ESTADO</TableCell>
-            {form.tipoFactura === 'MULTIPLE' && (
+            {mostrarFacturaPorRecepcion ? (
               <TableCell sx={{ fontWeight: 700 }}>FACTURA</TableCell>
-            )}
+            ) : null}
           </TableRow>
         </TableHead>
 
         <TableBody>
-          {recepciones.map((recepcion) => (
-            <TableRow key={recepcion.idRecepciones} hover>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  checked={isRecepcionSelected(recepcion.idRecepciones)}
-                  onChange={() => toggleRecepcion(recepcion)}
-                />
-              </TableCell>
-              <TableCell>{recepcion.idRecepciones}</TableCell>
-              <TableCell>{formatDateTimeForTable(recepcion.fechaRecepcion)}</TableCell>
-              <TableCell>{formatNumber(recepcion.recibido)}</TableCell>
-              <TableCell>
-                <Chip
-                  label={recepcion.estadoRecepcion || '-'}
-                  size="small"
-                  sx={{
-                    fontWeight: 700,
-                    ...getEstadoChipStyles(recepcion.estadoRecepcion),
-                  }}
-                />
-              </TableCell>
+          {recepciones.map((recepcion) => {
+            const seleccionada = isRecepcionSelected(recepcion.idRecepciones);
+            const recepcionSeleccionada = selectedRecepciones.find(
+              (item) => item.idRecepciones === recepcion.idRecepciones
+            );
 
-              {form.tipoFactura === 'MULTIPLE' && (
-                <TableCell sx={{ minWidth: 220 }}>
-                  {isRecepcionSelected(recepcion.idRecepciones) ? (
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="N° factura"
-                      value={
-                        selectedRecepciones.find(
-                          (item) => item.idRecepciones === recepcion.idRecepciones
-                        )?.numeroFactura || ''
-                      }
-                      onChange={(event) =>
-                        updateNumeroFacturaDetalle(
-                          recepcion.idRecepciones,
-                          event.target.value
-                        )
-                      }
-                      error={!!errors.numeroFacturaDetalle}
-                    />
-                  ) : (
-                    <Typography sx={{ color: '#94a3b8', fontSize: '0.85rem' }}>
-                      Selecciona la recepción
-                    </Typography>
-                  )}
+            return (
+              <TableRow key={recepcion.idRecepciones} hover>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    checked={seleccionada}
+                    onChange={() => toggleRecepcion(recepcion)}
+                  />
                 </TableCell>
-              )}
-            </TableRow>
-          ))}
+
+                <TableCell>{recepcion.idRecepciones}</TableCell>
+                <TableCell>{formatDateTimeForTable(recepcion.fechaRecepcion)}</TableCell>
+                <TableCell>{formatNumber(recepcion.recibido)}</TableCell>
+
+                <TableCell>
+                  <Chip
+                    label={recepcion.estadoRecepcion || '-'}
+                    size="small"
+                    sx={{
+                      fontWeight: 700,
+                      ...getEstadoChipStyles(recepcion.estadoRecepcion),
+                    }}
+                  />
+                </TableCell>
+
+                {mostrarFacturaPorRecepcion ? (
+                  <TableCell sx={{ minWidth: 220 }}>
+                    {seleccionada ? (
+                      <TextField
+                        fullWidth
+                        size="small"
+                        label="N° factura"
+                        value={recepcionSeleccionada?.numeroFactura || ''}
+                        onChange={(event) =>
+                          updateNumeroFacturaDetalle(
+                            recepcion.idRecepciones,
+                            event.target.value
+                          )
+                        }
+                        error={errorNumeroFacturaDetalle}
+                      />
+                    ) : (
+                      <Typography sx={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+                        Selecciona la recepción
+                      </Typography>
+                    )}
+                  </TableCell>
+                ) : null}
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </TableContainer>
   );
-});
+}
+
+RecepcionesTable.propTypes = {
+  recepciones: PropTypes.arrayOf(
+    PropTypes.shape({
+      idRecepciones: PropTypes.number,
+      fechaRecepcion: PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.instanceOf(Date),
+      ]),
+      recibido: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+      estadoRecepcion: PropTypes.string,
+    })
+  ).isRequired,
+  selectedRecepciones: PropTypes.arrayOf(
+    PropTypes.shape({
+      idCompras: PropTypes.number,
+      idRecepciones: PropTypes.number,
+      numeroFactura: PropTypes.string,
+    })
+  ).isRequired,
+  toggleRecepcion: PropTypes.func.isRequired,
+  isRecepcionSelected: PropTypes.func.isRequired,
+  tipoFactura: PropTypes.string.isRequired,
+  updateNumeroFacturaDetalle: PropTypes.func.isRequired,
+  errors: PropTypes.shape({
+    numeroFacturaDetalle: PropTypes.string,
+  }).isRequired,
+};
 
 export default function ModalCuentaPagar({ open, onClose, onSaved }) {
   const [comprasValidas, setComprasValidas] = React.useState([]);
@@ -190,8 +222,10 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
   const cargarComprasValidas = React.useCallback(async () => {
     try {
       setComprasLoading(true);
+      setServerError('');
+
       const data = await cuentaPagarService.listarComprasValidas();
-      setComprasValidas(data);
+      setComprasValidas(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error al listar compras válidas:', error);
       console.error('status:', error?.response?.status);
@@ -213,16 +247,16 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
   }, []);
 
   React.useEffect(() => {
-    if (open) {
-      setForm(initialForm);
-      setErrors({});
-      setServerError('');
-      setServerSuccess('');
-      setSelectedCompra(null);
-      setDetalleCompra(null);
-      setSelectedRecepciones([]);
-      cargarComprasValidas();
-    }
+    if (!open) return;
+
+    setForm(initialForm);
+    setErrors({});
+    setServerError('');
+    setServerSuccess('');
+    setSelectedCompra(null);
+    setDetalleCompra(null);
+    setSelectedRecepciones([]);
+    cargarComprasValidas();
   }, [open, cargarComprasValidas]);
 
   const handleChange = React.useCallback(
@@ -284,11 +318,17 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
 
   const toggleRecepcion = React.useCallback(
     (recepcion) => {
+      if (!detalleCompra) return;
+
       setSelectedRecepciones((prev) => {
-        const exists = prev.some((item) => item.idRecepciones === recepcion.idRecepciones);
+        const exists = prev.some(
+          (item) => item.idRecepciones === recepcion.idRecepciones
+        );
 
         if (exists) {
-          return prev.filter((item) => item.idRecepciones !== recepcion.idRecepciones);
+          return prev.filter(
+            (item) => item.idRecepciones !== recepcion.idRecepciones
+          );
         }
 
         return [
@@ -329,7 +369,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
     const newErrors = {};
 
     if (!selectedCompra?.idCompras) {
-      newErrors.idCompras = 'Seleccione una compra completa';
+      newErrors.idCompras = 'Seleccione una compra válida';
     }
 
     if (!form.tipoFactura) {
@@ -353,11 +393,11 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
     }
 
     if (form.tipoFactura === 'MULTIPLE') {
-      const missingFactura = selectedRecepciones.some(
+      const faltaFactura = selectedRecepciones.some(
         (item) => !item.numeroFactura?.trim()
       );
 
-      if (missingFactura) {
+      if (faltaFactura) {
         newErrors.numeroFacturaDetalle =
           'Cada recepción seleccionada debe tener número de factura';
       }
@@ -377,7 +417,9 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
         idCompras: item.idCompras,
         idRecepciones: item.idRecepciones,
         numeroFactura:
-          form.tipoFactura === 'MULTIPLE' ? item.numeroFactura?.trim() || null : null,
+          form.tipoFactura === 'MULTIPLE'
+            ? item.numeroFactura?.trim() || null
+            : null,
       })),
     };
   }, [form, selectedRecepciones]);
@@ -418,14 +460,44 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
     }
   }, [validate, buildPayload, onSaved]);
 
+  const helperIdCompras = errors.idCompras || '';
+  const helperTipoFactura = errors.tipoFactura || '';
+  const helperMoneda = errors.moneda || '';
+  const helperCodigoDetRet = errors.codigoDetRet || '';
+  const helperNumeroFactura = errors.numeroFactura || '';
+  const helperNumeroFacturaDetalle = errors.numeroFacturaDetalle || '';
+
+  const showFacturaUnica = form.tipoFactura === 'UNICA';
+  const showFacturaMultiple = form.tipoFactura === 'MULTIPLE';
+
+  const recepcionesDisponibles = detalleCompra?.recepcionesDisponibles || [];
+  const hasRecepcionesDisponibles = recepcionesDisponibles.length > 0;
+
+  const handleSelectCompra = (_, newValue) => {
+    setSelectedCompra(newValue);
+    setDetalleCompra(null);
+    setSelectedRecepciones([]);
+    setServerError('');
+    setServerSuccess('');
+
+    if (newValue?.idCompras) {
+      cargarDetalleCompra(newValue.idCompras);
+    }
+
+    setErrors((prev) => ({
+      ...prev,
+      idCompras: '',
+    }));
+  };
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="lg">
       <DialogTitle sx={{ fontWeight: 700 }}>Añadir cuenta por pagar</DialogTitle>
 
       <DialogContent dividers sx={{ pt: 2.5 }}>
         <Stack spacing={2}>
-          {serverError && <Alert severity="error">{serverError}</Alert>}
-          {serverSuccess && <Alert severity="success">{serverSuccess}</Alert>}
+          {serverError ? <Alert severity="error">{serverError}</Alert> : null}
+          {serverSuccess ? <Alert severity="success">{serverSuccess}</Alert> : null}
 
           {comprasLoading ? (
             <Box sx={{ py: 4, display: 'flex', justifyContent: 'center' }}>
@@ -437,22 +509,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
                 fullWidth
                 options={comprasValidas}
                 value={selectedCompra}
-                onChange={(_, newValue) => {
-                  setSelectedCompra(newValue);
-                  setDetalleCompra(null);
-                  setSelectedRecepciones([]);
-                  setServerError('');
-                  setServerSuccess('');
-
-                  if (newValue?.idCompras) {
-                    cargarDetalleCompra(newValue.idCompras);
-                  }
-
-                  setErrors((prev) => ({
-                    ...prev,
-                    idCompras: '',
-                  }));
-                }}
+                onChange={handleSelectCompra}
                 getOptionLabel={(option) =>
                   option
                     ? `Compra #${option.idCompras} - ${option.ruc} - ${option.razonSocial}`
@@ -492,10 +549,10 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    label="Compras con recepciones completas"
+                    label="Compras con recepciones válidas"
                     placeholder="Busca por compra, RUC, proveedor o artículo"
                     error={!!errors.idCompras}
-                    helperText={errors.idCompras}
+                    helperText={helperIdCompras}
                   />
                 )}
               />
@@ -504,7 +561,9 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
                 <Box sx={{ py: 3, display: 'flex', justifyContent: 'center' }}>
                   <CircularProgress size={24} />
                 </Box>
-              ) : detalleCompra ? (
+              ) : null}
+
+              {!detalleLoading && detalleCompra ? (
                 <>
                   <Box
                     sx={{
@@ -577,29 +636,29 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
 
                   <Box>
                     <Typography sx={{ fontWeight: 700, color: '#0f172a', mb: 1.5 }}>
-                      Recepciones completas disponibles
+                      Recepciones disponibles
                     </Typography>
 
-                    {errors.detalles && (
+                    {errors.detalles ? (
                       <Alert severity="warning" sx={{ mb: 2 }}>
                         {errors.detalles}
                       </Alert>
-                    )}
+                    ) : null}
 
-                    {detalleCompra.recepcionesDisponibles?.length === 0 ? (
-                      <Alert severity="info">
-                        Esta compra no tiene recepciones completas disponibles.
-                      </Alert>
-                    ) : (
+                    {hasRecepcionesDisponibles ? (
                       <RecepcionesTable
-                        recepciones={detalleCompra.recepcionesDisponibles}
+                        recepciones={recepcionesDisponibles}
                         selectedRecepciones={selectedRecepciones}
                         toggleRecepcion={toggleRecepcion}
                         isRecepcionSelected={isRecepcionSelected}
-                        form={form}
+                        tipoFactura={form.tipoFactura}
                         updateNumeroFacturaDetalle={updateNumeroFacturaDetalle}
                         errors={errors}
                       />
+                    ) : (
+                      <Alert severity="info">
+                        Esta compra no tiene recepciones disponibles.
+                      </Alert>
                     )}
                   </Box>
 
@@ -619,7 +678,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
                       value={form.tipoFactura}
                       onChange={handleChange('tipoFactura')}
                       error={!!errors.tipoFactura}
-                      helperText={errors.tipoFactura}
+                      helperText={helperTipoFactura}
                     >
                       <MenuItem value="UNICA">Única</MenuItem>
                       <MenuItem value="MULTIPLE">Múltiple</MenuItem>
@@ -632,7 +691,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
                       value={form.moneda}
                       onChange={handleChange('moneda')}
                       error={!!errors.moneda}
-                      helperText={errors.moneda}
+                      helperText={helperMoneda}
                     >
                       <MenuItem value="PEN">PEN</MenuItem>
                       <MenuItem value="USD">USD</MenuItem>
@@ -644,35 +703,39 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
                       value={form.codigoDetRet}
                       onChange={handleChange('codigoDetRet')}
                       error={!!errors.codigoDetRet}
-                      helperText={errors.codigoDetRet}
+                      helperText={helperCodigoDetRet}
                     />
 
-                    {form.tipoFactura === 'UNICA' ? (
+                    {showFacturaUnica ? (
                       <TextField
                         fullWidth
                         label="Número de factura"
                         value={form.numeroFactura}
                         onChange={handleChange('numeroFactura')}
                         error={!!errors.numeroFactura}
-                        helperText={errors.numeroFactura}
+                        helperText={helperNumeroFactura}
                       />
-                    ) : (
+                    ) : null}
+
+                    {showFacturaMultiple ? (
                       <TextField
                         fullWidth
                         label="Número de factura"
                         value="Se registra por recepción"
                         InputProps={{ readOnly: true }}
                         error={!!errors.numeroFacturaDetalle}
-                        helperText={errors.numeroFacturaDetalle}
+                        helperText={helperNumeroFacturaDetalle}
                       />
-                    )}
+                    ) : null}
                   </Box>
                 </>
-              ) : (
+              ) : null}
+
+              {!detalleLoading && !detalleCompra ? (
                 <Alert severity="info">
-                  Selecciona una compra completa para visualizar sus recepciones completas disponibles.
+                  Selecciona una compra válida para visualizar sus recepciones disponibles.
                 </Alert>
-              )}
+              ) : null}
             </>
           )}
         </Stack>
@@ -694,3 +757,9 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
     </Dialog>
   );
 }
+
+ModalCuentaPagar.propTypes = {
+  open: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSaved: PropTypes.func.isRequired,
+};

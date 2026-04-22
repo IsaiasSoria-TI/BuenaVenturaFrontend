@@ -1,7 +1,8 @@
+import React from 'react';
+import PropTypes from 'prop-types';
 import { Box, Avatar, IconButton, Typography } from '@mui/material';
 import { useLocation } from 'react-router-dom';
 
-/* 🔥 MISMO NAV_SECTIONS QUE TU SIDEBAR */
 const NAV_SECTIONS = [
   {
     label: 'Principal',
@@ -52,33 +53,44 @@ const NAV_SECTIONS = [
   },
 ];
 
-const Icon = ({ name, size = 22, color = 'inherit' }) => (
-  <span
-    className="material-symbols-rounded"
-    style={{
-      fontSize: size,
-      color,
-      lineHeight: 1,
-      userSelect: 'none',
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}
-  >
-    {name}
-  </span>
-);
+function Icon({ name, size, color }) {
+  return (
+    <span
+      className="material-symbols-rounded"
+      style={{
+        fontSize: size,
+        color,
+        lineHeight: 1,
+        userSelect: 'none',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontVariationSettings: '"FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24',
+      }}
+    >
+      {name}
+    </span>
+  );
+}
 
-/* 🔥 FUNCIÓN INTELIGENTE */
+Icon.propTypes = {
+  name: PropTypes.string.isRequired,
+  size: PropTypes.number,
+  color: PropTypes.string,
+};
+
+Icon.defaultProps = {
+  size: 22,
+  color: 'inherit',
+};
+
 function getTitleFromPath(pathname) {
   for (const section of NAV_SECTIONS) {
     for (const item of section.items) {
-      // nivel simple
       if (item.to && pathname === item.to) {
         return item.label;
       }
 
-      // nivel con hijos
       if (item.children) {
         for (const child of item.children) {
           if (pathname === child.to) {
@@ -89,14 +101,38 @@ function getTitleFromPath(pathname) {
     }
   }
 
-  // fallback
   return 'Panel Principal';
+}
+
+function getUserFromStorage() {
+  try {
+    return JSON.parse(localStorage.getItem('user') || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function getInitials(username) {
+  return (
+    username
+      .trim()
+      .split(' ')
+      .filter(Boolean)
+      .map((part) => part[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase() || 'US'
+  );
 }
 
 export default function Topbar({ isMobile, onMenuClick }) {
   const location = useLocation();
-
   const title = getTitleFromPath(location.pathname);
+
+  const user = getUserFromStorage();
+  const username = user.nombreCompleto || user.usuario || 'Usuario';
+  const fotoPerfil = user.fotoPerfil || '';
+  const initials = getInitials(username);
 
   return (
     <Box
@@ -114,11 +150,11 @@ export default function Topbar({ isMobile, onMenuClick }) {
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        {isMobile && (
+        {isMobile ? (
           <IconButton onClick={onMenuClick} sx={{ color: '#475569', mr: 0.5 }}>
             <Icon name="menu" size={22} />
           </IconButton>
-        )}
+        ) : null}
 
         <Typography
           sx={{
@@ -136,11 +172,8 @@ export default function Topbar({ isMobile, onMenuClick }) {
           <Icon name="notifications" size={20} />
         </IconButton>
 
-        <IconButton sx={{ color: '#475569', display: { xs: 'none', sm: 'inline-flex' } }}>
-          <Icon name="search" size={20} />
-        </IconButton>
-
         <Avatar
+          src={fotoPerfil}
           sx={{
             width: 34,
             height: 34,
@@ -150,9 +183,14 @@ export default function Topbar({ isMobile, onMenuClick }) {
             cursor: 'pointer',
           }}
         >
-          JR
+          {!fotoPerfil ? initials : null}
         </Avatar>
       </Box>
     </Box>
   );
 }
+
+Topbar.propTypes = {
+  isMobile: PropTypes.bool.isRequired,
+  onMenuClick: PropTypes.func.isRequired,
+};

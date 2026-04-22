@@ -1,20 +1,20 @@
-import * as React from 'react';
-
+import React from 'react';
+import PropTypes from 'prop-types';
 import {
-  Box,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Stack,
-  TextField,
-  CircularProgress,
-  Autocomplete,
-  Alert,
-  Divider,
-  Typography,
-  Chip,
+    Alert,
+    Autocomplete,
+    Box,
+    Button,
+    Chip,
+    CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Divider,
+    Stack,
+    TextField,
+    Typography,
 } from '@mui/material';
 
 function formatDateTimeForTable(value) {
@@ -45,16 +45,16 @@ function getEstadoChipStyles(estado) {
         };
     }
 
-    if (estado === 'Pendiente') {
+    if (estado === 'Completa parcial') {
         return {
-            backgroundColor: '#fef3c7',
-            color: '#d97706',
+            backgroundColor: '#dbeafe',
+            color: '#2563eb',
         };
     }
 
     return {
-        backgroundColor: '#fee2e2',
-        color: '#dc2626',
+        backgroundColor: '#fef3c7',
+        color: '#d97706',
     };
 }
 
@@ -79,15 +79,251 @@ export default function ModalRecepcion({
     recibidoActual,
     pendienteLuegoRegistro,
 }) {
+    const errorIdCompras = errors.idCompras || '';
+    const errorRecibido = errors.recibido || '';
+
+    const estadoCompra = detalleCompra?.estado || '-';
+    const pesoComprado = formatNumber(detalleCompra?.pesoComprado);
+    const totalRecibido = formatNumber(detalleCompra?.totalRecibido);
+    const pesoPendiente = formatNumber(detalleCompra?.pesoPendiente);
+    const hectareas = formatNumber(detalleCompra?.hectareas);
+    const costoKilo = formatNumber(detalleCompra?.costoKilo);
+    const costoTotal = formatNumber(detalleCompra?.costoTotal);
+    const maxRecibido = detalleCompra?.pesoPendiente || undefined;
+
+    const mostrarCargaCompras = comprasLoading;
+    const mostrarCargaDetalle = !comprasLoading && detalleLoading;
+    const mostrarDetalle = !comprasLoading && !detalleLoading && !!detalleCompra;
+    const mostrarInfoInicial = !comprasLoading && !detalleLoading && !detalleCompra;
+
+    const handleSelectCompra = (_, newValue) => {
+        setSelectedCompra(newValue);
+        setForm((prev) => ({
+            ...prev,
+            idCompras: newValue ? newValue.idCompras : null,
+        }));
+
+        if (errors.idCompras) {
+            setErrors((prev) => ({
+                ...prev,
+                idCompras: '',
+            }));
+        }
+
+        if (newValue?.idCompras) {
+            cargarDetalleCompra(newValue.idCompras);
+        }
+    };
+
+    const renderCompraOption = (props, option) => (
+        <Box component="li" {...props}>
+            <Box>
+                <Typography sx={{ fontWeight: 700, fontSize: '0.92rem' }}>
+                    Compra #{option.idCompras}
+                </Typography>
+                <Typography sx={{ fontSize: '0.82rem', color: '#64748b' }}>
+                    {option.ruc} - {option.razonSocial}
+                </Typography>
+                <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
+                    {option.articulo} | Peso: {formatNumber(option.pesoComprado)}
+                </Typography>
+            </Box>
+        </Box>
+    );
+
+    const renderDetalleCompra = () => (
+        <>
+            <Box
+                sx={{
+                    p: 2,
+                    borderRadius: 2,
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                }}
+            >
+                <Typography sx={{ fontWeight: 700, color: '#0f172a', mb: 1.5 }}>
+                    Detalle de compra seleccionada
+                </Typography>
+
+                <Box
+                    sx={{
+                        display: 'grid',
+                        gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                        gap: 1.5,
+                    }}
+                >
+                    <Box>
+                        <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
+                            Código de compra
+                        </Typography>
+                        <Typography sx={{ fontWeight: 700 }}>
+                            #{detalleCompra.idCompras}
+                        </Typography>
+                    </Box>
+
+                    <Box>
+                        <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
+                            Fecha de compra
+                        </Typography>
+                        <Typography>
+                            {formatDateTimeForTable(detalleCompra.fechaCompras)}
+                        </Typography>
+                    </Box>
+
+                    <Box>
+                        <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
+                            Proveedor
+                        </Typography>
+                        <Typography sx={{ fontWeight: 700 }}>
+                            {detalleCompra.razonSocial}
+                        </Typography>
+                    </Box>
+
+                    <Box>
+                        <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
+                            RUC
+                        </Typography>
+                        <Typography>{detalleCompra.ruc}</Typography>
+                    </Box>
+
+                    <Box>
+                        <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
+                            Artículo
+                        </Typography>
+                        <Typography>{detalleCompra.articulo}</Typography>
+                    </Box>
+
+                    <Box>
+                        <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
+                            Medida
+                        </Typography>
+                        <Typography>{detalleCompra.medida}</Typography>
+                    </Box>
+
+                    <Box>
+                        <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
+                            Zona de producción
+                        </Typography>
+                        <Typography>{detalleCompra.zonaProduccion || '-'}</Typography>
+                    </Box>
+
+                    <Box>
+                        <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
+                            Hectáreas
+                        </Typography>
+                        <Typography>{hectareas}</Typography>
+                    </Box>
+
+                    <Box>
+                        <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
+                            Costo por kilo
+                        </Typography>
+                        <Typography>{costoKilo}</Typography>
+                    </Box>
+
+                    <Box>
+                        <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
+                            Costo total
+                        </Typography>
+                        <Typography>{costoTotal}</Typography>
+                    </Box>
+
+                    <Box>
+                        <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
+                            Estado de compra
+                        </Typography>
+                        <Chip
+                            label={estadoCompra}
+                            size="small"
+                            sx={{
+                                mt: 0.5,
+                                fontWeight: 700,
+                                ...getEstadoChipStyles(estadoCompra),
+                            }}
+                        />
+                    </Box>
+                </Box>
+            </Box>
+
+            <Divider />
+
+            <Box
+                sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
+                    gap: 2,
+                }}
+            >
+                <TextField
+                    fullWidth
+                    label="Peso comprado"
+                    value={pesoComprado}
+                    InputProps={{ readOnly: true }}
+                />
+
+                <TextField
+                    fullWidth
+                    label="Total recibido"
+                    value={totalRecibido}
+                    InputProps={{ readOnly: true }}
+                />
+
+                <TextField
+                    fullWidth
+                    label="Peso pendiente"
+                    value={pesoPendiente}
+                    InputProps={{ readOnly: true }}
+                />
+            </Box>
+
+            <TextField
+                fullWidth
+                type="number"
+                label="Peso recibido"
+                value={form.recibido}
+                onChange={handleChange('recibido')}
+                error={!!errors.recibido}
+                helperText={errorRecibido}
+                inputProps={{
+                    min: 0.01,
+                    step: '0.01',
+                    max: maxRecibido,
+                }}
+            />
+
+            <Box
+                sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                    gap: 2,
+                }}
+            >
+                <TextField
+                    fullWidth
+                    label="Recepción actual"
+                    value={formatNumber(recibidoActual)}
+                    InputProps={{ readOnly: true }}
+                />
+
+                <TextField
+                    fullWidth
+                    label="Pendiente después del registro"
+                    value={formatNumber(pendienteLuegoRegistro)}
+                    InputProps={{ readOnly: true }}
+                />
+            </Box>
+        </>
+    );
+
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
             <DialogTitle sx={{ fontWeight: 700 }}>Nueva recepción</DialogTitle>
 
             <DialogContent dividers sx={{ pt: 2.5 }}>
                 <Stack spacing={2}>
-                    {serverError && <Alert severity="error">{serverError}</Alert>}
+                    {serverError ? <Alert severity="error">{serverError}</Alert> : null}
 
-                    {comprasLoading ? (
+                    {mostrarCargaCompras ? (
                         <Box sx={{ py: 4, display: 'flex', justifyContent: 'center' }}>
                             <CircularProgress size={26} />
                         </Box>
@@ -97,24 +333,7 @@ export default function ModalRecepcion({
                                 fullWidth
                                 options={comprasPendientes}
                                 value={selectedCompra}
-                                onChange={(_, newValue) => {
-                                    setSelectedCompra(newValue);
-                                    setForm((prev) => ({
-                                        ...prev,
-                                        idCompras: newValue ? newValue.idCompras : null,
-                                    }));
-
-                                    if (setErrors && errors.idCompras) {
-                                        setErrors((prev) => ({
-                                            ...prev,
-                                            idCompras: '',
-                                        }));
-                                    }
-
-                                    if (newValue?.idCompras) {
-                                        cargarDetalleCompra(newValue.idCompras);
-                                    }
-                                }}
+                                onChange={handleSelectCompra}
                                 getOptionLabel={(option) =>
                                     option
                                         ? `Compra #${option.idCompras} - ${option.ruc} - ${option.razonSocial}`
@@ -136,223 +355,31 @@ export default function ModalRecepcion({
 
                                     return filtered.slice(0, 20);
                                 }}
-                                renderOption={(props, option) => (
-                                    <Box component="li" {...props}>
-                                        <Box>
-                                            <Typography sx={{ fontWeight: 700, fontSize: '0.92rem' }}>
-                                                Compra #{option.idCompras}
-                                            </Typography>
-                                            <Typography sx={{ fontSize: '0.82rem', color: '#64748b' }}>
-                                                {option.ruc} - {option.razonSocial}
-                                            </Typography>
-                                            <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                                {option.articulo} | Peso: {formatNumber(option.pesoComprado)}
-                                            </Typography>
-                                        </Box>
-                                    </Box>
-                                )}
+                                renderOption={renderCompraOption}
                                 renderInput={(params) => (
                                     <TextField
                                         {...params}
-                                        label="Compra pendiente"
+                                        label="Compra disponible para recepción"
                                         placeholder="Busca por código, RUC, proveedor o artículo"
                                         error={!!errors.idCompras}
-                                        helperText={errors.idCompras}
+                                        helperText={errorIdCompras}
                                     />
                                 )}
                             />
 
-                            {detalleLoading ? (
+                            {mostrarCargaDetalle ? (
                                 <Box sx={{ py: 3, display: 'flex', justifyContent: 'center' }}>
                                     <CircularProgress size={24} />
                                 </Box>
-                            ) : detalleCompra ? (
-                                <>
-                                    <Box
-                                        sx={{
-                                            p: 2,
-                                            borderRadius: 2,
-                                            backgroundColor: '#f8fafc',
-                                            border: '1px solid #e2e8f0',
-                                        }}
-                                    >
-                                        <Typography sx={{ fontWeight: 700, color: '#0f172a', mb: 1.5 }}>
-                                            Detalle de compra seleccionada
-                                        </Typography>
+                            ) : null}
 
-                                        <Box
-                                            sx={{
-                                                display: 'grid',
-                                                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-                                                gap: 1.5,
-                                            }}
-                                        >
-                                            <Box>
-                                                <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                                    Código de compra
-                                                </Typography>
-                                                <Typography sx={{ fontWeight: 700 }}>
-                                                    #{detalleCompra.idCompras}
-                                                </Typography>
-                                            </Box>
+                            {mostrarDetalle ? renderDetalleCompra() : null}
 
-                                            <Box>
-                                                <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                                    Fecha de compra
-                                                </Typography>
-                                                <Typography>
-                                                    {formatDateTimeForTable(detalleCompra.fechaCompras)}
-                                                </Typography>
-                                            </Box>
-
-                                            <Box>
-                                                <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                                    Proveedor
-                                                </Typography>
-                                                <Typography sx={{ fontWeight: 700 }}>
-                                                    {detalleCompra.razonSocial}
-                                                </Typography>
-                                            </Box>
-
-                                            <Box>
-                                                <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                                    RUC
-                                                </Typography>
-                                                <Typography>{detalleCompra.ruc}</Typography>
-                                            </Box>
-
-                                            <Box>
-                                                <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                                    Artículo
-                                                </Typography>
-                                                <Typography>{detalleCompra.articulo}</Typography>
-                                            </Box>
-
-                                            <Box>
-                                                <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                                    Medida
-                                                </Typography>
-                                                <Typography>{detalleCompra.medida}</Typography>
-                                            </Box>
-
-                                            <Box>
-                                                <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                                    Zona de producción
-                                                </Typography>
-                                                <Typography>{detalleCompra.zonaProduccion || '-'}</Typography>
-                                            </Box>
-
-                                            <Box>
-                                                <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                                    Hectáreas
-                                                </Typography>
-                                                <Typography>{formatNumber(detalleCompra.hectareas)}</Typography>
-                                            </Box>
-
-                                            <Box>
-                                                <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                                    Costo por kilo
-                                                </Typography>
-                                                <Typography>{formatNumber(detalleCompra.costoKilo)}</Typography>
-                                            </Box>
-
-                                            <Box>
-                                                <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                                    Costo total
-                                                </Typography>
-                                                <Typography>{formatNumber(detalleCompra.costoTotal)}</Typography>
-                                            </Box>
-
-                                            <Box>
-                                                <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                                    Estado
-                                                </Typography>
-                                                <Chip
-                                                    label={detalleCompra.estado || '-'}
-                                                    size="small"
-                                                    sx={{
-                                                        mt: 0.5,
-                                                        fontWeight: 700,
-                                                        ...getEstadoChipStyles(detalleCompra.estado),
-                                                    }}
-                                                />
-                                            </Box>
-                                        </Box>
-                                    </Box>
-
-                                    <Divider />
-
-                                    <Box
-                                        sx={{
-                                            display: 'grid',
-                                            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
-                                            gap: 2,
-                                        }}
-                                    >
-                                        <TextField
-                                            fullWidth
-                                            label="Peso comprado"
-                                            value={formatNumber(detalleCompra.pesoComprado)}
-                                            InputProps={{ readOnly: true }}
-                                        />
-
-                                        <TextField
-                                            fullWidth
-                                            label="Total recibido"
-                                            value={formatNumber(detalleCompra.totalRecibido)}
-                                            InputProps={{ readOnly: true }}
-                                        />
-
-                                        <TextField
-                                            fullWidth
-                                            label="Peso pendiente"
-                                            value={formatNumber(detalleCompra.pesoPendiente)}
-                                            InputProps={{ readOnly: true }}
-                                        />
-                                    </Box>
-
-                                    <TextField
-                                        fullWidth
-                                        type="number"
-                                        label="Peso recibido"
-                                        value={form.recibido}
-                                        onChange={handleChange('recibido')}
-                                        error={!!errors.recibido}
-                                        helperText={errors.recibido}
-                                        inputProps={{
-                                            min: 0.01,
-                                            step: '0.01',
-                                            max: detalleCompra.pesoPendiente || undefined,
-                                        }}
-                                    />
-
-                                    <Box
-                                        sx={{
-                                            display: 'grid',
-                                            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-                                            gap: 2,
-                                        }}
-                                    >
-                                        <TextField
-                                            fullWidth
-                                            label="Recepción actual"
-                                            value={formatNumber(recibidoActual)}
-                                            InputProps={{ readOnly: true }}
-                                        />
-
-                                        <TextField
-                                            fullWidth
-                                            label="Pendiente después del registro"
-                                            value={formatNumber(pendienteLuegoRegistro)}
-                                            InputProps={{ readOnly: true }}
-                                        />
-                                    </Box>
-                                </>
-                            ) : (
+                            {mostrarInfoInicial ? (
                                 <Alert severity="info">
-                                    Selecciona una compra pendiente para visualizar su detalle y registrar la recepción.
+                                    Selecciona una compra disponible para visualizar su detalle y registrar la recepción.
                                 </Alert>
-                            )}
+                            ) : null}
                         </>
                     )}
                 </Stack>
@@ -374,3 +401,68 @@ export default function ModalRecepcion({
         </Dialog>
     );
 }
+
+const compraOptionShape = PropTypes.shape({
+    idCompras: PropTypes.number,
+    ruc: PropTypes.string,
+    razonSocial: PropTypes.string,
+    articulo: PropTypes.string,
+    pesoComprado: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+});
+
+const detalleCompraShape = PropTypes.shape({
+    idCompras: PropTypes.number,
+    fechaCompras: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)]),
+    razonSocial: PropTypes.string,
+    ruc: PropTypes.string,
+    articulo: PropTypes.string,
+    medida: PropTypes.string,
+    zonaProduccion: PropTypes.string,
+    hectareas: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    costoKilo: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    costoTotal: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    estado: PropTypes.string,
+    pesoComprado: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    totalRecibido: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    pesoPendiente: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+});
+
+ModalRecepcion.propTypes = {
+    open: PropTypes.bool.isRequired,
+    onClose: PropTypes.func.isRequired,
+    saving: PropTypes.bool.isRequired,
+    comprasLoading: PropTypes.bool.isRequired,
+    detalleLoading: PropTypes.bool.isRequired,
+    comprasPendientes: PropTypes.arrayOf(compraOptionShape).isRequired,
+    selectedCompra: PropTypes.oneOfType([
+        compraOptionShape,
+        PropTypes.oneOf([null]),
+    ]),
+    setSelectedCompra: PropTypes.func.isRequired,
+    form: PropTypes.shape({
+        idCompras: PropTypes.oneOfType([PropTypes.number, PropTypes.oneOf([null])]),
+        recibido: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    }).isRequired,
+    setForm: PropTypes.func.isRequired,
+    errors: PropTypes.shape({
+        idCompras: PropTypes.string,
+        recibido: PropTypes.string,
+    }).isRequired,
+    setErrors: PropTypes.func.isRequired,
+    detalleCompra: PropTypes.oneOfType([
+        detalleCompraShape,
+        PropTypes.oneOf([null]),
+    ]),
+    serverError: PropTypes.string,
+    cargarDetalleCompra: PropTypes.func.isRequired,
+    handleChange: PropTypes.func.isRequired,
+    handleSubmit: PropTypes.func.isRequired,
+    recibidoActual: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+    pendienteLuegoRegistro: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+};
+
+ModalRecepcion.defaultProps = {
+    selectedCompra: null,
+    detalleCompra: null,
+    serverError: '',
+};

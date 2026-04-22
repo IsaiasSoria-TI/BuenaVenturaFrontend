@@ -1,0 +1,96 @@
+import React from 'react';
+import PropTypes from 'prop-types';
+import { Box, Button, Stack, Typography } from '@mui/material';
+
+const MENU_OPTIONS = [
+    {
+        key: 'perfil',
+        label: 'Perfil',
+        description: 'Datos personales',
+    },
+    {
+        key: 'seguridad',
+        label: 'Seguridad',
+        description: 'Contraseña y acceso',
+    },
+    {
+        key: 'bancos',
+        label: 'Bancos',
+        description: 'Catálogo de bancos',
+    },
+];
+
+export default function ConfiguracionMenu({ seccionActiva, onChangeSeccion }) {
+    return (
+        <Box
+            sx={{
+                width: '100%',
+                maxWidth: 320,
+                border: '1px solid #e2e8f0',
+                borderRadius: 3,
+                p: 1.5,
+                backgroundColor: '#fff',
+            }}
+        >
+            <Typography
+                sx={{
+                    fontWeight: 700,
+                    color: '#0f172a',
+                    mb: 1.5,
+                    textAlign: 'center',
+                }}
+            >
+                Opciones
+            </Typography>
+
+            <Stack spacing={1}>
+                {MENU_OPTIONS.map((option) => {
+                    const active = seccionActiva === option.key;
+
+                    return (
+                        <Button
+                            key={option.key}
+                            fullWidth
+                            onClick={() => onChangeSeccion(option.key)}
+                            sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'flex-start',
+                                justifyContent: 'center',
+                                textTransform: 'none',
+                                borderRadius: 2.5,
+                                px: 2,
+                                py: 1.5,
+                                minHeight: 68,
+                                backgroundColor: active ? '#eff6ff' : '#fff',
+                                border: active ? '1px solid #bfdbfe' : '1px solid #e2e8f0',
+                                color: active ? '#2563eb' : '#0f172a',
+                                '&:hover': {
+                                    backgroundColor: active ? '#dbeafe' : '#f8fafc',
+                                },
+                            }}
+                        >
+                            <Typography sx={{ fontWeight: 700, fontSize: '0.92rem' }}>
+                                {option.label}
+                            </Typography>
+                            <Typography
+                                sx={{
+                                    fontSize: '0.78rem',
+                                    color: active ? '#2563eb' : '#64748b',
+                                    mt: 0.25,
+                                }}
+                            >
+                                {option.description}
+                            </Typography>
+                        </Button>
+                    );
+                })}
+            </Stack>
+        </Box>
+    );
+}
+
+ConfiguracionMenu.propTypes = {
+    seccionActiva: PropTypes.string.isRequired,
+    onChangeSeccion: PropTypes.func.isRequired,
+};

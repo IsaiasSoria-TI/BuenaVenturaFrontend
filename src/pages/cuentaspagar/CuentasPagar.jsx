@@ -1,45 +1,59 @@
-import * as React from 'react';
+import React from 'react';
+import PropTypes from 'prop-types';
 import {
+  Alert,
   Box,
+  Button,
   Card,
   CardContent,
-  Typography,
-  Button,
+  Chip,
+  CircularProgress,
+  Paper,
   Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  CircularProgress,
-  Alert,
   TablePagination,
+  TableRow,
+  Typography,
 } from '@mui/material';
 
 import { cuentaPagarService } from '../../services/cuentaPagarService';
 import ModalCuentaPagar from './ModalCuentaPagar';
 
-const Icon = ({ name, size = 20, color = 'inherit' }) => (
-  <Box
-    component="span"
-    className="material-symbols-rounded"
-    sx={{
-      fontSize: size,
-      color,
-      lineHeight: 1,
-      userSelect: 'none',
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontVariationSettings: '"FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24',
-    }}
-  >
-    {name}
-  </Box>
-);
+function Icon({ name, size, color }) {
+  return (
+    <Box
+      component="span"
+      className="material-symbols-rounded"
+      sx={{
+        fontSize: size,
+        color,
+        lineHeight: 1,
+        userSelect: 'none',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontVariationSettings: '"FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24',
+      }}
+    >
+      {name}
+    </Box>
+  );
+}
+
+Icon.propTypes = {
+  name: PropTypes.string.isRequired,
+  size: PropTypes.number,
+  color: PropTypes.string,
+};
+
+Icon.defaultProps = {
+  size: 20,
+  color: 'inherit',
+};
 
 function formatDateTimeForTable(value) {
   if (!value) return '-';
@@ -60,23 +74,16 @@ function getEstadoChipStyles(estado) {
     };
   }
 
-  if (estado === 'Pagado') {
+  if (estado === 'Completa parcial') {
     return {
       backgroundColor: '#dbeafe',
       color: '#2563eb',
     };
   }
 
-  if (estado === 'Pendiente') {
-    return {
-      backgroundColor: '#fef3c7',
-      color: '#d97706',
-    };
-  }
-
   return {
-    backgroundColor: '#fee2e2',
-    color: '#dc2626',
+    backgroundColor: '#fef3c7',
+    color: '#d97706',
   };
 }
 
@@ -138,7 +145,7 @@ export default function CuentasPagar() {
     await cargarCuentas();
   }, [cargarCuentas]);
 
-  const handleChangePage = (event, newPage) => {
+  const handleChangePage = (_, newPage) => {
     setPage(newPage);
   };
 
@@ -159,6 +166,10 @@ export default function CuentasPagar() {
     return cuentasOrdenadas.slice(inicio, fin);
   }, [cuentasOrdenadas, page, rowsPerPage]);
 
+  const showLoading = loading;
+  const showEmpty = !loading && cuentas.length === 0;
+  const showRows = !loading && cuentas.length > 0;
+
   return (
     <Box>
       <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e2e8f0' }}>
@@ -175,7 +186,7 @@ export default function CuentasPagar() {
                 Cuentas por pagar
               </Typography>
               <Typography sx={{ fontSize: '0.86rem', color: '#64748b', mt: 0.5 }}>
-                Muestra recepciones registradas con factura y código de retención en estado pagado.
+                Registra facturas a partir de recepciones parciales o completas y las inicia en estado pendiente.
               </Typography>
             </Box>
 
@@ -209,17 +220,17 @@ export default function CuentasPagar() {
             </Stack>
           </Stack>
 
-          {serverSuccess && (
+          {serverSuccess ? (
             <Alert severity="success" sx={{ mb: 2 }}>
               {serverSuccess}
             </Alert>
-          )}
+          ) : null}
 
-          {serverError && (
+          {serverError ? (
             <Alert severity="error" sx={{ mb: 2 }}>
               {serverError}
             </Alert>
-          )}
+          ) : null}
 
           <TableContainer
             component={Paper}
@@ -248,20 +259,24 @@ export default function CuentasPagar() {
               </TableHead>
 
               <TableBody>
-                {loading ? (
+                {showLoading ? (
                   <TableRow>
                     <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
                       <CircularProgress size={28} />
                     </TableCell>
                   </TableRow>
-                ) : cuentas.length === 0 ? (
+                ) : null}
+
+                {showEmpty ? (
                   <TableRow>
                     <TableCell colSpan={11} align="center" sx={{ py: 4, color: '#64748b' }}>
-                      No hay cuentas por pagar pagadas registradas.
+                      No hay cuentas por pagar registradas.
                     </TableCell>
                   </TableRow>
-                ) : (
-                  cuentasPaginadas.map((cuenta) => (
+                ) : null}
+
+                {showRows
+                  ? cuentasPaginadas.map((cuenta) => (
                     <TableRow key={cuenta.idCuentaPagar} hover>
                       <TableCell>{cuenta.idCuentaPagar}</TableCell>
                       <TableCell>{cuenta.idCompras}</TableCell>
@@ -285,11 +300,11 @@ export default function CuentasPagar() {
                       <TableCell>{formatDateTimeForTable(cuenta.fechaCreacion)}</TableCell>
                     </TableRow>
                   ))
-                )}
+                  : null}
               </TableBody>
             </Table>
 
-            {!loading && cuentas.length > 0 && (
+            {showRows ? (
               <TablePagination
                 component="div"
                 count={cuentas.length}
@@ -300,7 +315,7 @@ export default function CuentasPagar() {
                 rowsPerPageOptions={[5, 10, 20]}
                 labelRowsPerPage="Filas por página:"
               />
-            )}
+            ) : null}
           </TableContainer>
         </CardContent>
       </Card>
