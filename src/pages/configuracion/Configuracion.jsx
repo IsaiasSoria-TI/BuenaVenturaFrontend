@@ -1,9 +1,13 @@
 import React from 'react';
 import { Box, Card, CardContent, Stack } from '@mui/material';
+
 import ConfiguracionMenu from './components/ConfiguracionMenu';
-import PerfilSection from './sections/PerfilSection';
-import SeguridadSection from './sections/SeguridadSection';
-import BancosSection from './sections/BancosSection';
+
+import PerfilSection from './sections/perfil/PerfilSection';
+import SeguridadSection from './sections/seguridad/SeguridadSection';
+import CuentasContablesSection from './sections/cuentascontables/CuentasContablesSection';
+import CategoriasSection from './sections/categorias/CategoriasSection';
+import BancosSection from './sections/bancos/BancosSection';
 
 export default function Configuracion() {
     const [seccionActiva, setSeccionActiva] = React.useState('perfil');
@@ -12,10 +16,19 @@ export default function Configuracion() {
         switch (seccionActiva) {
             case 'perfil':
                 return <PerfilSection />;
+
             case 'seguridad':
                 return <SeguridadSection />;
+
+            case 'cuentas-contables':
+                return <CuentasContablesSection />;
+
+            case 'categorias':
+                return <CategoriasSection />;
+
             case 'bancos':
                 return <BancosSection />;
+
             default:
                 return <PerfilSection />;
         }
@@ -23,17 +36,22 @@ export default function Configuracion() {
 
     return (
         <Box>
-            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e2e8f0' }}>
+            <Card
+                elevation={0}
+                sx={{
+                    borderRadius: 3,
+                    border: '1px solid #e2e8f0',
+                }}
+            >
                 <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                     <Stack
                         direction={{ xs: 'column', lg: 'row' }}
                         spacing={3}
                         alignItems="stretch"
-                        justifyContent="center"
                     >
                         <Box
                             sx={{
-                                width: { xs: '100%', lg: 290 },
+                                width: { xs: '100%', lg: 320 },
                                 flexShrink: 0,
                                 display: 'flex',
                                 justifyContent: 'center',

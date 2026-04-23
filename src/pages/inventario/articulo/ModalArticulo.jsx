@@ -25,11 +25,13 @@ export default function ModalArticulo({
     saving,
     onChange,
     onSubmit,
+    categorias,
 }) {
     const helperDescripcion = errors.descripcion || '';
     const helperMedida = errors.medida || 'Seleccione la unidad';
     const helperStock =
         errors.stock || 'Opcional. Si lo dejas vacío, se guardará en 0.';
+    const helperCategoria = errors.idCategoria || 'Seleccione una categoría';
 
     const titulo = editing ? 'Editar artículo' : 'Nuevo artículo';
     const textoBoton = saving
@@ -41,7 +43,7 @@ export default function ModalArticulo({
     const mostrarEstado = editing;
 
     return (
-        <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+        <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
             <DialogTitle sx={{ fontWeight: 700 }}>{titulo}</DialogTitle>
 
             <DialogContent dividers sx={{ pt: 2.5 }}>
@@ -92,6 +94,28 @@ export default function ModalArticulo({
                         helperText={helperStock}
                         inputProps={{ min: 0, step: '0.01' }}
                     />
+
+                    <TextField
+                        select
+                        fullWidth
+                        label="Categoría"
+                        value={form.idCategoria}
+                        onChange={onChange('idCategoria')}
+                        error={!!errors.idCategoria}
+                        helperText={helperCategoria}
+                    >
+                        <MenuItem value="">
+                            <em>Seleccione</em>
+                        </MenuItem>
+
+                        {categorias
+                            .filter((categoria) => categoria.estado === 'Activo')
+                            .map((categoria) => (
+                                <MenuItem key={categoria.idCategoria} value={categoria.idCategoria}>
+                                    {categoria.descripcion}
+                                </MenuItem>
+                            ))}
+                    </TextField>
                 </Box>
 
                 {mostrarEstado ? (
@@ -133,18 +157,28 @@ ModalArticulo.propTypes = {
     onClose: PropTypes.func.isRequired,
     editing: PropTypes.bool.isRequired,
     form: PropTypes.shape({
+        idArticulo: PropTypes.oneOfType([PropTypes.number, PropTypes.oneOf([null])]),
         descripcion: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         medida: PropTypes.string,
         stock: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        idCategoria: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         estado: PropTypes.string,
     }).isRequired,
     errors: PropTypes.shape({
         descripcion: PropTypes.string,
         medida: PropTypes.string,
         stock: PropTypes.string,
+        idCategoria: PropTypes.string,
         estado: PropTypes.string,
     }).isRequired,
     saving: PropTypes.bool.isRequired,
     onChange: PropTypes.func.isRequired,
     onSubmit: PropTypes.func.isRequired,
+    categorias: PropTypes.arrayOf(
+        PropTypes.shape({
+            idCategoria: PropTypes.number.isRequired,
+            descripcion: PropTypes.string.isRequired,
+            estado: PropTypes.string,
+        })
+    ).isRequired,
 };

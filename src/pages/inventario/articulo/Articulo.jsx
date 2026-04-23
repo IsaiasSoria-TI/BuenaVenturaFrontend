@@ -1,4 +1,6 @@
 import * as React from 'react';
+import PropTypes from 'prop-types';
+
 import {
   Box,
   Card,
@@ -14,92 +16,169 @@ import {
   TableRow,
   Paper,
   IconButton,
+  Chip,
+  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Chip,
-  CircularProgress,
+  TablePagination,
+  Alert,
 } from '@mui/material';
+
 import { articuloService } from '../../../services/articuloService';
+import { categoriaService } from '../../../services/categoriaService';
 import ModalArticulo from './ModalArticulo';
 
-const Icon = ({ name, size = 20, color = 'inherit' }) => (
-  <Box
-    component="span"
-    className="material-symbols-rounded"
-    sx={{
-      fontSize: size,
-      color,
-      lineHeight: 1,
-      userSelect: 'none',
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontVariationSettings: '"FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24',
-    }}
-  >
-    {name}
-  </Box>
-);
+function Icon({ name, size = 20, color = 'inherit' }) {
+  return (
+    <Box
+      component="span"
+      className="material-symbols-rounded"
+      sx={{
+        fontSize: size,
+        color,
+        lineHeight: 1,
+        userSelect: 'none',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontVariationSettings: '"FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24',
+      }}
+    >
+      {name}
+    </Box>
+  );
+}
 
-const MEDIDAS = [
-  { value: 'kg', label: 'Kilogramos (kg)' },
-  { value: 'tn', label: 'Toneladas (tn)' },
-];
+Icon.propTypes = {
+  name: PropTypes.string.isRequired,
+  size: PropTypes.number,
+  color: PropTypes.string,
+};
 
 const initialForm = {
   idArticulo: null,
   descripcion: '',
   medida: '',
   stock: '',
+  idCategoria: '',
   estado: 'Activo',
 };
 
+function formatNumber(value) {
+  if (value === null || value === undefined || value === '') return '0.00';
+
+  const number = Number(value);
+  if (Number.isNaN(number)) return '0.00';
+
+  return number.toFixed(2);
+}
+
+function getEstadoChipStyles(estado) {
+  if (estado === 'Activo') {
+    return {
+      backgroundColor: '#dcfce7',
+      color: '#16a34a',
+    };
+  }
+
+  return {
+    backgroundColor: '#fee2e2',
+    color: '#dc2626',
+  };
+}
+
 export default function Articulo() {
   const [articulos, setArticulos] = React.useState([]);
+  const [categorias, setCategorias] = React.useState([]);
+
   const [loading, setLoading] = React.useState(true);
+  const [catalogLoading, setCatalogLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
+
   const [open, setOpen] = React.useState(false);
   const [editing, setEditing] = React.useState(false);
+
   const [form, setForm] = React.useState(initialForm);
   const [errors, setErrors] = React.useState({});
+
+  const [serverError, setServerError] = React.useState('');
+  const [successMessage, setSuccessMessage] = React.useState('');
+
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [selectedDelete, setSelectedDelete] = React.useState(null);
+
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(5);
 
   const cargarArticulos = React.useCallback(async () => {
     try {
       setLoading(true);
+      setServerError('');
+
       const data = await articuloService.listar();
-      setArticulos(data);
+      setArticulos(Array.isArray(data) ? data : []);
+      setPage(0);
     } catch (error) {
       console.error('Error al listar artículos:', error);
       console.error('status:', error?.response?.status);
       console.error('data:', error?.response?.data);
+
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        'No se pudo listar los artículos.';
+
+      setServerError(
+        typeof message === 'string'
+          ? message
+          : 'No se pudo listar los artículos.'
+      );
     } finally {
       setLoading(false);
     }
   }, []);
 
+  const cargarCategorias = React.useCallback(async () => {
+    try {
+      setCatalogLoading(true);
+      const data = await categoriaService.listar();
+      setCategorias(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error al listar categorías:', error);
+      console.error('status:', error?.response?.status);
+      console.error('data:', error?.response?.data);
+    } finally {
+      setCatalogLoading(false);
+    }
+  }, []);
+
   React.useEffect(() => {
     cargarArticulos();
-  }, [cargarArticulos]);
+    cargarCategorias();
+  }, [cargarArticulos, cargarCategorias]);
 
   const handleOpenCreate = () => {
     setEditing(false);
     setForm(initialForm);
     setErrors({});
+    setServerError('');
+    setSuccessMessage('');
     setOpen(true);
   };
 
   const handleOpenEdit = (articulo) => {
     setEditing(true);
     setErrors({});
+    setServerError('');
+    setSuccessMessage('');
     setForm({
       idArticulo: articulo.idArticulo,
       descripcion: articulo.descripcion || '',
       medida: articulo.medida || '',
       stock: articulo.stock ?? '',
+      idCategoria: articulo.idCategoria ?? '',
       estado: articulo.estado || 'Activo',
     });
     setOpen(true);
@@ -107,6 +186,7 @@ export default function Articulo() {
 
   const handleClose = () => {
     if (saving) return;
+
     setOpen(false);
     setForm(initialForm);
     setErrors({});
@@ -124,6 +204,14 @@ export default function Articulo() {
         [field]: '',
       }));
     }
+
+    if (serverError) {
+      setServerError('');
+    }
+
+    if (successMessage) {
+      setSuccessMessage('');
+    }
   };
 
   const validate = () => {
@@ -134,35 +222,43 @@ export default function Articulo() {
     }
 
     if (!form.medida) {
-      newErrors.medida = 'Seleccione una medida';
+      newErrors.medida = 'La medida es obligatoria';
     }
 
-    if (form.stock !== '' && Number(form.stock) < 0) {
+    if (form.stock === '' || Number(form.stock) < 0) {
       newErrors.stock = 'El stock no puede ser negativo';
+    }
+
+    if (!form.idCategoria) {
+      newErrors.idCategoria = 'Seleccione una categoría';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const buildPayload = () => ({
-    descripcion: form.descripcion.trim(),
-    medida: form.medida,
-    stock: form.stock === '' ? null : Number(form.stock),
-    estado: form.estado || 'Activo',
-  });
-
   const handleSubmit = async () => {
     if (!validate()) return;
 
     try {
       setSaving(true);
-      const payload = buildPayload();
+      setServerError('');
+      setSuccessMessage('');
+
+      const payload = {
+        descripcion: form.descripcion.trim(),
+        medida: form.medida,
+        stock: Number(form.stock),
+        idCategoria: Number(form.idCategoria),
+        estado: form.estado,
+      };
 
       if (editing && form.idArticulo) {
         await articuloService.actualizar(form.idArticulo, payload);
+        setSuccessMessage('Artículo actualizado correctamente.');
       } else {
         await articuloService.crear(payload);
+        setSuccessMessage('Artículo registrado correctamente.');
       }
 
       handleClose();
@@ -171,6 +267,17 @@ export default function Articulo() {
       console.error('Error al guardar artículo:', error);
       console.error('status:', error?.response?.status);
       console.error('data:', error?.response?.data);
+
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        'No se pudo guardar el artículo.';
+
+      setServerError(
+        typeof message === 'string'
+          ? message
+          : 'No se pudo guardar el artículo.'
+      );
     } finally {
       setSaving(false);
     }
@@ -191,19 +298,41 @@ export default function Articulo() {
 
     try {
       await articuloService.eliminar(selectedDelete.idArticulo);
+      setSuccessMessage('Artículo inactivado correctamente.');
       handleCloseDeleteDialog();
       await cargarArticulos();
     } catch (error) {
       console.error('Error al eliminar artículo:', error);
       console.error('status:', error?.response?.status);
       console.error('data:', error?.response?.data);
+
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        'No se pudo eliminar el artículo.';
+
+      setServerError(
+        typeof message === 'string'
+          ? message
+          : 'No se pudo eliminar el artículo.'
+      );
     }
   };
 
-  const getMedidaLabel = (medida) => {
-    const found = MEDIDAS.find((m) => m.value === medida);
-    return found ? found.label : medida || '-';
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
   };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const articulosPaginados = React.useMemo(() => {
+    const inicio = page * rowsPerPage;
+    const fin = inicio + rowsPerPage;
+    return articulos.slice(inicio, fin);
+  }, [articulos, page, rowsPerPage]);
 
   return (
     <Box>
@@ -221,7 +350,7 @@ export default function Articulo() {
                 Artículos
               </Typography>
               <Typography sx={{ fontSize: '0.86rem', color: '#64748b', mt: 0.5 }}>
-                Gestiona, edita y elimina artículos de inventario.
+                Administra los artículos y asígnales una categoría.
               </Typography>
             </Box>
 
@@ -241,29 +370,41 @@ export default function Articulo() {
             </Button>
           </Stack>
 
+          {successMessage ? (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              {successMessage}
+            </Alert>
+          ) : null}
+
+          {serverError ? (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {serverError}
+            </Alert>
+          ) : null}
+
           <TableContainer
             component={Paper}
             elevation={0}
             sx={{
               border: '1px solid #e2e8f0',
               borderRadius: 2.5,
-              overflow: 'hidden',
+              overflowX: 'auto',
             }}
           >
             <Table>
               <TableHead>
                 <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                  <TableCell sx={{ fontWeight: 700 }}>CÓDIGO</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>DESCRIPCIÓN</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>MEDIDA</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>STOCK DE SEGURIDAD</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>STOCK</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>CATEGORÍA</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>ESTADO</TableCell>
                   <TableCell sx={{ fontWeight: 700, textAlign: 'center' }}>ACCIONES</TableCell>
                 </TableRow>
               </TableHead>
 
               <TableBody>
-                {loading ? (
+                {loading || catalogLoading ? (
                   <TableRow>
                     <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                       <CircularProgress size={28} />
@@ -276,20 +417,19 @@ export default function Articulo() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  articulos.map((articulo) => (
+                  articulosPaginados.map((articulo) => (
                     <TableRow key={articulo.idArticulo} hover>
-                      <TableCell>{articulo.idArticulo}</TableCell>
                       <TableCell>{articulo.descripcion}</TableCell>
-                      <TableCell>{getMedidaLabel(articulo.medida)}</TableCell>
-                      <TableCell>{articulo.stock ?? 0}</TableCell>
+                      <TableCell>{articulo.medida}</TableCell>
+                      <TableCell>{formatNumber(articulo.stock)}</TableCell>
+                      <TableCell>{articulo.descripcionCategoria || '-'}</TableCell>
                       <TableCell>
                         <Chip
-                          label={articulo.estado === 'Activo' ? 'Activo' : 'Inactivo'}
+                          label={articulo.estado || '-'}
                           size="small"
                           sx={{
                             fontWeight: 700,
-                            backgroundColor: articulo.estado === 'Activo' ? '#dcfce7' : '#fee2e2',
-                            color: articulo.estado === 'Activo' ? '#16a34a' : '#dc2626',
+                            ...getEstadoChipStyles(articulo.estado),
                           }}
                         />
                       </TableCell>
@@ -306,6 +446,19 @@ export default function Articulo() {
                 )}
               </TableBody>
             </Table>
+
+            {!loading && !catalogLoading && articulos.length > 0 ? (
+              <TablePagination
+                component="div"
+                count={articulos.length}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPageOptions={[5, 10, 20]}
+                labelRowsPerPage="Filas por página:"
+              />
+            ) : null}
           </TableContainer>
         </CardContent>
       </Card>
@@ -319,19 +472,20 @@ export default function Articulo() {
         saving={saving}
         onChange={handleChange}
         onSubmit={handleSubmit}
+        categorias={categorias}
       />
 
       <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
         <DialogTitle sx={{ fontWeight: 700 }}>Confirmar eliminación</DialogTitle>
         <DialogContent>
           <Typography sx={{ color: '#475569' }}>
-            ¿Seguro que deseas eliminar este artículo?
+            ¿Seguro que deseas inactivar este artículo?
           </Typography>
-          {selectedDelete && (
+          {selectedDelete ? (
             <Typography sx={{ mt: 1, fontWeight: 700, color: '#0f172a' }}>
-              {selectedDelete.descripcion}
+              Artículo: {selectedDelete.descripcion}
             </Typography>
-          )}
+          ) : null}
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}>
           <Button onClick={handleCloseDeleteDialog} sx={{ textTransform: 'none' }}>
@@ -343,7 +497,7 @@ export default function Articulo() {
             onClick={handleConfirmDelete}
             sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
           >
-            Eliminar
+            Inactivar
           </Button>
         </DialogActions>
       </Dialog>

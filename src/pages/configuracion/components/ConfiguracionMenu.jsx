@@ -14,6 +14,16 @@ const MENU_OPTIONS = [
         description: 'Contraseña y acceso',
     },
     {
+        key: 'cuentas-contables',
+        label: 'Cuentas contables',
+        description: 'Códigos contables',
+    },
+    {
+        key: 'categorias',
+        label: 'Categorías',
+        description: 'Asignación a cuenta contable',
+    },
+    {
         key: 'bancos',
         label: 'Bancos',
         description: 'Catálogo de bancos',
@@ -38,6 +48,7 @@ export default function ConfiguracionMenu({ seccionActiva, onChangeSeccion }) {
                     color: '#0f172a',
                     mb: 1.5,
                     textAlign: 'center',
+                    fontSize: '1rem',
                 }}
             >
                 Opciones
@@ -61,23 +72,35 @@ export default function ConfiguracionMenu({ seccionActiva, onChangeSeccion }) {
                                 borderRadius: 2.5,
                                 px: 2,
                                 py: 1.5,
-                                minHeight: 68,
+                                minHeight: 72,
                                 backgroundColor: active ? '#eff6ff' : '#fff',
                                 border: active ? '1px solid #bfdbfe' : '1px solid #e2e8f0',
                                 color: active ? '#2563eb' : '#0f172a',
+                                boxShadow: 'none',
                                 '&:hover': {
                                     backgroundColor: active ? '#dbeafe' : '#f8fafc',
+                                    boxShadow: 'none',
                                 },
                             }}
                         >
-                            <Typography sx={{ fontWeight: 700, fontSize: '0.92rem' }}>
+                            <Typography
+                                sx={{
+                                    fontWeight: 700,
+                                    fontSize: '0.92rem',
+                                    textAlign: 'left',
+                                    width: '100%',
+                                }}
+                            >
                                 {option.label}
                             </Typography>
+
                             <Typography
                                 sx={{
                                     fontSize: '0.78rem',
                                     color: active ? '#2563eb' : '#64748b',
                                     mt: 0.25,
+                                    textAlign: 'left',
+                                    width: '100%',
                                 }}
                             >
                                 {option.description}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Alert, Box, CircularProgress, Typography } from '@mui/material';
 import PerfilForm from './PerfilForm';
-import { configuracionService } from '../../../services/configuracionService';
+import { configuracionService } from '../../../../services/configuracionService';
 
 const initialForm = {
     nombres: '',
