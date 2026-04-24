@@ -62,14 +62,14 @@ Icon.propTypes = {
 };
 
 const createDetalle = () => ({
-  tempId: crypto.randomUUID(),
+  tempId: Math.random().toString(36).substring(2) + Date.now(),
   idArticulo: '',
   peso: '',
   costoKilo: '',
 });
 
 const createImpuesto = () => ({
-  tempId: crypto.randomUUID(),
+  tempId: Math.random().toString(36).substring(2) + Date.now(),
   idImpuesto: '',
 });
 
@@ -269,14 +269,14 @@ export default function GestionarCompras() {
     const detalles =
       Array.isArray(compra.detalles) && compra.detalles.length > 0
         ? compra.detalles.map((detalle) => ({
-          tempId: crypto.randomUUID(),
+          tempId: Math.random().toString(36).substring(2) + Date.now(),
           idArticulo: detalle.idArticulo ?? '',
           peso: detalle.peso ?? '',
           costoKilo: detalle.costoKilo ?? '',
         }))
         : [
           {
-            tempId: crypto.randomUUID(),
+            tempId: Math.random().toString(36).substring(2) + Date.now(),
             idArticulo: compra.idArticulo ?? '',
             peso: compra.peso ?? '',
             costoKilo: compra.costoKilo ?? '',
@@ -286,12 +286,12 @@ export default function GestionarCompras() {
     const impuestosCompra =
       Array.isArray(compra.impuestos) && compra.impuestos.length > 0
         ? compra.impuestos.map((impuesto) => ({
-          tempId: crypto.randomUUID(),
+          tempId: Math.random().toString(36).substring(2) + Date.now(),
           idImpuesto: impuesto.idImpuesto ?? '',
         }))
         : [
           {
-            tempId: crypto.randomUUID(),
+            tempId: Math.random().toString(36).substring(2) + Date.now(),
             idImpuesto: compra.idImpuesto ?? '',
           },
         ];
