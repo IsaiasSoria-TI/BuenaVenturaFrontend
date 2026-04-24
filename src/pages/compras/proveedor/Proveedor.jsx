@@ -1,47 +1,60 @@
 import * as React from 'react';
+import PropTypes from 'prop-types';
+
 import {
+  Alert,
   Box,
+  Button,
   Card,
   CardContent,
-  Typography,
-  Button,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Paper,
   Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Chip,
-  CircularProgress,
-  Alert,
   TablePagination,
+  TableRow,
+  Typography,
 } from '@mui/material';
+
 import { proveedorService } from '../../../services/proveedorService';
 import ModalProveedor from './ModalProveedor';
 
-const Icon = ({ name, size = 20, color = 'inherit' }) => (
-  <span
-    className="material-symbols-rounded"
-    style={{
-      fontSize: size,
-      color,
-      lineHeight: 1,
-      userSelect: 'none',
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}
-  >
-    {name}
-  </span>
-);
+function Icon({ name, size = 20, color = 'inherit' }) {
+  return (
+    <Box
+      component="span"
+      className="material-symbols-rounded"
+      sx={{
+        fontSize: size,
+        color,
+        lineHeight: 1,
+        userSelect: 'none',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontVariationSettings: '"FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24',
+      }}
+    >
+      {name}
+    </Box>
+  );
+}
+
+Icon.propTypes = {
+  name: PropTypes.string.isRequired,
+  size: PropTypes.number,
+  color: PropTypes.string,
+};
 
 const initialForm = {
   idProveedor: null,
@@ -56,24 +69,45 @@ const initialForm = {
   cuentaInterbancaria: '',
 };
 
+function getEstadoChipStyles(flgActivo) {
+  if (flgActivo) {
+    return {
+      backgroundColor: '#dcfce7',
+      color: '#16a34a',
+    };
+  }
+
+  return {
+    backgroundColor: '#fee2e2',
+    color: '#dc2626',
+  };
+}
+
 export default function Proveedor() {
   const [proveedores, setProveedores] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
+
   const [open, setOpen] = React.useState(false);
   const [editing, setEditing] = React.useState(false);
+
   const [form, setForm] = React.useState(initialForm);
   const [errors, setErrors] = React.useState({});
+
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [selectedDelete, setSelectedDelete] = React.useState(null);
+
   const [serverError, setServerError] = React.useState('');
   const [serverSuccess, setServerSuccess] = React.useState('');
+
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
 
   const cargarProveedores = React.useCallback(async () => {
     try {
       setLoading(true);
+      setServerError('');
+
       const data = await proveedorService.listar();
       setProveedores(Array.isArray(data) ? data : []);
       setPage(0);
@@ -81,6 +115,17 @@ export default function Proveedor() {
       console.error('Error al listar proveedores:', error);
       console.error('status:', error?.response?.status);
       console.error('data:', error?.response?.data);
+
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        'No se pudo listar los proveedores.';
+
+      setServerError(
+        typeof message === 'string'
+          ? message
+          : 'No se pudo listar los proveedores.'
+      );
     } finally {
       setLoading(false);
     }
@@ -121,6 +166,7 @@ export default function Proveedor() {
 
   const handleClose = () => {
     if (saving) return;
+
     setOpen(false);
     setForm(initialForm);
     setErrors({});
@@ -129,7 +175,7 @@ export default function Proveedor() {
   };
 
   const handleChange = (field) => (event) => {
-    const value = event.target.value;
+    const { value } = event.target;
 
     setForm((prev) => ({
       ...prev,
@@ -238,7 +284,9 @@ export default function Proveedor() {
         'No se pudo guardar el proveedor.';
 
       setServerError(
-        typeof message === 'string' ? message : 'No se pudo guardar el proveedor.'
+        typeof message === 'string'
+          ? message
+          : 'No se pudo guardar el proveedor.'
       );
     } finally {
       setSaving(false);
@@ -263,37 +311,43 @@ export default function Proveedor() {
     try {
       setServerError('');
       setServerSuccess('');
+
       await proveedorService.eliminar(selectedDelete.idProveedor);
+
       handleCloseDeleteDialog();
       await cargarProveedores();
-      setServerSuccess('Proveedor eliminado correctamente.');
+      setServerSuccess('Proveedor inactivado correctamente.');
     } catch (error) {
-      console.error('Error al eliminar proveedor:', error);
+      console.error('Error al inactivar proveedor:', error);
       console.error('status:', error?.response?.status);
       console.error('data:', error?.response?.data);
 
       const message =
         error?.response?.data?.message ||
         error?.response?.data ||
-        'No se pudo eliminar el proveedor.';
+        'No se pudo inactivar el proveedor.';
 
       setServerError(
-        typeof message === 'string' ? message : 'No se pudo eliminar el proveedor.'
+        typeof message === 'string'
+          ? message
+          : 'No se pudo inactivar el proveedor.'
       );
     }
   };
 
-  const handleChangePage = (event, newPage) => {
+  const handleChangePage = (_event, newPage) => {
     setPage(newPage);
   };
 
   const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
+    setRowsPerPage(Number.parseInt(event.target.value, 10));
     setPage(0);
   };
 
   const proveedoresOrdenados = React.useMemo(() => {
-    return [...proveedores].sort((a, b) => Number(b.idProveedor) - Number(a.idProveedor));
+    return [...proveedores].sort(
+      (a, b) => Number(b.idProveedor) - Number(a.idProveedor)
+    );
   }, [proveedores]);
 
   const proveedoresPaginados = React.useMemo(() => {
@@ -318,7 +372,7 @@ export default function Proveedor() {
                 Proveedores
               </Typography>
               <Typography sx={{ fontSize: '0.86rem', color: '#64748b', mt: 0.5 }}>
-                Gestiona, edita y elimina proveedores.
+                Gestiona, edita e inactiva proveedores.
               </Typography>
             </Box>
 
@@ -338,17 +392,17 @@ export default function Proveedor() {
             </Button>
           </Stack>
 
-          {serverSuccess && (
+          {serverSuccess ? (
             <Alert severity="success" sx={{ mb: 2 }}>
               {serverSuccess}
             </Alert>
-          )}
+          ) : null}
 
-          {serverError && (
+          {serverError ? (
             <Alert severity="error" sx={{ mb: 2 }}>
               {serverError}
             </Alert>
-          )}
+          ) : null}
 
           <TableContainer
             component={Paper}
@@ -407,8 +461,7 @@ export default function Proveedor() {
                           size="small"
                           sx={{
                             fontWeight: 700,
-                            backgroundColor: proveedor.flgActivo ? '#dcfce7' : '#fee2e2',
-                            color: proveedor.flgActivo ? '#16a34a' : '#dc2626',
+                            ...getEstadoChipStyles(proveedor.flgActivo),
                           }}
                         />
                       </TableCell>
@@ -416,6 +469,7 @@ export default function Proveedor() {
                         <IconButton onClick={() => handleOpenEdit(proveedor)}>
                           <Icon name="edit" size={20} color="#1976d2" />
                         </IconButton>
+
                         <IconButton onClick={() => handleOpenDeleteDialog(proveedor)}>
                           <Icon name="delete" size={20} color="#ef4444" />
                         </IconButton>
@@ -426,7 +480,7 @@ export default function Proveedor() {
               </TableBody>
             </Table>
 
-            {!loading && proveedores.length > 0 && (
+            {!loading && proveedores.length > 0 ? (
               <TablePagination
                 component="div"
                 count={proveedoresOrdenados.length}
@@ -437,7 +491,7 @@ export default function Proveedor() {
                 rowsPerPageOptions={[5, 10, 20]}
                 labelRowsPerPage="Filas por página:"
               />
-            )}
+            ) : null}
           </TableContainer>
         </CardContent>
       </Card>
@@ -456,28 +510,32 @@ export default function Proveedor() {
       />
 
       <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
-        <DialogTitle sx={{ fontWeight: 700 }}>Confirmar eliminación</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700 }}>Confirmar inactivación</DialogTitle>
+
         <DialogContent>
           <Typography sx={{ color: '#475569' }}>
-            ¿Seguro que deseas eliminar este proveedor?
+            ¿Seguro que deseas inactivar este proveedor?
           </Typography>
-          {selectedDelete && (
+
+          {selectedDelete ? (
             <Typography sx={{ mt: 1, fontWeight: 700, color: '#0f172a' }}>
               {selectedDelete.razonSocial}
             </Typography>
-          )}
+          ) : null}
         </DialogContent>
+
         <DialogActions sx={{ px: 3, py: 2 }}>
           <Button onClick={handleCloseDeleteDialog} sx={{ textTransform: 'none' }}>
             Cancelar
           </Button>
+
           <Button
             variant="contained"
             color="error"
             onClick={handleConfirmDelete}
             sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
           >
-            Eliminar
+            Inactivar
           </Button>
         </DialogActions>
       </Dialog>

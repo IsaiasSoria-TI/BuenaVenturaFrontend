@@ -1,27 +1,29 @@
 import * as React from 'react';
+import PropTypes from 'prop-types';
 
 import {
+  Alert,
   Box,
+  Button,
   Card,
   CardContent,
-  Typography,
-  Button,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Paper,
   Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  Chip,
-  CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TablePagination,
+  TableRow,
+  Typography,
 } from '@mui/material';
 
 import { compraService } from '../../../services/compraService';
@@ -32,36 +34,54 @@ import { pagoService } from '../../../services/pagoService';
 
 import ModalGestionarCompras from './ModalGestionarCompras';
 
-const Icon = ({ name, size = 20, color = 'inherit' }) => (
-  <Box
-    component="span"
-    className="material-symbols-rounded"
-    sx={{
-      fontSize: size,
-      color,
-      lineHeight: 1,
-      userSelect: 'none',
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontVariationSettings: '"FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24',
-    }}
-  >
-    {name}
-  </Box>
-);
+function Icon({ name, size = 20, color = 'inherit' }) {
+  return (
+    <Box
+      component="span"
+      className="material-symbols-rounded"
+      sx={{
+        fontSize: size,
+        color,
+        lineHeight: 1,
+        userSelect: 'none',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontVariationSettings: '"FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24',
+      }}
+    >
+      {name}
+    </Box>
+  );
+}
+
+Icon.propTypes = {
+  name: PropTypes.string.isRequired,
+  size: PropTypes.number,
+  color: PropTypes.string,
+};
+
+const createDetalle = () => ({
+  tempId: crypto.randomUUID(),
+  idArticulo: '',
+  peso: '',
+  costoKilo: '',
+});
+
+const createImpuesto = () => ({
+  tempId: crypto.randomUUID(),
+  idImpuesto: '',
+});
 
 const initialForm = {
   idCompras: null,
-  idImpuesto: '',
   idPago: '',
   idProveedor: null,
-  idArticulo: '',
   fechaCompras: '',
   zonaProduccion: '',
   hectareas: '',
-  peso: '',
-  costoKilo: '',
+  detalles: [createDetalle()],
+  impuestos: [createImpuesto()],
 };
 
 function formatDateTimeForInput(value) {
@@ -70,15 +90,11 @@ function formatDateTimeForInput(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
 
-  const pad = (n) => String(n).padStart(2, '0');
+  const pad = (number) => String(number).padStart(2, '0');
 
-  const yyyy = date.getFullYear();
-  const mm = pad(date.getMonth() + 1);
-  const dd = pad(date.getDate());
-  const hh = pad(date.getHours());
-  const mi = pad(date.getMinutes());
-
-  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
+    date.getHours()
+  )}:${pad(date.getMinutes())}`;
 }
 
 function formatDateTimeForTable(value) {
@@ -92,7 +108,16 @@ function formatDateTimeForTable(value) {
   return date.toLocaleString();
 }
 
-function getEstadoStyles(estado) {
+function formatNumber(value) {
+  if (value === null || value === undefined || value === '') return '0.00';
+
+  const number = Number(value);
+  if (Number.isNaN(number)) return '0.00';
+
+  return number.toFixed(2);
+}
+
+function getEstadoChipStyles(estado) {
   if (estado === 'Completo') {
     return {
       backgroundColor: '#dcfce7',
@@ -107,10 +132,39 @@ function getEstadoStyles(estado) {
     };
   }
 
+  if (estado === 'Pendiente') {
+    return {
+      backgroundColor: '#fef3c7',
+      color: '#d97706',
+    };
+  }
+
   return {
-    backgroundColor: '#fef3c7',
-    color: '#d97706',
+    backgroundColor: '#fee2e2',
+    color: '#dc2626',
   };
+}
+
+function getResumenArticulos(compra) {
+  if (Array.isArray(compra.detalles) && compra.detalles.length > 0) {
+    return compra.detalles
+      .map((detalle) => detalle.descripcionArticulo)
+      .filter(Boolean)
+      .join(', ');
+  }
+
+  return compra.descripcionArticulo || '-';
+}
+
+function getResumenImpuestos(compra) {
+  if (Array.isArray(compra.impuestos) && compra.impuestos.length > 0) {
+    return compra.impuestos
+      .map((impuesto) => impuesto.tipoImpuesto)
+      .filter(Boolean)
+      .join(', ');
+  }
+
+  return compra.tipoImpuesto || '-';
 }
 
 export default function GestionarCompras() {
@@ -129,8 +183,10 @@ export default function GestionarCompras() {
 
   const [form, setForm] = React.useState(initialForm);
   const [errors, setErrors] = React.useState({});
-
   const [selectedProveedor, setSelectedProveedor] = React.useState(null);
+
+  const [serverError, setServerError] = React.useState('');
+  const [successMessage, setSuccessMessage] = React.useState('');
 
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [selectedDelete, setSelectedDelete] = React.useState(null);
@@ -141,6 +197,8 @@ export default function GestionarCompras() {
   const cargarCompras = React.useCallback(async () => {
     try {
       setLoading(true);
+      setServerError('');
+
       const data = await compraService.listar();
       setCompras(Array.isArray(data) ? data : []);
       setPage(0);
@@ -148,6 +206,13 @@ export default function GestionarCompras() {
       console.error('Error al listar compras:', error);
       console.error('status:', error?.response?.status);
       console.error('data:', error?.response?.data);
+
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        'No se pudo listar las compras.';
+
+      setServerError(typeof message === 'string' ? message : 'No se pudo listar las compras.');
     } finally {
       setLoading(false);
     }
@@ -157,12 +222,7 @@ export default function GestionarCompras() {
     try {
       setCatalogLoading(true);
 
-      const [
-        proveedoresData,
-        articulosData,
-        impuestosData,
-        pagosData,
-      ] = await Promise.all([
+      const [proveedoresData, articulosData, impuestosData, pagosData] = await Promise.all([
         proveedorService.listar(),
         articuloService.listar(),
         impuestoService.listar(),
@@ -177,6 +237,7 @@ export default function GestionarCompras() {
       console.error('Error al cargar catálogos:', error);
       console.error('status:', error?.response?.status);
       console.error('data:', error?.response?.data);
+      setServerError('No se pudieron cargar los catálogos.');
     } finally {
       setCatalogLoading(false);
     }
@@ -189,48 +250,89 @@ export default function GestionarCompras() {
 
   const handleOpenCreate = () => {
     setEditing(false);
-    setForm(initialForm);
+    setForm({
+      ...initialForm,
+      detalles: [createDetalle()],
+      impuestos: [createImpuesto()],
+    });
     setSelectedProveedor(null);
     setErrors({});
+    setServerError('');
+    setSuccessMessage('');
     setOpen(true);
   };
 
   const handleOpenEdit = (compra) => {
-    if (compra.estado !== 'Pendiente') return;
-
     const proveedorEncontrado =
-      proveedores.find((p) => p.idProveedor === compra.idProveedor) || null;
+      proveedores.find((proveedor) => proveedor.idProveedor === compra.idProveedor) || null;
+
+    const detalles =
+      Array.isArray(compra.detalles) && compra.detalles.length > 0
+        ? compra.detalles.map((detalle) => ({
+          tempId: crypto.randomUUID(),
+          idArticulo: detalle.idArticulo ?? '',
+          peso: detalle.peso ?? '',
+          costoKilo: detalle.costoKilo ?? '',
+        }))
+        : [
+          {
+            tempId: crypto.randomUUID(),
+            idArticulo: compra.idArticulo ?? '',
+            peso: compra.peso ?? '',
+            costoKilo: compra.costoKilo ?? '',
+          },
+        ];
+
+    const impuestosCompra =
+      Array.isArray(compra.impuestos) && compra.impuestos.length > 0
+        ? compra.impuestos.map((impuesto) => ({
+          tempId: crypto.randomUUID(),
+          idImpuesto: impuesto.idImpuesto ?? '',
+        }))
+        : [
+          {
+            tempId: crypto.randomUUID(),
+            idImpuesto: compra.idImpuesto ?? '',
+          },
+        ];
 
     setEditing(true);
     setErrors({});
+    setServerError('');
+    setSuccessMessage('');
+    setSelectedProveedor(proveedorEncontrado);
     setForm({
       idCompras: compra.idCompras,
-      idImpuesto: compra.idImpuesto ?? '',
       idPago: compra.idPago ?? '',
       idProveedor: compra.idProveedor ?? null,
-      idArticulo: compra.idArticulo ?? '',
       fechaCompras: formatDateTimeForInput(compra.fechaCompras),
       zonaProduccion: compra.zonaProduccion || '',
       hectareas: compra.hectareas ?? '',
-      peso: compra.peso ?? '',
-      costoKilo: compra.costoKilo ?? '',
+      detalles,
+      impuestos: impuestosCompra,
     });
-    setSelectedProveedor(proveedorEncontrado);
     setOpen(true);
   };
 
   const handleClose = () => {
     if (saving) return;
+
     setOpen(false);
-    setForm(initialForm);
+    setForm({
+      ...initialForm,
+      detalles: [createDetalle()],
+      impuestos: [createImpuesto()],
+    });
     setSelectedProveedor(null);
     setErrors({});
   };
 
   const handleChange = (field) => (event) => {
+    const { value } = event.target;
+
     setForm((prev) => ({
       ...prev,
-      [field]: event.target.value,
+      [field]: value,
     }));
 
     if (errors[field]) {
@@ -239,14 +341,118 @@ export default function GestionarCompras() {
         [field]: '',
       }));
     }
+
+    if (serverError) {
+      setServerError('');
+    }
+
+    if (successMessage) {
+      setSuccessMessage('');
+    }
   };
+
+  const handleDetalleChange = (index, field, value) => {
+    setForm((prev) => ({
+      ...prev,
+      detalles: prev.detalles.map((detalle, detalleIndex) =>
+        detalleIndex === index ? { ...detalle, [field]: value } : detalle
+      ),
+    }));
+
+    const errorKey = `detalle_${index}_${field}`;
+    if (errors[errorKey]) {
+      setErrors((prev) => ({
+        ...prev,
+        [errorKey]: '',
+      }));
+    }
+  };
+
+  const handleAddDetalle = () => {
+    setForm((prev) => ({
+      ...prev,
+      detalles: [...prev.detalles, createDetalle()],
+    }));
+  };
+
+  const handleRemoveDetalle = (index) => {
+    setForm((prev) => {
+      if (prev.detalles.length === 1) return prev;
+
+      return {
+        ...prev,
+        detalles: prev.detalles.filter((_, detalleIndex) => detalleIndex !== index),
+      };
+    });
+  };
+
+  const handleImpuestoChange = (index, field, value) => {
+    setForm((prev) => ({
+      ...prev,
+      impuestos: prev.impuestos.map((impuesto, impuestoIndex) =>
+        impuestoIndex === index ? { ...impuesto, [field]: value } : impuesto
+      ),
+    }));
+
+    const errorKey = `impuesto_${index}_${field}`;
+    if (errors[errorKey]) {
+      setErrors((prev) => ({
+        ...prev,
+        [errorKey]: '',
+      }));
+    }
+  };
+
+  const handleAddImpuesto = () => {
+    setForm((prev) => ({
+      ...prev,
+      impuestos: [...prev.impuestos, createImpuesto()],
+    }));
+  };
+
+  const handleRemoveImpuesto = (index) => {
+    setForm((prev) => {
+      if (prev.impuestos.length === 1) return prev;
+
+      return {
+        ...prev,
+        impuestos: prev.impuestos.filter((_, impuestoIndex) => impuestoIndex !== index),
+      };
+    });
+  };
+
+  const subtotalPreview = React.useMemo(() => {
+    const total = form.detalles.reduce((acc, detalle) => {
+      const peso = Number(detalle.peso || 0);
+      const costoKilo = Number(detalle.costoKilo || 0);
+      return acc + peso * costoKilo;
+    }, 0);
+
+    return total.toFixed(2);
+  }, [form.detalles]);
+
+  const totalImpuestosPreview = React.useMemo(() => {
+    const subtotal = Number(subtotalPreview);
+
+    const total = form.impuestos.reduce((acc, impuestoForm) => {
+      const impuesto = impuestos.find(
+        (item) => item.idImpuesto === Number(impuestoForm.idImpuesto)
+      );
+
+      if (!impuesto) return acc;
+
+      return acc + (subtotal * Number(impuesto.valor || 0)) / 100;
+    }, 0);
+
+    return total.toFixed(2);
+  }, [form.impuestos, impuestos, subtotalPreview]);
+
+  const totalGeneralPreview = React.useMemo(() => {
+    return (Number(subtotalPreview) + Number(totalImpuestosPreview)).toFixed(2);
+  }, [subtotalPreview, totalImpuestosPreview]);
 
   const validate = () => {
     const newErrors = {};
-
-    if (!form.idImpuesto) {
-      newErrors.idImpuesto = 'Seleccione un impuesto';
-    }
 
     if (!form.idPago) {
       newErrors.idPago = 'Seleccione una condición de pago';
@@ -254,10 +460,6 @@ export default function GestionarCompras() {
 
     if (!form.idProveedor) {
       newErrors.idProveedor = 'Seleccione un proveedor';
-    }
-
-    if (!form.idArticulo) {
-      newErrors.idArticulo = 'Seleccione un artículo';
     }
 
     if (!form.fechaCompras) {
@@ -272,54 +474,70 @@ export default function GestionarCompras() {
       newErrors.hectareas = 'Las hectáreas deben ser 0 o mayores';
     }
 
-    if (form.peso === '' || Number(form.peso) <= 0) {
-      newErrors.peso = 'El peso debe ser mayor a 0';
+    if (!form.detalles.length) {
+      newErrors.detalles = 'Debe agregar al menos un artículo';
     }
 
-    if (form.costoKilo === '' || Number(form.costoKilo) <= 0) {
-      newErrors.costoKilo = 'El costo por kilo debe ser mayor a 0';
+    form.detalles.forEach((detalle, index) => {
+      if (!detalle.idArticulo) {
+        newErrors[`detalle_${index}_idArticulo`] = 'Seleccione un artículo';
+      }
+
+      if (detalle.peso === '' || Number(detalle.peso) <= 0) {
+        newErrors[`detalle_${index}_peso`] = 'El peso debe ser mayor a 0';
+      }
+
+      if (detalle.costoKilo === '' || Number(detalle.costoKilo) <= 0) {
+        newErrors[`detalle_${index}_costoKilo`] = 'El costo debe ser mayor a 0';
+      }
+    });
+
+    if (!form.impuestos.length) {
+      newErrors.impuestos = 'Debe agregar al menos un impuesto';
     }
+
+    form.impuestos.forEach((impuesto, index) => {
+      if (!impuesto.idImpuesto) {
+        newErrors[`impuesto_${index}_idImpuesto`] = 'Seleccione un impuesto';
+      }
+    });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const buildPayload = () => ({
-    idImpuesto: Number(form.idImpuesto),
     idPago: Number(form.idPago),
     idProveedor: Number(form.idProveedor),
-    idArticulo: Number(form.idArticulo),
     fechaCompras: form.fechaCompras,
     zonaProduccion: form.zonaProduccion.trim(),
     hectareas: Number(form.hectareas),
-    peso: Number(form.peso),
-    costoKilo: Number(form.costoKilo),
+    detalles: form.detalles.map((detalle) => ({
+      idArticulo: Number(detalle.idArticulo),
+      peso: Number(detalle.peso),
+      costoKilo: Number(detalle.costoKilo),
+    })),
+    impuestos: form.impuestos.map((impuesto) => ({
+      idImpuesto: Number(impuesto.idImpuesto),
+    })),
   });
-
-  const impuestoSeleccionado =
-    impuestos.find((item) => item.idImpuesto === Number(form.idImpuesto)) || null;
-
-  const costoTotalPreview =
-    form.peso !== '' && form.costoKilo !== ''
-      ? (Number(form.peso) * Number(form.costoKilo)).toFixed(2)
-      : '0.00';
-
-  const importeImpuestoPreview =
-    impuestoSeleccionado
-      ? ((Number(costoTotalPreview) * Number(impuestoSeleccionado.valor || 0)) / 100).toFixed(2)
-      : '0.00';
 
   const handleSubmit = async () => {
     if (!validate()) return;
 
     try {
       setSaving(true);
+      setServerError('');
+      setSuccessMessage('');
+
       const payload = buildPayload();
 
       if (editing && form.idCompras) {
         await compraService.actualizar(form.idCompras, payload);
+        setSuccessMessage('Compra actualizada correctamente.');
       } else {
         await compraService.crear(payload);
+        setSuccessMessage('Compra registrada correctamente.');
       }
 
       handleClose();
@@ -328,13 +546,19 @@ export default function GestionarCompras() {
       console.error('Error al guardar compra:', error);
       console.error('status:', error?.response?.status);
       console.error('data:', error?.response?.data);
+
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        'No se pudo guardar la compra.';
+
+      setServerError(typeof message === 'string' ? message : 'No se pudo guardar la compra.');
     } finally {
       setSaving(false);
     }
   };
 
   const handleOpenDeleteDialog = (compra) => {
-    if (compra.estado !== 'Pendiente') return;
     setSelectedDelete(compra);
     setDeleteDialogOpen(true);
   };
@@ -348,17 +572,28 @@ export default function GestionarCompras() {
     if (!selectedDelete?.idCompras) return;
 
     try {
+      setServerError('');
+      setSuccessMessage('');
+
       await compraService.eliminar(selectedDelete.idCompras);
+      setSuccessMessage('Compra inactivada correctamente.');
       handleCloseDeleteDialog();
       await cargarCompras();
     } catch (error) {
-      console.error('Error al eliminar compra:', error);
+      console.error('Error al inactivar compra:', error);
       console.error('status:', error?.response?.status);
       console.error('data:', error?.response?.data);
+
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        'No se pudo inactivar la compra.';
+
+      setServerError(typeof message === 'string' ? message : 'No se pudo inactivar la compra.');
     }
   };
 
-  const handleChangePage = (event, newPage) => {
+  const handleChangePage = (_event, newPage) => {
     setPage(newPage);
   };
 
@@ -389,7 +624,7 @@ export default function GestionarCompras() {
                 Gestionar compras
               </Typography>
               <Typography sx={{ fontSize: '0.86rem', color: '#64748b', mt: 0.5 }}>
-                Registra, edita y elimina compras.
+                Registra compras con múltiples artículos e impuestos.
               </Typography>
             </Box>
 
@@ -409,6 +644,18 @@ export default function GestionarCompras() {
             </Button>
           </Stack>
 
+          {successMessage ? (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              {successMessage}
+            </Alert>
+          ) : null}
+
+          {serverError ? (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {serverError}
+            </Alert>
+          ) : null}
+
           <TableContainer
             component={Paper}
             elevation={0}
@@ -425,85 +672,64 @@ export default function GestionarCompras() {
                   <TableCell sx={{ fontWeight: 700 }}>FECHA</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>RUC</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>PROVEEDOR</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>ARTÍCULO</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>PESO</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>COSTO TOTAL</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>ARTÍCULOS</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>IMPUESTOS</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>PESO TOTAL</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>TOTAL</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>ESTADO</TableCell>
                   <TableCell sx={{ fontWeight: 700, textAlign: 'center' }}>ACCIONES</TableCell>
                 </TableRow>
               </TableHead>
 
               <TableBody>
-                {loading && (
+                {loading ? (
                   <TableRow>
-                    <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                    <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
                       <CircularProgress size={28} />
                     </TableCell>
                   </TableRow>
-                )}
-
-                {!loading && compras.length === 0 && (
+                ) : compras.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} align="center" sx={{ py: 4, color: '#64748b' }}>
+                    <TableCell colSpan={10} align="center" sx={{ py: 4, color: '#64748b' }}>
                       No hay compras registradas.
                     </TableCell>
                   </TableRow>
-                )}
-
-                {!loading && compras.length > 0 && comprasPaginadas.map((compra) => {
-                  const estadoStyles = getEstadoStyles(compra.estado);
-                  const puedeEditarOEliminar = compra.estado === 'Pendiente';
-
-                  return (
+                ) : (
+                  comprasPaginadas.map((compra) => (
                     <TableRow key={compra.idCompras} hover>
                       <TableCell>{compra.idCompras}</TableCell>
                       <TableCell>{formatDateTimeForTable(compra.fechaCompras)}</TableCell>
                       <TableCell>{compra.ruc}</TableCell>
                       <TableCell>{compra.razonSocial}</TableCell>
-                      <TableCell>{compra.descripcionArticulo}</TableCell>
-                      <TableCell>{compra.peso}</TableCell>
-                      <TableCell>{compra.costoTotal}</TableCell>
+                      <TableCell>{getResumenArticulos(compra)}</TableCell>
+                      <TableCell>{getResumenImpuestos(compra)}</TableCell>
+                      <TableCell>{formatNumber(compra.peso)}</TableCell>
+                      <TableCell>{formatNumber(compra.totalGeneral || compra.costoTotal)}</TableCell>
                       <TableCell>
                         <Chip
-                          label={compra.estado}
+                          label={compra.estado || '-'}
                           size="small"
                           sx={{
                             fontWeight: 700,
-                            backgroundColor: estadoStyles.backgroundColor,
-                            color: estadoStyles.color,
+                            ...getEstadoChipStyles(compra.estado),
                           }}
                         />
                       </TableCell>
                       <TableCell align="center">
-                        <IconButton
-                          onClick={() => handleOpenEdit(compra)}
-                          disabled={!puedeEditarOEliminar}
-                        >
-                          <Icon
-                            name="edit"
-                            size={20}
-                            color={puedeEditarOEliminar ? '#1976d2' : '#94a3b8'}
-                          />
+                        <IconButton onClick={() => handleOpenEdit(compra)}>
+                          <Icon name="edit" size={20} color="#1976d2" />
                         </IconButton>
-
-                        <IconButton
-                          onClick={() => handleOpenDeleteDialog(compra)}
-                          disabled={!puedeEditarOEliminar}
-                        >
-                          <Icon
-                            name="delete"
-                            size={20}
-                            color={puedeEditarOEliminar ? '#ef4444' : '#94a3b8'}
-                          />
+                        <IconButton onClick={() => handleOpenDeleteDialog(compra)}>
+                          <Icon name="delete" size={20} color="#ef4444" />
                         </IconButton>
                       </TableCell>
                     </TableRow>
-                  );
-                })}
+                  ))
+                )}
               </TableBody>
             </Table>
 
-            {!loading && compras.length > 0 && (
+            {!loading && compras.length > 0 ? (
               <TablePagination
                 component="div"
                 count={compras.length}
@@ -514,7 +740,7 @@ export default function GestionarCompras() {
                 rowsPerPageOptions={[5, 10, 20]}
                 labelRowsPerPage="Filas por página:"
               />
-            )}
+            ) : null}
           </TableContainer>
         </CardContent>
       </Card>
@@ -537,21 +763,28 @@ export default function GestionarCompras() {
         setErrors={setErrors}
         handleChange={handleChange}
         handleSubmit={handleSubmit}
-        costoTotalPreview={costoTotalPreview}
-        importeImpuestoPreview={importeImpuestoPreview}
+        handleDetalleChange={handleDetalleChange}
+        handleAddDetalle={handleAddDetalle}
+        handleRemoveDetalle={handleRemoveDetalle}
+        handleImpuestoChange={handleImpuestoChange}
+        handleAddImpuesto={handleAddImpuesto}
+        handleRemoveImpuesto={handleRemoveImpuesto}
+        subtotalPreview={subtotalPreview}
+        totalImpuestosPreview={totalImpuestosPreview}
+        totalGeneralPreview={totalGeneralPreview}
       />
 
       <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
-        <DialogTitle sx={{ fontWeight: 700 }}>Confirmar eliminación</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700 }}>Confirmar inactivación</DialogTitle>
         <DialogContent>
           <Typography sx={{ color: '#475569' }}>
-            ¿Seguro que deseas eliminar esta compra?
+            ¿Seguro que deseas inactivar esta compra?
           </Typography>
-          {selectedDelete && (
+          {selectedDelete ? (
             <Typography sx={{ mt: 1, fontWeight: 700, color: '#0f172a' }}>
               Compra #{selectedDelete.idCompras} - {selectedDelete.razonSocial}
             </Typography>
-          )}
+          ) : null}
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}>
           <Button onClick={handleCloseDeleteDialog} sx={{ textTransform: 'none' }}>
@@ -563,7 +796,7 @@ export default function GestionarCompras() {
             onClick={handleConfirmDelete}
             sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
           >
-            Eliminar
+            Inactivar
           </Button>
         </DialogActions>
       </Dialog>

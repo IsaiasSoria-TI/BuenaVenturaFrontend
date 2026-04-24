@@ -23,7 +23,7 @@ import {
 import { recepcionService } from '../../../services/recepcionService';
 import ModalRecepcion from './ModalRecepcion';
 
-function Icon({ name, size, color }) {
+function Icon({ name, size = 20, color = 'inherit' }) {
     return (
         <Box
             component="span"
@@ -50,14 +50,9 @@ Icon.propTypes = {
     color: PropTypes.string,
 };
 
-Icon.defaultProps = {
-    size: 20,
-    color: 'inherit',
-};
-
 const initialForm = {
     idCompras: null,
-    recibido: '',
+    detalles: [],
 };
 
 function formatDateTimeForTable(value) {
@@ -101,6 +96,17 @@ function getEstadoChipStyles(estado) {
     };
 }
 
+function getArticulosResumen(recepcion) {
+    if (Array.isArray(recepcion.detalles) && recepcion.detalles.length > 0) {
+        return recepcion.detalles
+            .map((detalle) => detalle.articulo)
+            .filter(Boolean)
+            .join(', ');
+    }
+
+    return recepcion.articulo || '-';
+}
+
 export default function Recepciones() {
     const [recepciones, setRecepciones] = React.useState([]);
     const [comprasDisponibles, setComprasDisponibles] = React.useState([]);
@@ -117,12 +123,14 @@ export default function Recepciones() {
     const [errors, setErrors] = React.useState({});
     const [selectedCompra, setSelectedCompra] = React.useState(null);
     const [serverError, setServerError] = React.useState('');
+
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
 
     const cargarRecepciones = React.useCallback(async () => {
         try {
             setLoading(true);
+
             const data = await recepcionService.listar();
             setRecepciones(Array.isArray(data) ? data : []);
             setPage(0);
@@ -138,6 +146,7 @@ export default function Recepciones() {
     const cargarComprasDisponibles = React.useCallback(async () => {
         try {
             setComprasLoading(true);
+
             const data = await recepcionService.listarComprasPendientes();
             setComprasDisponibles(Array.isArray(data) ? data : []);
         } catch (error) {
@@ -174,36 +183,41 @@ export default function Recepciones() {
         setServerError('');
     };
 
-    const handleChange = (field) => (event) => {
-        setForm((prev) => ({
-            ...prev,
-            [field]: event.target.value,
-        }));
-
-        if (errors[field]) {
-            setErrors((prev) => ({
-                ...prev,
-                [field]: '',
-            }));
-        }
-
-        if (serverError) {
-            setServerError('');
-        }
-    };
-
     const cargarDetalleCompra = async (idCompras) => {
         try {
             setDetalleLoading(true);
             setServerError('');
+
             const data = await recepcionService.verDetalleCompra(idCompras);
             setDetalleCompra(data);
+
+            const detallesForm = Array.isArray(data.detalles)
+                ? data.detalles.map((detalle) => ({
+                    idCompraDetalle: detalle.idCompraDetalle,
+                    articulo: detalle.articulo || '',
+                    medida: detalle.medida || '',
+                    pesoComprado: detalle.pesoComprado ?? 0,
+                    totalRecibido: detalle.totalRecibido ?? 0,
+                    pesoPendiente: detalle.pesoPendiente ?? 0,
+                    recibido: '',
+                }))
+                : [];
+
+            setForm((prev) => ({
+                ...prev,
+                idCompras,
+                detalles: detallesForm,
+            }));
         } catch (error) {
             console.error('Error al cargar detalle de compra:', error);
             console.error('status:', error?.response?.status);
             console.error('data:', error?.response?.data);
 
             setDetalleCompra(null);
+            setForm((prev) => ({
+                ...prev,
+                detalles: [],
+            }));
 
             const message =
                 error?.response?.data?.message ||
@@ -220,6 +234,34 @@ export default function Recepciones() {
         }
     };
 
+    const handleDetalleChange = (index, value) => {
+        setForm((prev) => ({
+            ...prev,
+            detalles: prev.detalles.map((detalle, detalleIndex) =>
+                detalleIndex === index ? { ...detalle, recibido: value } : detalle
+            ),
+        }));
+
+        const errorKey = `detalle_${index}_recibido`;
+        if (errors[errorKey]) {
+            setErrors((prev) => ({
+                ...prev,
+                [errorKey]: '',
+            }));
+        }
+
+        if (errors.detalles) {
+            setErrors((prev) => ({
+                ...prev,
+                detalles: '',
+            }));
+        }
+
+        if (serverError) {
+            setServerError('');
+        }
+    };
+
     const validate = () => {
         const newErrors = {};
 
@@ -227,16 +269,31 @@ export default function Recepciones() {
             newErrors.idCompras = 'Seleccione una compra disponible';
         }
 
-        if (form.recibido === '' || Number(form.recibido) <= 0) {
-            newErrors.recibido = 'El peso recibido debe ser mayor a 0';
+        if (!form.detalles.length) {
+            newErrors.detalles = 'La compra no tiene detalles disponibles';
         }
 
-        if (
-            detalleCompra &&
-            form.recibido !== '' &&
-            Number(form.recibido) > Number(detalleCompra.pesoPendiente)
-        ) {
-            newErrors.recibido = 'El peso recibido no puede exceder el peso pendiente';
+        let tieneRecibido = false;
+
+        form.detalles.forEach((detalle, index) => {
+            const recibido = Number(detalle.recibido || 0);
+            const pendiente = Number(detalle.pesoPendiente || 0);
+
+            if (recibido > 0) {
+                tieneRecibido = true;
+            }
+
+            if (recibido < 0) {
+                newErrors[`detalle_${index}_recibido`] = 'No puede ser negativo';
+            }
+
+            if (recibido > pendiente) {
+                newErrors[`detalle_${index}_recibido`] = 'No puede exceder el pendiente';
+            }
+        });
+
+        if (!tieneRecibido) {
+            newErrors.detalles = 'Ingrese al menos un peso recibido';
         }
 
         setErrors(newErrors);
@@ -245,12 +302,27 @@ export default function Recepciones() {
 
     const buildPayload = () => ({
         idCompras: Number(form.idCompras),
-        recibido: Number(form.recibido),
+        detalles: form.detalles
+            .filter((detalle) => Number(detalle.recibido || 0) > 0)
+            .map((detalle) => ({
+                idCompraDetalle: Number(detalle.idCompraDetalle),
+                recibido: Number(detalle.recibido),
+            })),
     });
 
-    const recibidoActual = form.recibido === '' ? 0 : Number(form.recibido);
-    const pesoPendienteActual = Number(detalleCompra?.pesoPendiente || 0);
-    const pendienteLuegoRegistro = Math.max(pesoPendienteActual - recibidoActual, 0);
+    const totalRecepcionActual = React.useMemo(() => {
+        return form.detalles.reduce((total, detalle) => {
+            return total + Number(detalle.recibido || 0);
+        }, 0);
+    }, [form.detalles]);
+
+    const totalPendienteActual = React.useMemo(() => {
+        return form.detalles.reduce((total, detalle) => {
+            return total + Number(detalle.pesoPendiente || 0);
+        }, 0);
+    }, [form.detalles]);
+
+    const pendienteLuegoRegistro = Math.max(totalPendienteActual - totalRecepcionActual, 0);
 
     const handleSubmit = async () => {
         if (!validate()) return;
@@ -284,12 +356,12 @@ export default function Recepciones() {
         }
     };
 
-    const handleChangePage = (_, newPage) => {
+    const handleChangePage = (_event, newPage) => {
         setPage(newPage);
     };
 
     const handleChangeRowsPerPage = (event) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
+        setRowsPerPage(Number.parseInt(event.target.value, 10));
         setPage(0);
     };
 
@@ -319,7 +391,7 @@ export default function Recepciones() {
                                 Gestionar recepciones
                             </Typography>
                             <Typography sx={{ fontSize: '0.86rem', color: '#64748b', mt: 0.5 }}>
-                                Registra recepciones parciales o completas de compras disponibles.
+                                Registra recepciones parciales o completas por artículo.
                             </Typography>
                         </Box>
 
@@ -356,8 +428,7 @@ export default function Recepciones() {
                                     <TableCell sx={{ fontWeight: 700 }}>COMPRA</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>RUC</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>PROVEEDOR</TableCell>
-                                    <TableCell sx={{ fontWeight: 700 }}>ARTÍCULO</TableCell>
-                                    <TableCell sx={{ fontWeight: 700 }}>MEDIDA</TableCell>
+                                    <TableCell sx={{ fontWeight: 700 }}>ARTÍCULOS</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>PESO COMPRADO</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>RECIBIDO</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>ESTADO COMPRA</TableCell>
@@ -368,7 +439,7 @@ export default function Recepciones() {
                             <TableBody>
                                 {showLoading ? (
                                     <TableRow>
-                                        <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
+                                        <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
                                             <CircularProgress size={28} />
                                         </TableCell>
                                     </TableRow>
@@ -376,7 +447,7 @@ export default function Recepciones() {
 
                                 {showEmpty ? (
                                     <TableRow>
-                                        <TableCell colSpan={11} align="center" sx={{ py: 4, color: '#64748b' }}>
+                                        <TableCell colSpan={10} align="center" sx={{ py: 4, color: '#64748b' }}>
                                             No hay recepciones registradas.
                                         </TableCell>
                                     </TableRow>
@@ -390,8 +461,7 @@ export default function Recepciones() {
                                             <TableCell>{recepcion.idCompras}</TableCell>
                                             <TableCell>{recepcion.ruc}</TableCell>
                                             <TableCell>{recepcion.razonSocial}</TableCell>
-                                            <TableCell>{recepcion.articulo}</TableCell>
-                                            <TableCell>{recepcion.medida}</TableCell>
+                                            <TableCell>{getArticulosResumen(recepcion)}</TableCell>
                                             <TableCell>{formatNumber(recepcion.pesoComprado)}</TableCell>
                                             <TableCell>{formatNumber(recepcion.recibido)}</TableCell>
                                             <TableCell>
@@ -452,9 +522,9 @@ export default function Recepciones() {
                 detalleCompra={detalleCompra}
                 serverError={serverError}
                 cargarDetalleCompra={cargarDetalleCompra}
-                handleChange={handleChange}
+                handleDetalleChange={handleDetalleChange}
                 handleSubmit={handleSubmit}
-                recibidoActual={recibidoActual}
+                totalRecepcionActual={totalRecepcionActual}
                 pendienteLuegoRegistro={pendienteLuegoRegistro}
             />
         </Box>

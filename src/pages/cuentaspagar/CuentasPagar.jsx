@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+
 import {
   Alert,
   Box,
@@ -23,7 +24,7 @@ import {
 import { cuentaPagarService } from '../../services/cuentaPagarService';
 import ModalCuentaPagar from './ModalCuentaPagar';
 
-function Icon({ name, size, color }) {
+function Icon({ name, size = 20, color = 'inherit' }) {
   return (
     <Box
       component="span"
@@ -50,11 +51,6 @@ Icon.propTypes = {
   color: PropTypes.string,
 };
 
-Icon.defaultProps = {
-  size: 20,
-  color: 'inherit',
-};
-
 function formatDateTimeForTable(value) {
   if (!value) return '-';
 
@@ -67,7 +63,7 @@ function formatDateTimeForTable(value) {
 }
 
 function getEstadoChipStyles(estado) {
-  if (estado === 'Completo') {
+  if (estado === 'Completo' || estado === 'Pagado') {
     return {
       backgroundColor: '#dcfce7',
       color: '#16a34a',
@@ -106,8 +102,6 @@ export default function CuentasPagar() {
       setPage(0);
     } catch (error) {
       console.error('Error al listar cuentas por pagar:', error);
-      console.error('status:', error?.response?.status);
-      console.error('data:', error?.response?.data);
 
       const message =
         error?.response?.data?.message ||
@@ -128,35 +122,35 @@ export default function CuentasPagar() {
     cargarCuentas();
   }, [cargarCuentas]);
 
-  const handleOpenCreate = React.useCallback(() => {
+  const handleOpenCreate = () => {
     setServerError('');
     setServerSuccess('');
     setOpen(true);
-  }, []);
+  };
 
-  const handleCloseCreate = React.useCallback(() => {
+  const handleCloseCreate = () => {
     setOpen(false);
-  }, []);
+  };
 
-  const handleSaved = React.useCallback(async () => {
+  const handleSaved = async () => {
     setOpen(false);
     setServerError('');
     setServerSuccess('Cuenta por pagar registrada correctamente.');
     await cargarCuentas();
-  }, [cargarCuentas]);
+  };
 
-  const handleChangePage = (_, newPage) => {
+  const handleChangePage = (_event, newPage) => {
     setPage(newPage);
   };
 
   const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
+    setRowsPerPage(Number.parseInt(event.target.value, 10));
     setPage(0);
   };
 
   const cuentasOrdenadas = React.useMemo(() => {
     return [...cuentas].sort(
-      (a, b) => new Date(b.fechaCreacion) - new Date(a.fechaCreacion)
+      (a, b) => new Date(b.fechaCreacion || 0) - new Date(a.fechaCreacion || 0)
     );
   }, [cuentas]);
 
@@ -186,7 +180,7 @@ export default function CuentasPagar() {
                 Cuentas por pagar
               </Typography>
               <Typography sx={{ fontSize: '0.86rem', color: '#64748b', mt: 0.5 }}>
-                Registra facturas a partir de recepciones parciales o completas y las inicia en estado pendiente.
+                Registra facturas a partir de recepciones parciales o completas.
               </Typography>
             </Box>
 
@@ -252,7 +246,7 @@ export default function CuentasPagar() {
                   <TableCell sx={{ fontWeight: 700 }}>ARTÍCULO</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>FACTURA</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>MONEDA</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>COD. RETENCIÓN</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>COD. DET/RET</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>ESTADO</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>F. CREACIÓN</TableCell>
                 </TableRow>
@@ -283,10 +277,10 @@ export default function CuentasPagar() {
                       <TableCell>{cuenta.idRecepciones}</TableCell>
                       <TableCell>{cuenta.proveedor || '-'}</TableCell>
                       <TableCell>{cuenta.ruc || '-'}</TableCell>
-                      <TableCell>{cuenta.articulo || '-'}</TableCell>
-                      <TableCell>{cuenta.numeroFactura}</TableCell>
-                      <TableCell>{cuenta.moneda}</TableCell>
-                      <TableCell>{cuenta.codigoDetRet}</TableCell>
+                      <TableCell>{cuenta.articulo || 'Varios artículos'}</TableCell>
+                      <TableCell>{cuenta.numeroFactura || '-'}</TableCell>
+                      <TableCell>{cuenta.moneda || '-'}</TableCell>
+                      <TableCell>{cuenta.codigoDetRet || '-'}</TableCell>
                       <TableCell>
                         <Chip
                           label={cuenta.estado || '-'}

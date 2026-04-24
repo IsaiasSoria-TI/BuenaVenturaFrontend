@@ -43,6 +43,15 @@ export default function ModalCuentaContable({
                         helperText={errors.codigo || ''}
                     />
 
+                    <TextField
+                        fullWidth
+                        label="Descripción"
+                        value={form.descripcion}
+                        onChange={handleChange('descripcion')}
+                        error={!!errors.descripcion}
+                        helperText={errors.descripcion || ''}
+                    />
+
                     {editing ? (
                         <TextField
                             select
@@ -83,10 +92,12 @@ ModalCuentaContable.propTypes = {
     form: PropTypes.shape({
         idCuentaContable: PropTypes.oneOfType([PropTypes.number, PropTypes.oneOf([null])]),
         codigo: PropTypes.string.isRequired,
+        descripcion: PropTypes.string.isRequired,
         estado: PropTypes.string.isRequired,
     }).isRequired,
     errors: PropTypes.shape({
         codigo: PropTypes.string,
+        descripcion: PropTypes.string,
     }).isRequired,
     saving: PropTypes.bool.isRequired,
     handleChange: PropTypes.func.isRequired,

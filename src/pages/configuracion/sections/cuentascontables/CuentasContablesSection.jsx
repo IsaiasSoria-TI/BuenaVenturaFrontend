@@ -1,4 +1,6 @@
-import React from 'react';
+import * as React from 'react';
+import PropTypes from 'prop-types';
+
 import {
     Alert,
     Box,
@@ -27,28 +29,37 @@ import {
 import { cuentaContableService } from '../../../../services/cuentaContableService';
 import ModalCuentaContable from './ModalCuentaContable';
 
-const Icon = ({ name, size = 20, color = 'inherit' }) => (
-    <Box
-        component="span"
-        className="material-symbols-rounded"
-        sx={{
-            fontSize: size,
-            color,
-            lineHeight: 1,
-            userSelect: 'none',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontVariationSettings: '"FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24',
-        }}
-    >
-        {name}
-    </Box>
-);
+/* ICON COMPONENT */
+function Icon({ name, size = 20, color = 'inherit' }) {
+    return (
+        <Box
+            component="span"
+            className="material-symbols-rounded"
+            sx={{
+                fontSize: size,
+                color,
+                lineHeight: 1,
+                userSelect: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+            }}
+        >
+            {name}
+        </Box>
+    );
+}
+
+Icon.propTypes = {
+    name: PropTypes.string.isRequired,
+    size: PropTypes.number,
+    color: PropTypes.string,
+};
 
 const initialForm = {
     idCuentaContable: null,
     codigo: '',
+    descripcion: '',
     estado: 'Activo',
 };
 
@@ -59,7 +70,6 @@ function getEstadoChipStyles(estado) {
             color: '#16a34a',
         };
     }
-
     return {
         backgroundColor: '#fee2e2',
         color: '#dc2626',
@@ -76,6 +86,7 @@ export default function CuentasContablesSection() {
 
     const [form, setForm] = React.useState(initialForm);
     const [errors, setErrors] = React.useState({});
+
     const [serverError, setServerError] = React.useState('');
     const [successMessage, setSuccessMessage] = React.useState('');
 
@@ -89,23 +100,12 @@ export default function CuentasContablesSection() {
         try {
             setLoading(true);
             setServerError('');
-
             const data = await cuentaContableService.listar();
             setCuentas(Array.isArray(data) ? data : []);
             setPage(0);
         } catch (error) {
-            console.error('Error al listar cuentas contables:', error);
-
-            const message =
-                error?.response?.data?.message ||
-                error?.response?.data ||
-                'No se pudo listar las cuentas contables.';
-
-            setServerError(
-                typeof message === 'string'
-                    ? message
-                    : 'No se pudo listar las cuentas contables.'
-            );
+            console.error(error);
+            setServerError('No se pudo listar las cuentas contables.');
         } finally {
             setLoading(false);
         }
@@ -119,8 +119,6 @@ export default function CuentasContablesSection() {
         setEditing(false);
         setForm(initialForm);
         setErrors({});
-        setServerError('');
-        setSuccessMessage('');
         setOpen(true);
     };
 
@@ -129,17 +127,15 @@ export default function CuentasContablesSection() {
         setForm({
             idCuentaContable: cuenta.idCuentaContable,
             codigo: cuenta.codigo || '',
+            descripcion: cuenta.descripcion || '',
             estado: cuenta.estado || 'Activo',
         });
         setErrors({});
-        setServerError('');
-        setSuccessMessage('');
         setOpen(true);
     };
 
     const handleClose = () => {
         if (saving) return;
-
         setOpen(false);
         setForm(initialForm);
         setErrors({});
@@ -150,28 +146,17 @@ export default function CuentasContablesSection() {
             ...prev,
             [field]: event.target.value,
         }));
-
-        if (errors[field]) {
-            setErrors((prev) => ({
-                ...prev,
-                [field]: '',
-            }));
-        }
-
-        if (serverError) {
-            setServerError('');
-        }
-
-        if (successMessage) {
-            setSuccessMessage('');
-        }
     };
 
     const validate = () => {
         const newErrors = {};
 
         if (!form.codigo.trim()) {
-            newErrors.codigo = 'El código es obligatorio';
+            newErrors.codigo = 'Código requerido';
+        }
+
+        if (!form.descripcion.trim()) {
+            newErrors.descripcion = 'Descripción requerida';
         }
 
         setErrors(newErrors);
@@ -184,36 +169,29 @@ export default function CuentasContablesSection() {
         try {
             setSaving(true);
             setServerError('');
-            setSuccessMessage('');
 
             const payload = {
                 codigo: form.codigo.trim(),
+                descripcion: form.descripcion.trim(),
                 estado: form.estado,
             };
 
             if (editing && form.idCuentaContable) {
-                await cuentaContableService.actualizar(form.idCuentaContable, payload);
-                setSuccessMessage('Cuenta contable actualizada correctamente.');
+                await cuentaContableService.actualizar(
+                    form.idCuentaContable,
+                    payload
+                );
+                setSuccessMessage('Actualizado correctamente');
             } else {
                 await cuentaContableService.crear(payload);
-                setSuccessMessage('Cuenta contable registrada correctamente.');
+                setSuccessMessage('Registrado correctamente');
             }
 
             handleClose();
             await cargarCuentas();
         } catch (error) {
-            console.error('Error al guardar cuenta contable:', error);
-
-            const message =
-                error?.response?.data?.message ||
-                error?.response?.data ||
-                'No se pudo guardar la cuenta contable.';
-
-            setServerError(
-                typeof message === 'string'
-                    ? message
-                    : 'No se pudo guardar la cuenta contable.'
-            );
+            console.error(error);
+            setServerError('Error al guardar');
         } finally {
             setSaving(false);
         }
@@ -224,166 +202,84 @@ export default function CuentasContablesSection() {
         setDeleteDialogOpen(true);
     };
 
-    const handleCloseDeleteDialog = () => {
-        setSelectedDelete(null);
-        setDeleteDialogOpen(false);
-    };
-
     const handleConfirmDelete = async () => {
-        if (!selectedDelete?.idCuentaContable) return;
+        if (!selectedDelete) return;
 
         try {
-            await cuentaContableService.eliminar(selectedDelete.idCuentaContable);
-            setSuccessMessage('Cuenta contable inactivada correctamente.');
-            handleCloseDeleteDialog();
+            await cuentaContableService.eliminar(
+                selectedDelete.idCuentaContable
+            );
+            setSuccessMessage('Inactivado correctamente');
+            setDeleteDialogOpen(false);
             await cargarCuentas();
         } catch (error) {
-            console.error('Error al eliminar cuenta contable:', error);
-
-            const message =
-                error?.response?.data?.message ||
-                error?.response?.data ||
-                'No se pudo eliminar la cuenta contable.';
-
-            setServerError(
-                typeof message === 'string'
-                    ? message
-                    : 'No se pudo eliminar la cuenta contable.'
-            );
+            console.error(error);
+            setServerError('Error al eliminar');
         }
     };
 
-    const handleChangePage = (event, newPage) => {
-        setPage(newPage);
-    };
-
-    const handleChangeRowsPerPage = (event) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
-    };
-
     const cuentasPaginadas = React.useMemo(() => {
-        const inicio = page * rowsPerPage;
-        const fin = inicio + rowsPerPage;
-        return cuentas.slice(inicio, fin);
+        const start = page * rowsPerPage;
+        return cuentas.slice(start, start + rowsPerPage);
     }, [cuentas, page, rowsPerPage]);
 
     return (
         <Box>
-            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e2e8f0' }}>
+            <Card sx={{ borderRadius: 3 }}>
                 <CardContent>
                     <Stack
-                        direction={{ xs: 'column', md: 'row' }}
+                        direction="row"
                         justifyContent="space-between"
-                        alignItems={{ xs: 'stretch', md: 'center' }}
-                        spacing={2}
-                        sx={{ mb: 2.5 }}
+                        sx={{ mb: 2 }}
                     >
-                        <Box>
-                            <Typography sx={{ fontWeight: 700, color: '#0f172a', mb: 0.5 }}>
-                                Cuentas contables
-                            </Typography>
-                            <Typography sx={{ color: '#64748b', fontSize: '0.9rem' }}>
-                                Administra los códigos contables que luego serán asignados a las categorías.
-                            </Typography>
-                        </Box>
+                        <Typography fontWeight={700}>
+                            Cuentas Contables
+                        </Typography>
 
-                        <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
-                            <Button
-                                variant="outlined"
-                                onClick={cargarCuentas}
-                                startIcon={<Icon name="refresh" size={18} />}
-                                sx={{
-                                    textTransform: 'none',
-                                    fontWeight: 700,
-                                    borderRadius: 2,
-                                }}
-                            >
-                                Actualizar
-                            </Button>
-
-                            <Button
-                                variant="contained"
-                                onClick={handleOpenCreate}
-                                startIcon={<Icon name="add" size={18} color="#fff" />}
-                                sx={{
-                                    textTransform: 'none',
-                                    fontWeight: 700,
-                                    borderRadius: 2,
-                                    boxShadow: 'none',
-                                }}
-                            >
-                                Nueva cuenta contable
-                            </Button>
-                        </Stack>
+                        <Button variant="contained" onClick={handleOpenCreate}>
+                            Nueva
+                        </Button>
                     </Stack>
 
-                    {successMessage ? (
-                        <Alert severity="success" sx={{ mb: 2 }}>
-                            {successMessage}
-                        </Alert>
-                    ) : null}
+                    {successMessage && <Alert severity="success">{successMessage}</Alert>}
+                    {serverError && <Alert severity="error">{serverError}</Alert>}
 
-                    {serverError ? (
-                        <Alert severity="error" sx={{ mb: 2 }}>
-                            {serverError}
-                        </Alert>
-                    ) : null}
-
-                    <TableContainer
-                        component={Paper}
-                        elevation={0}
-                        sx={{
-                            border: '1px solid #e2e8f0',
-                            borderRadius: 2.5,
-                            overflowX: 'auto',
-                        }}
-                    >
+                    <TableContainer component={Paper}>
                         <Table>
                             <TableHead>
-                                <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                                    <TableCell sx={{ fontWeight: 700 }}>CÓDIGO</TableCell>
-                                    <TableCell sx={{ fontWeight: 700 }}>ESTADO</TableCell>
-                                    <TableCell sx={{ fontWeight: 700, textAlign: 'center' }}>
-                                        ACCIONES
-                                    </TableCell>
+                                <TableRow>
+                                    <TableCell>Código</TableCell>
+                                    <TableCell>Descripción</TableCell>
+                                    <TableCell>Estado</TableCell>
+                                    <TableCell align="center">Acciones</TableCell>
                                 </TableRow>
                             </TableHead>
 
                             <TableBody>
                                 {loading ? (
                                     <TableRow>
-                                        <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
-                                            <CircularProgress size={28} />
-                                        </TableCell>
-                                    </TableRow>
-                                ) : cuentas.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={3} align="center" sx={{ py: 4, color: '#64748b' }}>
-                                            No hay cuentas contables registradas.
+                                        <TableCell colSpan={4} align="center">
+                                            <CircularProgress />
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    cuentasPaginadas.map((cuenta) => (
-                                        <TableRow key={cuenta.idCuentaContable} hover>
-                                            <TableCell>{cuenta.codigo}</TableCell>
+                                    cuentasPaginadas.map((c) => (
+                                        <TableRow key={c.idCuentaContable}>
+                                            <TableCell>{c.codigo}</TableCell>
+                                            <TableCell>{c.descripcion}</TableCell>
                                             <TableCell>
                                                 <Chip
-                                                    label={cuenta.estado || '-'}
+                                                    label={c.estado}
                                                     size="small"
-                                                    sx={{
-                                                        fontWeight: 700,
-                                                        ...getEstadoChipStyles(cuenta.estado),
-                                                    }}
+                                                    sx={getEstadoChipStyles(c.estado)}
                                                 />
                                             </TableCell>
                                             <TableCell align="center">
-                                                <IconButton onClick={() => handleOpenEdit(cuenta)}>
-                                                    <Icon name="edit" size={20} color="#1976d2" />
+                                                <IconButton onClick={() => handleOpenEdit(c)}>
+                                                    <Icon name="edit" />
                                                 </IconButton>
-
-                                                <IconButton onClick={() => handleOpenDeleteDialog(cuenta)}>
-                                                    <Icon name="delete" size={20} color="#ef4444" />
+                                                <IconButton onClick={() => handleOpenDeleteDialog(c)}>
+                                                    <Icon name="delete" color="red" />
                                                 </IconButton>
                                             </TableCell>
                                         </TableRow>
@@ -392,18 +288,16 @@ export default function CuentasContablesSection() {
                             </TableBody>
                         </Table>
 
-                        {!loading && cuentas.length > 0 ? (
-                            <TablePagination
-                                component="div"
-                                count={cuentas.length}
-                                page={page}
-                                onPageChange={handleChangePage}
-                                rowsPerPage={rowsPerPage}
-                                onRowsPerPageChange={handleChangeRowsPerPage}
-                                rowsPerPageOptions={[5, 10, 20]}
-                                labelRowsPerPage="Filas por página:"
-                            />
-                        ) : null}
+                        <TablePagination
+                            component="div"
+                            count={cuentas.length}
+                            page={page}
+                            onPageChange={(e, p) => setPage(p)}
+                            rowsPerPage={rowsPerPage}
+                            onRowsPerPageChange={(e) =>
+                                setRowsPerPage(parseInt(e.target.value, 10))
+                            }
+                        />
                     </TableContainer>
                 </CardContent>
             </Card>
@@ -419,31 +313,14 @@ export default function CuentasContablesSection() {
                 handleSubmit={handleSubmit}
             />
 
-            <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
-                <DialogTitle sx={{ fontWeight: 700 }}>Confirmar eliminación</DialogTitle>
+            <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+                <DialogTitle>Confirmar</DialogTitle>
                 <DialogContent>
-                    <Typography sx={{ color: '#475569' }}>
-                        ¿Seguro que deseas inactivar esta cuenta contable?
-                    </Typography>
-
-                    {selectedDelete ? (
-                        <Typography sx={{ mt: 1, fontWeight: 700, color: '#0f172a' }}>
-                            Código: {selectedDelete.codigo}
-                        </Typography>
-                    ) : null}
+                    ¿Deseas inactivar esta cuenta?
                 </DialogContent>
-
-                <DialogActions sx={{ px: 3, py: 2 }}>
-                    <Button onClick={handleCloseDeleteDialog} sx={{ textTransform: 'none' }}>
-                        Cancelar
-                    </Button>
-
-                    <Button
-                        variant="contained"
-                        color="error"
-                        onClick={handleConfirmDelete}
-                        sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
-                    >
+                <DialogActions>
+                    <Button onClick={() => setDeleteDialogOpen(false)}>Cancelar</Button>
+                    <Button color="error" onClick={handleConfirmDelete}>
                         Inactivar
                     </Button>
                 </DialogActions>
