@@ -18,9 +18,12 @@ import {
     Chip,
     CircularProgress,
     TablePagination,
+    IconButton,
+    Tooltip,
 } from '@mui/material';
 
 import { recepcionService } from '../../../services/recepcionService';
+import ModalDetalleRecepcion from './ModalDetalleRecepcion';
 import ModalRecepcion from './ModalRecepcion';
 
 function Icon({ name, size = 20, color = 'inherit' }) {
@@ -123,6 +126,8 @@ export default function Recepciones() {
     const [errors, setErrors] = React.useState({});
     const [selectedCompra, setSelectedCompra] = React.useState(null);
     const [serverError, setServerError] = React.useState('');
+    const [detailDialogOpen, setDetailDialogOpen] = React.useState(false);
+    const [selectedDetail, setSelectedDetail] = React.useState(null);
 
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
@@ -181,6 +186,16 @@ export default function Recepciones() {
         setDetalleCompra(null);
         setErrors({});
         setServerError('');
+    };
+
+    const handleOpenDetailDialog = (recepcion) => {
+        setSelectedDetail(recepcion);
+        setDetailDialogOpen(true);
+    };
+
+    const handleCloseDetailDialog = () => {
+        setDetailDialogOpen(false);
+        setSelectedDetail(null);
     };
 
     const cargarDetalleCompra = async (idCompras) => {
@@ -433,13 +448,14 @@ export default function Recepciones() {
                                     <TableCell sx={{ fontWeight: 700 }}>RECIBIDO</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>ESTADO COMPRA</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>ESTADO RECEPCIÓN</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, textAlign: 'center' }}>ACCIONES</TableCell>
                                 </TableRow>
                             </TableHead>
 
                             <TableBody>
                                 {showLoading ? (
                                     <TableRow>
-                                        <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
+                                        <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
                                             <CircularProgress size={28} />
                                         </TableCell>
                                     </TableRow>
@@ -447,7 +463,7 @@ export default function Recepciones() {
 
                                 {showEmpty ? (
                                     <TableRow>
-                                        <TableCell colSpan={10} align="center" sx={{ py: 4, color: '#64748b' }}>
+                                        <TableCell colSpan={11} align="center" sx={{ py: 4, color: '#64748b' }}>
                                             No hay recepciones registradas.
                                         </TableCell>
                                     </TableRow>
@@ -483,6 +499,13 @@ export default function Recepciones() {
                                                         ...getEstadoChipStyles(recepcion.estado),
                                                     }}
                                                 />
+                                            </TableCell>
+                                            <TableCell align="center">
+                                                <Tooltip title="Ver detalle">
+                                                    <IconButton onClick={() => handleOpenDetailDialog(recepcion)}>
+                                                        <Icon name="visibility" size={20} color="#0f766e" />
+                                                    </IconButton>
+                                                </Tooltip>
                                             </TableCell>
                                         </TableRow>
                                     ))
@@ -526,6 +549,12 @@ export default function Recepciones() {
                 handleSubmit={handleSubmit}
                 totalRecepcionActual={totalRecepcionActual}
                 pendienteLuegoRegistro={pendienteLuegoRegistro}
+            />
+
+            <ModalDetalleRecepcion
+                open={detailDialogOpen}
+                onClose={handleCloseDetailDialog}
+                recepcion={selectedDetail}
             />
         </Box>
     );

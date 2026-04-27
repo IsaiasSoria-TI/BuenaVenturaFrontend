@@ -9,6 +9,7 @@ import {
   CardContent,
   Chip,
   CircularProgress,
+  IconButton,
   Paper,
   Stack,
   Table,
@@ -18,10 +19,12 @@ import {
   TableHead,
   TablePagination,
   TableRow,
+  Tooltip,
   Typography,
 } from '@mui/material';
 
 import { cuentaPagarService } from '../../services/cuentaPagarService';
+import ModalDetalleCuentaPagar from './ModalDetalleCuentaPagar';
 import ModalCuentaPagar from './ModalCuentaPagar';
 
 function Icon({ name, size = 20, color = 'inherit' }) {
@@ -89,6 +92,8 @@ export default function CuentasPagar() {
   const [open, setOpen] = React.useState(false);
   const [serverError, setServerError] = React.useState('');
   const [serverSuccess, setServerSuccess] = React.useState('');
+  const [detailDialogOpen, setDetailDialogOpen] = React.useState(false);
+  const [selectedDetail, setSelectedDetail] = React.useState(null);
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
 
@@ -137,6 +142,16 @@ export default function CuentasPagar() {
     setServerError('');
     setServerSuccess('Cuenta por pagar registrada correctamente.');
     await cargarCuentas();
+  };
+
+  const handleOpenDetailDialog = (cuenta) => {
+    setSelectedDetail(cuenta);
+    setDetailDialogOpen(true);
+  };
+
+  const handleCloseDetailDialog = () => {
+    setDetailDialogOpen(false);
+    setSelectedDetail(null);
   };
 
   const handleChangePage = (_event, newPage) => {
@@ -249,13 +264,14 @@ export default function CuentasPagar() {
                   <TableCell sx={{ fontWeight: 700 }}>COD. DET/RET</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>ESTADO</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>F. CREACIÓN</TableCell>
+                  <TableCell sx={{ fontWeight: 700, textAlign: 'center' }}>ACCIONES</TableCell>
                 </TableRow>
               </TableHead>
 
               <TableBody>
                 {showLoading ? (
                   <TableRow>
-                    <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
+                    <TableCell colSpan={12} align="center" sx={{ py: 4 }}>
                       <CircularProgress size={28} />
                     </TableCell>
                   </TableRow>
@@ -263,7 +279,7 @@ export default function CuentasPagar() {
 
                 {showEmpty ? (
                   <TableRow>
-                    <TableCell colSpan={11} align="center" sx={{ py: 4, color: '#64748b' }}>
+                    <TableCell colSpan={12} align="center" sx={{ py: 4, color: '#64748b' }}>
                       No hay cuentas por pagar registradas.
                     </TableCell>
                   </TableRow>
@@ -292,6 +308,13 @@ export default function CuentasPagar() {
                         />
                       </TableCell>
                       <TableCell>{formatDateTimeForTable(cuenta.fechaCreacion)}</TableCell>
+                      <TableCell align="center">
+                        <Tooltip title="Ver detalle">
+                          <IconButton onClick={() => handleOpenDetailDialog(cuenta)}>
+                            <Icon name="visibility" size={20} color="#0f766e" />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
                     </TableRow>
                   ))
                   : null}
@@ -318,6 +341,12 @@ export default function CuentasPagar() {
         open={open}
         onClose={handleCloseCreate}
         onSaved={handleSaved}
+      />
+
+      <ModalDetalleCuentaPagar
+        open={detailDialogOpen}
+        onClose={handleCloseDetailDialog}
+        cuenta={selectedDetail}
       />
     </Box>
   );

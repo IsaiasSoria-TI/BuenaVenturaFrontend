@@ -5,12 +5,14 @@ import {
     Autocomplete,
     Box,
     Button,
+    Checkbox,
     CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
     DialogTitle,
     Divider,
+    FormControlLabel,
     IconButton,
     MenuItem,
     Paper,
@@ -46,6 +48,11 @@ Icon.propTypes = {
     color: PropTypes.string,
 };
 
+function isIgvImpuesto(impuesto) {
+    const tipo = String(impuesto?.tipoImpuesto || '').replace(/[.\s]/g, '').toUpperCase();
+    return tipo === 'IGV';
+}
+
 export default function ModalGestionarCompras({
     open,
     onClose,
@@ -63,6 +70,7 @@ export default function ModalGestionarCompras({
     setForm,
     setErrors,
     handleChange,
+    handleIgvChange,
     handleSubmit,
     handleDetalleChange,
     handleAddDetalle,
@@ -72,8 +80,14 @@ export default function ModalGestionarCompras({
     handleRemoveImpuesto,
     subtotalPreview,
     totalImpuestosPreview,
+    igvPreview,
     totalGeneralPreview,
 }) {
+    const impuestosDisponibles = React.useMemo(
+        () => impuestos.filter((item) => !isIgvImpuesto(item)),
+        [impuestos]
+    );
+
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="lg">
             <DialogTitle sx={{ fontWeight: 700 }}>
@@ -377,7 +391,7 @@ export default function ModalGestionarCompras({
                                         Impuestos
                                     </Typography>
                                     <Typography sx={{ fontSize: '0.85rem', color: '#64748b' }}>
-                                        Agrega IGV u otros impuestos aplicables.
+                                        Agrega retenciones, detracciones u otros impuestos aplicables.
                                     </Typography>
                                 </Box>
 
@@ -393,7 +407,7 @@ export default function ModalGestionarCompras({
 
                             <Stack spacing={1.5}>
                                 {form.impuestos.map((impuestoItem, index) => {
-                                    const impuestoSeleccionado = impuestos.find(
+                                    const impuestoSeleccionado = impuestosDisponibles.find(
                                         (item) => item.idImpuesto === Number(impuestoItem.idImpuesto)
                                     );
 
@@ -436,7 +450,7 @@ export default function ModalGestionarCompras({
                                                     <MenuItem value="">
                                                         <em>Seleccione</em>
                                                     </MenuItem>
-                                                    {impuestos.map((item) => (
+                                                    {impuestosDisponibles.map((item) => (
                                                         <MenuItem key={item.idImpuesto} value={item.idImpuesto}>
                                                             {item.tipoImpuesto} ({item.valor}%)
                                                         </MenuItem>
@@ -483,10 +497,76 @@ export default function ModalGestionarCompras({
 
                         <Divider />
 
+                        <Box>
+                            <Typography sx={{ fontWeight: 700, color: '#0f172a', mb: 1.5 }}>
+                                IGV
+                            </Typography>
+
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    p: 2,
+                                    border: '1px solid #e2e8f0',
+                                    borderRadius: 2,
+                                }}
+                            >
+                                <Box
+                                    sx={{
+                                        display: 'grid',
+                                        gridTemplateColumns: {
+                                            xs: '1fr',
+                                            md: form.aplicaIgv ? '1.2fr 1fr 1fr' : '1.2fr 1fr',
+                                        },
+                                        gap: 2,
+                                        alignItems: 'center',
+                                    }}
+                                >
+                                    <FormControlLabel
+                                        control={
+                                            <Checkbox
+                                                checked={Boolean(form.aplicaIgv)}
+                                                onChange={handleIgvChange}
+                                            />
+                                        }
+                                        label="Aplicar IGV"
+                                        sx={{ m: 0 }}
+                                    />
+
+                                    <TextField
+                                        fullWidth
+                                        type="number"
+                                        label="Porcentaje IGV"
+                                        value={form.porcentajeIgv}
+                                        onChange={handleChange('porcentajeIgv')}
+                                        error={!!errors.porcentajeIgv}
+                                        helperText={errors.porcentajeIgv}
+                                        slotProps={{
+                                            input: {
+                                                inputProps: { min: 0, step: '0.01' },
+                                            },
+                                        }}
+                                    />
+
+                                    {form.aplicaIgv ? (
+                                        <TextField
+                                            fullWidth
+                                            label="Importe IGV"
+                                            value={igvPreview}
+                                            slotProps={{
+                                                input: { readOnly: true },
+                                            }}
+                                        />
+                                    ) : null}
+                                </Box>
+                            </Paper>
+                        </Box>
+
+                        <Divider />
+
                         <Box
                             sx={{
                                 display: 'grid',
-                                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
+                                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr 1fr' },
                                 gap: 2,
                             }}
                         >
@@ -503,6 +583,15 @@ export default function ModalGestionarCompras({
                                 fullWidth
                                 label="Total impuestos"
                                 value={totalImpuestosPreview}
+                                slotProps={{
+                                    input: { readOnly: true },
+                                }}
+                            />
+
+                            <TextField
+                                fullWidth
+                                label="IGV"
+                                value={form.aplicaIgv ? igvPreview : '0.00'}
                                 slotProps={{
                                     input: { readOnly: true },
                                 }}
@@ -565,6 +654,9 @@ ModalGestionarCompras.propTypes = {
                 idImpuesto: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
             })
         ).isRequired,
+        aplicaIgv: PropTypes.bool.isRequired,
+        porcentajeIgv: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+        importeIgv: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     }).isRequired,
     errors: PropTypes.objectOf(PropTypes.string).isRequired,
     proveedores: PropTypes.arrayOf(PropTypes.object).isRequired,
@@ -576,6 +668,7 @@ ModalGestionarCompras.propTypes = {
     setForm: PropTypes.func.isRequired,
     setErrors: PropTypes.func.isRequired,
     handleChange: PropTypes.func.isRequired,
+    handleIgvChange: PropTypes.func.isRequired,
     handleSubmit: PropTypes.func.isRequired,
     handleDetalleChange: PropTypes.func.isRequired,
     handleAddDetalle: PropTypes.func.isRequired,
@@ -585,6 +678,7 @@ ModalGestionarCompras.propTypes = {
     handleRemoveImpuesto: PropTypes.func.isRequired,
     subtotalPreview: PropTypes.string.isRequired,
     totalImpuestosPreview: PropTypes.string.isRequired,
+    igvPreview: PropTypes.string.isRequired,
     totalGeneralPreview: PropTypes.string.isRequired,
 };
 

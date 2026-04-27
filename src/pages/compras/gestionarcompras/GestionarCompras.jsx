@@ -23,6 +23,7 @@ import {
   TableHead,
   TablePagination,
   TableRow,
+  Tooltip,
   Typography,
 } from '@mui/material';
 
@@ -32,6 +33,7 @@ import { articuloService } from '../../../services/articuloService';
 import { impuestoService } from '../../../services/impuestoService';
 import { pagoService } from '../../../services/pagoService';
 
+import ModalDetalleCompra from './ModalDetalleCompra';
 import ModalGestionarCompras from './ModalGestionarCompras';
 
 function Icon({ name, size = 20, color = 'inherit' }) {
@@ -73,6 +75,8 @@ const createImpuesto = () => ({
   idImpuesto: '',
 });
 
+const DEFAULT_IGV_PERCENTAGE = 18;
+
 const initialForm = {
   idCompras: null,
   idPago: '',
@@ -82,6 +86,9 @@ const initialForm = {
   hectareas: '',
   detalles: [createDetalle()],
   impuestos: [createImpuesto()],
+  aplicaIgv: false,
+  porcentajeIgv: DEFAULT_IGV_PERCENTAGE,
+  importeIgv: 0,
 };
 
 function formatDateTimeForInput(value) {
@@ -115,6 +122,11 @@ function formatNumber(value) {
   if (Number.isNaN(number)) return '0.00';
 
   return number.toFixed(2);
+}
+
+function isIgvImpuesto(impuesto) {
+  const tipo = String(impuesto?.tipoImpuesto || '').replace(/[.\s]/g, '').toUpperCase();
+  return tipo === 'IGV';
 }
 
 function getEstadoChipStyles(estado) {
@@ -159,12 +171,13 @@ function getResumenArticulos(compra) {
 function getResumenImpuestos(compra) {
   if (Array.isArray(compra.impuestos) && compra.impuestos.length > 0) {
     return compra.impuestos
+      .filter((impuesto) => !isIgvImpuesto(impuesto))
       .map((impuesto) => impuesto.tipoImpuesto)
       .filter(Boolean)
-      .join(', ');
+      .join(', ') || '-';
   }
 
-  return compra.tipoImpuesto || '-';
+  return isIgvImpuesto({ tipoImpuesto: compra.tipoImpuesto }) ? '-' : compra.tipoImpuesto || '-';
 }
 
 export default function GestionarCompras() {
@@ -190,6 +203,8 @@ export default function GestionarCompras() {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [selectedDelete, setSelectedDelete] = React.useState(null);
+  const [detailDialogOpen, setDetailDialogOpen] = React.useState(false);
+  const [selectedDetail, setSelectedDetail] = React.useState(null);
 
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
@@ -231,7 +246,7 @@ export default function GestionarCompras() {
 
       setProveedores(Array.isArray(proveedoresData) ? proveedoresData : []);
       setArticulos(Array.isArray(articulosData) ? articulosData : []);
-      setImpuestos(Array.isArray(impuestosData) ? impuestosData : []);
+      setImpuestos(Array.isArray(impuestosData) ? impuestosData.filter((item) => !isIgvImpuesto(item)) : []);
       setPagos(Array.isArray(pagosData) ? pagosData : []);
     } catch (error) {
       console.error('Error al cargar catálogos:', error);
@@ -283,18 +298,17 @@ export default function GestionarCompras() {
           },
         ];
 
+    const impuestosNormalesCompra = Array.isArray(compra.impuestos)
+      ? compra.impuestos.filter((impuesto) => !isIgvImpuesto(impuesto))
+      : [];
+
     const impuestosCompra =
-      Array.isArray(compra.impuestos) && compra.impuestos.length > 0
-        ? compra.impuestos.map((impuesto) => ({
+      impuestosNormalesCompra.length > 0
+        ? impuestosNormalesCompra.map((impuesto) => ({
           tempId: Math.random().toString(36).substring(2) + Date.now(),
           idImpuesto: impuesto.idImpuesto ?? '',
         }))
-        : [
-          {
-            tempId: Math.random().toString(36).substring(2) + Date.now(),
-            idImpuesto: compra.idImpuesto ?? '',
-          },
-        ];
+        : [createImpuesto()];
 
     setEditing(true);
     setErrors({});
@@ -310,6 +324,9 @@ export default function GestionarCompras() {
       hectareas: compra.hectareas ?? '',
       detalles,
       impuestos: impuestosCompra,
+      aplicaIgv: Boolean(compra.aplicaIgv),
+      porcentajeIgv: compra.porcentajeIgv ?? DEFAULT_IGV_PERCENTAGE,
+      importeIgv: compra.importeIgv ?? 0,
     });
     setOpen(true);
   };
@@ -339,6 +356,31 @@ export default function GestionarCompras() {
       setErrors((prev) => ({
         ...prev,
         [field]: '',
+      }));
+    }
+
+    if (serverError) {
+      setServerError('');
+    }
+
+    if (successMessage) {
+      setSuccessMessage('');
+    }
+  };
+
+  const handleIgvChange = (event) => {
+    const { checked } = event.target;
+
+    setForm((prev) => ({
+      ...prev,
+      aplicaIgv: checked,
+      porcentajeIgv: prev.porcentajeIgv === '' ? DEFAULT_IGV_PERCENTAGE : prev.porcentajeIgv,
+    }));
+
+    if (errors.porcentajeIgv) {
+      setErrors((prev) => ({
+        ...prev,
+        porcentajeIgv: '',
       }));
     }
 
@@ -435,6 +477,8 @@ export default function GestionarCompras() {
     const subtotal = Number(subtotalPreview);
 
     const total = form.impuestos.reduce((acc, impuestoForm) => {
+      if (!impuestoForm.idImpuesto) return acc;
+
       const impuesto = impuestos.find(
         (item) => item.idImpuesto === Number(impuestoForm.idImpuesto)
       );
@@ -447,9 +491,20 @@ export default function GestionarCompras() {
     return total.toFixed(2);
   }, [form.impuestos, impuestos, subtotalPreview]);
 
+  const igvPreview = React.useMemo(() => {
+    if (!form.aplicaIgv) return '0.00';
+
+    const subtotal = Number(subtotalPreview);
+    const porcentajeIgv = Number(form.porcentajeIgv || DEFAULT_IGV_PERCENTAGE);
+
+    if (Number.isNaN(porcentajeIgv)) return '0.00';
+
+    return ((subtotal * porcentajeIgv) / 100).toFixed(2);
+  }, [form.aplicaIgv, form.porcentajeIgv, subtotalPreview]);
+
   const totalGeneralPreview = React.useMemo(() => {
-    return (Number(subtotalPreview) + Number(totalImpuestosPreview)).toFixed(2);
-  }, [subtotalPreview, totalImpuestosPreview]);
+    return (Number(subtotalPreview) + Number(totalImpuestosPreview) + Number(igvPreview)).toFixed(2);
+  }, [igvPreview, subtotalPreview, totalImpuestosPreview]);
 
   const validate = () => {
     const newErrors = {};
@@ -492,15 +547,18 @@ export default function GestionarCompras() {
       }
     });
 
-    if (!form.impuestos.length) {
-      newErrors.impuestos = 'Debe agregar al menos un impuesto';
-    }
-
     form.impuestos.forEach((impuesto, index) => {
-      if (!impuesto.idImpuesto) {
+      if (impuesto.idImpuesto && !impuestos.some((item) => item.idImpuesto === Number(impuesto.idImpuesto))) {
         newErrors[`impuesto_${index}_idImpuesto`] = 'Seleccione un impuesto';
       }
     });
+
+    if (
+      form.aplicaIgv &&
+      (form.porcentajeIgv === '' || Number(form.porcentajeIgv) < 0 || Number.isNaN(Number(form.porcentajeIgv)))
+    ) {
+      newErrors.porcentajeIgv = 'El porcentaje de IGV debe ser 0 o mayor';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -517,9 +575,13 @@ export default function GestionarCompras() {
       peso: Number(detalle.peso),
       costoKilo: Number(detalle.costoKilo),
     })),
-    impuestos: form.impuestos.map((impuesto) => ({
-      idImpuesto: Number(impuesto.idImpuesto),
-    })),
+    impuestos: form.impuestos
+      .filter((impuesto) => impuesto.idImpuesto)
+      .map((impuesto) => ({
+        idImpuesto: Number(impuesto.idImpuesto),
+      })),
+    aplicaIgv: Boolean(form.aplicaIgv),
+    porcentajeIgv: Number(form.porcentajeIgv || DEFAULT_IGV_PERCENTAGE),
   });
 
   const handleSubmit = async () => {
@@ -566,6 +628,16 @@ export default function GestionarCompras() {
   const handleCloseDeleteDialog = () => {
     setSelectedDelete(null);
     setDeleteDialogOpen(false);
+  };
+
+  const handleOpenDetailDialog = (compra) => {
+    setSelectedDetail(compra);
+    setDetailDialogOpen(true);
+  };
+
+  const handleCloseDetailDialog = () => {
+    setDetailDialogOpen(false);
+    setSelectedDetail(null);
   };
 
   const handleConfirmDelete = async () => {
@@ -716,6 +788,11 @@ export default function GestionarCompras() {
                         />
                       </TableCell>
                       <TableCell align="center">
+                        <Tooltip title="Ver detalle">
+                          <IconButton onClick={() => handleOpenDetailDialog(compra)}>
+                            <Icon name="visibility" size={20} color="#0f766e" />
+                          </IconButton>
+                        </Tooltip>
                         <IconButton onClick={() => handleOpenEdit(compra)}>
                           <Icon name="edit" size={20} color="#1976d2" />
                         </IconButton>
@@ -762,6 +839,7 @@ export default function GestionarCompras() {
         setForm={setForm}
         setErrors={setErrors}
         handleChange={handleChange}
+        handleIgvChange={handleIgvChange}
         handleSubmit={handleSubmit}
         handleDetalleChange={handleDetalleChange}
         handleAddDetalle={handleAddDetalle}
@@ -771,7 +849,14 @@ export default function GestionarCompras() {
         handleRemoveImpuesto={handleRemoveImpuesto}
         subtotalPreview={subtotalPreview}
         totalImpuestosPreview={totalImpuestosPreview}
+        igvPreview={igvPreview}
         totalGeneralPreview={totalGeneralPreview}
+      />
+
+      <ModalDetalleCompra
+        open={detailDialogOpen}
+        onClose={handleCloseDetailDialog}
+        compra={selectedDetail}
       />
 
       <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
