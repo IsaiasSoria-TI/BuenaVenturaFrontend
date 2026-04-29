@@ -379,6 +379,77 @@ export default function ModalGestionarCompras({
                         <Divider />
 
                         <Box>
+                            <Stack spacing={0.5} sx={{ mb: 1.5 }}>
+                                <Typography sx={{ fontWeight: 700, color: '#0f172a' }}>
+                                    IGV
+                                </Typography>
+                                <Typography sx={{ fontSize: '0.85rem', color: '#64748b' }}>
+                                    Define si la compra aplica IGV y revisa el importe calculado.
+                                </Typography>
+                            </Stack>
+
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    p: 1.5,
+                                    border: '1px solid #e2e8f0',
+                                    borderRadius: 2,
+                                }}
+                            >
+                                <Box
+                                    sx={{
+                                        display: 'grid',
+                                        gridTemplateColumns: {
+                                            xs: '1fr',
+                                            md: form.aplicaIgv ? '1.2fr 1fr 1fr' : '1.2fr 1fr',
+                                        },
+                                        gap: 1.5,
+                                        alignItems: 'center',
+                                    }}
+                                >
+                                    <FormControlLabel
+                                        control={
+                                            <Checkbox
+                                                checked={Boolean(form.aplicaIgv)}
+                                                onChange={handleIgvChange}
+                                            />
+                                        }
+                                        label="Aplicar IGV"
+                                        sx={{ m: 0 }}
+                                    />
+
+                                    <TextField
+                                        fullWidth
+                                        type="number"
+                                        label="Porcentaje IGV"
+                                        value={form.porcentajeIgv}
+                                        onChange={handleChange('porcentajeIgv')}
+                                        error={!!errors.porcentajeIgv}
+                                        helperText={errors.porcentajeIgv}
+                                        slotProps={{
+                                            input: {
+                                                inputProps: { min: 0, step: '0.01' },
+                                            },
+                                        }}
+                                    />
+
+                                    {form.aplicaIgv ? (
+                                        <TextField
+                                            fullWidth
+                                            label="Importe IGV"
+                                            value={igvPreview}
+                                            slotProps={{
+                                                input: { readOnly: true },
+                                            }}
+                                        />
+                                    ) : null}
+                                </Box>
+                            </Paper>
+                        </Box>
+
+                        <Divider />
+
+                        <Box>
                             <Stack
                                 direction={{ xs: 'column', md: 'row' }}
                                 justifyContent="space-between"
@@ -388,10 +459,10 @@ export default function ModalGestionarCompras({
                             >
                                 <Box>
                                     <Typography sx={{ fontWeight: 700, color: '#0f172a' }}>
-                                        Impuestos
+                                        Retencion / detraccion
                                     </Typography>
                                     <Typography sx={{ fontSize: '0.85rem', color: '#64748b' }}>
-                                        Agrega retenciones, detracciones u otros impuestos aplicables.
+                                        Agrega retenciones o detracciones aplicables.
                                     </Typography>
                                 </Box>
 
@@ -399,20 +470,21 @@ export default function ModalGestionarCompras({
                                     variant="outlined"
                                     onClick={handleAddImpuesto}
                                     startIcon={<Icon name="add" size={18} />}
-                                    sx={{ textTransform: 'none', fontWeight: 700 }}
+                                    sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2 }}
                                 >
-                                    Agregar impuesto
+                                    Agregar ret./det.
                                 </Button>
                             </Stack>
 
-                            <Stack spacing={1.5}>
+                            <Stack spacing={1.25}>
                                 {form.impuestos.map((impuestoItem, index) => {
                                     const impuestoSeleccionado = impuestosDisponibles.find(
                                         (item) => item.idImpuesto === Number(impuestoItem.idImpuesto)
                                     );
 
+                                    const baseImpuestos = Number(subtotalPreview) + Number(igvPreview);
                                     const importe = impuestoSeleccionado
-                                        ? (Number(subtotalPreview) * Number(impuestoSeleccionado.valor || 0)) / 100
+                                        ? (baseImpuestos * Number(impuestoSeleccionado.valor || 0)) / 100
                                         : 0;
 
                                     return (
@@ -420,7 +492,7 @@ export default function ModalGestionarCompras({
                                             key={impuestoItem.tempId}
                                             elevation={0}
                                             sx={{
-                                                p: 2,
+                                                p: 1.5,
                                                 border: '1px solid #e2e8f0',
                                                 borderRadius: 2,
                                             }}
@@ -432,14 +504,14 @@ export default function ModalGestionarCompras({
                                                         xs: '1fr',
                                                         md: '1.5fr 1fr 1fr auto',
                                                     },
-                                                    gap: 2,
+                                                    gap: 1.5,
                                                     alignItems: 'center',
                                                 }}
                                             >
                                                 <TextField
                                                     select
                                                     fullWidth
-                                                    label="Impuesto"
+                                                    label="Retencion / detraccion"
                                                     value={impuestoItem.idImpuesto}
                                                     onChange={(event) =>
                                                         handleImpuestoChange(index, 'idImpuesto', event.target.value)
@@ -497,72 +569,6 @@ export default function ModalGestionarCompras({
 
                         <Divider />
 
-                        <Box>
-                            <Typography sx={{ fontWeight: 700, color: '#0f172a', mb: 1.5 }}>
-                                IGV
-                            </Typography>
-
-                            <Paper
-                                elevation={0}
-                                sx={{
-                                    p: 2,
-                                    border: '1px solid #e2e8f0',
-                                    borderRadius: 2,
-                                }}
-                            >
-                                <Box
-                                    sx={{
-                                        display: 'grid',
-                                        gridTemplateColumns: {
-                                            xs: '1fr',
-                                            md: form.aplicaIgv ? '1.2fr 1fr 1fr' : '1.2fr 1fr',
-                                        },
-                                        gap: 2,
-                                        alignItems: 'center',
-                                    }}
-                                >
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox
-                                                checked={Boolean(form.aplicaIgv)}
-                                                onChange={handleIgvChange}
-                                            />
-                                        }
-                                        label="Aplicar IGV"
-                                        sx={{ m: 0 }}
-                                    />
-
-                                    <TextField
-                                        fullWidth
-                                        type="number"
-                                        label="Porcentaje IGV"
-                                        value={form.porcentajeIgv}
-                                        onChange={handleChange('porcentajeIgv')}
-                                        error={!!errors.porcentajeIgv}
-                                        helperText={errors.porcentajeIgv}
-                                        slotProps={{
-                                            input: {
-                                                inputProps: { min: 0, step: '0.01' },
-                                            },
-                                        }}
-                                    />
-
-                                    {form.aplicaIgv ? (
-                                        <TextField
-                                            fullWidth
-                                            label="Importe IGV"
-                                            value={igvPreview}
-                                            slotProps={{
-                                                input: { readOnly: true },
-                                            }}
-                                        />
-                                    ) : null}
-                                </Box>
-                            </Paper>
-                        </Box>
-
-                        <Divider />
-
                         <Box
                             sx={{
                                 display: 'grid',
@@ -581,15 +587,6 @@ export default function ModalGestionarCompras({
 
                             <TextField
                                 fullWidth
-                                label="Total impuestos"
-                                value={totalImpuestosPreview}
-                                slotProps={{
-                                    input: { readOnly: true },
-                                }}
-                            />
-
-                            <TextField
-                                fullWidth
                                 label="IGV"
                                 value={form.aplicaIgv ? igvPreview : '0.00'}
                                 slotProps={{
@@ -599,7 +596,16 @@ export default function ModalGestionarCompras({
 
                             <TextField
                                 fullWidth
-                                label="Total general"
+                                label="Retencion / detraccion"
+                                value={totalImpuestosPreview}
+                                slotProps={{
+                                    input: { readOnly: true },
+                                }}
+                            />
+
+                            <TextField
+                                fullWidth
+                                label="Total final"
                                 value={totalGeneralPreview}
                                 slotProps={{
                                     input: { readOnly: true },

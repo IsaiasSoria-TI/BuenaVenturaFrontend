@@ -78,6 +78,11 @@ function formatNumber(value) {
     return number.toFixed(2);
 }
 
+function formatCodigo(prefix, id) {
+    if (id === null || id === undefined || id === '') return '-';
+    return `${prefix}-${String(id).padStart(4, '0')}`;
+}
+
 function getEstadoChipStyles(estado) {
     if (estado === 'Completo') {
         return {
@@ -472,7 +477,7 @@ export default function Recepciones() {
                                 {showRows
                                     ? recepcionesPaginadas.map((recepcion) => (
                                         <TableRow key={recepcion.idRecepciones} hover>
-                                            <TableCell>{recepcion.idRecepciones}</TableCell>
+                                            <TableCell>{formatCodigo('REC', recepcion.idRecepciones)}</TableCell>
                                             <TableCell>{formatDateTimeForTable(recepcion.fechaRecepcion)}</TableCell>
                                             <TableCell>{recepcion.idCompras}</TableCell>
                                             <TableCell>{recepcion.ruc}</TableCell>

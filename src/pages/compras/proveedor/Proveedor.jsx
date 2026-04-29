@@ -27,6 +27,7 @@ import {
 } from '@mui/material';
 
 import { proveedorService } from '../../../services/proveedorService';
+import { tipoProveedorService } from '../../../services/tipoProveedorService';
 import ModalProveedor from './ModalProveedor';
 
 function Icon({ name, size = 20, color = 'inherit' }) {
@@ -60,10 +61,13 @@ const initialForm = {
   idProveedor: null,
   ruc: '',
   razonSocial: '',
+  idTipoProveedor: '',
   telefono: '',
   correo: '',
   direccion: '',
   representante: '',
+  departamento: '',
+  provincia: '',
   idBanco: '',
   cuentaBancaria: '',
   cuentaInterbancaria: '',
@@ -83,8 +87,14 @@ function getEstadoChipStyles(flgActivo) {
   };
 }
 
+function formatCodigo(prefix, id) {
+  if (id === null || id === undefined || id === '') return '-';
+  return `${prefix}-${String(id).padStart(4, '0')}`;
+}
+
 export default function Proveedor() {
   const [proveedores, setProveedores] = React.useState([]);
+  const [tiposProveedor, setTiposProveedor] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
 
@@ -131,9 +141,32 @@ export default function Proveedor() {
     }
   }, []);
 
+  const cargarTiposProveedor = React.useCallback(async () => {
+    try {
+      const data = await tipoProveedorService.listar();
+      setTiposProveedor(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error al listar tipos de proveedor:', error);
+      console.error('status:', error?.response?.status);
+      console.error('data:', error?.response?.data);
+
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        'No se pudo listar los tipos de proveedor.';
+
+      setServerError(
+        typeof message === 'string'
+          ? message
+          : 'No se pudo listar los tipos de proveedor.'
+      );
+    }
+  }, []);
+
   React.useEffect(() => {
     cargarProveedores();
-  }, [cargarProveedores]);
+    cargarTiposProveedor();
+  }, [cargarProveedores, cargarTiposProveedor]);
 
   const handleOpenCreate = () => {
     setEditing(false);
@@ -153,10 +186,13 @@ export default function Proveedor() {
       idProveedor: proveedor.idProveedor,
       ruc: proveedor.ruc || '',
       razonSocial: proveedor.razonSocial || '',
+      idTipoProveedor: proveedor.idTipoProveedor ?? '',
       telefono: proveedor.telefono || '',
       correo: proveedor.correo || '',
       direccion: proveedor.direccion || '',
       representante: proveedor.representante || '',
+      departamento: proveedor.departamento || '',
+      provincia: proveedor.provincia || '',
       idBanco: proveedor.idBanco ?? '',
       cuentaBancaria: proveedor.cuentaBancaria || '',
       cuentaInterbancaria: proveedor.cuentaInterbancaria || '',
@@ -244,10 +280,13 @@ export default function Proveedor() {
     idProveedor: form.idProveedor,
     ruc: form.ruc.trim(),
     razonSocial: form.razonSocial.trim(),
+    idTipoProveedor: form.idTipoProveedor === '' ? null : Number(form.idTipoProveedor),
     telefono: form.telefono.trim(),
     correo: form.correo.trim() || null,
     direccion: form.direccion.trim(),
     representante: form.representante.trim(),
+    departamento: form.departamento.trim() || null,
+    provincia: form.provincia.trim() || null,
     idBanco: form.idBanco === '' ? null : Number(form.idBanco),
     cuentaBancaria: form.cuentaBancaria.trim() || null,
     cuentaInterbancaria: form.cuentaInterbancaria.trim() || null,
@@ -418,8 +457,11 @@ export default function Proveedor() {
                 <TableRow sx={{ backgroundColor: '#f8fafc' }}>
                   <TableCell sx={{ fontWeight: 700 }}>CÓDIGO</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>RUC</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>TIPO PROVEEDOR</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>RAZÓN SOCIAL</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>DIRECCIÓN</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>DEPARTAMENTO</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>PROVINCIA</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>TELÉFONO</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>CONTACTO</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>BANCO</TableCell>
@@ -433,23 +475,26 @@ export default function Proveedor() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
+                    <TableCell colSpan={14} align="center" sx={{ py: 4 }}>
                       <CircularProgress size={28} />
                     </TableCell>
                   </TableRow>
                 ) : proveedores.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} align="center" sx={{ py: 4, color: '#64748b' }}>
+                    <TableCell colSpan={14} align="center" sx={{ py: 4, color: '#64748b' }}>
                       No hay proveedores registrados.
                     </TableCell>
                   </TableRow>
                 ) : (
                   proveedoresPaginados.map((proveedor) => (
                     <TableRow key={proveedor.idProveedor} hover>
-                      <TableCell>{proveedor.idProveedor}</TableCell>
+                      <TableCell>{formatCodigo('PROV', proveedor.idProveedor)}</TableCell>
                       <TableCell>{proveedor.ruc}</TableCell>
+                      <TableCell>{proveedor.nombreTipoProveedor || '-'}</TableCell>
                       <TableCell>{proveedor.razonSocial}</TableCell>
                       <TableCell>{proveedor.direccion}</TableCell>
+                      <TableCell>{proveedor.departamento || '-'}</TableCell>
+                      <TableCell>{proveedor.provincia || '-'}</TableCell>
                       <TableCell>{proveedor.telefono}</TableCell>
                       <TableCell>{proveedor.representante}</TableCell>
                       <TableCell>{proveedor.nombreBanco || '-'}</TableCell>
@@ -505,6 +550,7 @@ export default function Proveedor() {
         saving={saving}
         serverError={serverError}
         serverSuccess={serverSuccess}
+        tiposProveedor={tiposProveedor}
         onChange={handleChange}
         onSubmit={handleSubmit}
       />

@@ -14,6 +14,7 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  InputAdornment,
   Paper,
   Stack,
   Table,
@@ -23,6 +24,7 @@ import {
   TableHead,
   TablePagination,
   TableRow,
+  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -124,6 +126,18 @@ function formatNumber(value) {
   return number.toFixed(2);
 }
 
+function formatCodigo(prefix, id) {
+  if (id === null || id === undefined || id === '') return '-';
+  return `${prefix}-${String(id).padStart(4, '0')}`;
+}
+
+function toNumber(value) {
+  if (value === null || value === undefined || value === '') return 0;
+
+  const number = Number(value);
+  return Number.isNaN(number) ? 0 : number;
+}
+
 function isIgvImpuesto(impuesto) {
   const tipo = String(impuesto?.tipoImpuesto || '').replace(/[.\s]/g, '').toUpperCase();
   return tipo === 'IGV';
@@ -157,27 +171,68 @@ function getEstadoChipStyles(estado) {
   };
 }
 
-function getResumenArticulos(compra) {
+function getCompraSubtotal(compra) {
   if (Array.isArray(compra.detalles) && compra.detalles.length > 0) {
-    return compra.detalles
-      .map((detalle) => detalle.descripcionArticulo)
-      .filter(Boolean)
-      .join(', ');
+    return compra.detalles.reduce((total, detalle) => {
+      if (detalle.costoTotal !== null && detalle.costoTotal !== undefined) {
+        return total + toNumber(detalle.costoTotal);
+      }
+
+      return total + toNumber(detalle.peso) * toNumber(detalle.costoKilo);
+    }, 0);
   }
 
-  return compra.descripcionArticulo || '-';
+  if (compra.subtotal !== null && compra.subtotal !== undefined) {
+    return toNumber(compra.subtotal);
+  }
+
+  return toNumber(compra.totalGeneral ?? compra.costoTotal)
+    + toNumber(compra.importeImpuesto)
+    - toNumber(compra.importeIgv);
 }
 
-function getResumenImpuestos(compra) {
-  if (Array.isArray(compra.impuestos) && compra.impuestos.length > 0) {
-    return compra.impuestos
-      .filter((impuesto) => !isIgvImpuesto(impuesto))
-      .map((impuesto) => impuesto.tipoImpuesto)
-      .filter(Boolean)
-      .join(', ') || '-';
+function getCompraIgv(compra) {
+  if (compra.importeIgv !== null && compra.importeIgv !== undefined) {
+    return toNumber(compra.importeIgv);
   }
 
-  return isIgvImpuesto({ tipoImpuesto: compra.tipoImpuesto }) ? '-' : compra.tipoImpuesto || '-';
+  if (!compra.aplicaIgv) return 0;
+
+  return (getCompraSubtotal(compra) * toNumber(compra.porcentajeIgv ?? DEFAULT_IGV_PERCENTAGE)) / 100;
+}
+
+function getCompraImporteImpuestos(compra) {
+  if (compra.importeImpuesto !== null && compra.importeImpuesto !== undefined) {
+    return toNumber(compra.importeImpuesto);
+  }
+
+  if (Array.isArray(compra.impuestos) && compra.impuestos.length > 0) {
+    const baseImpuestos = getCompraSubtotal(compra) + getCompraIgv(compra);
+
+    return compra.impuestos.reduce((total, impuesto) => {
+      if (isIgvImpuesto(impuesto)) return total;
+
+      if (impuesto.importe !== null && impuesto.importe !== undefined) {
+        return total + toNumber(impuesto.importe);
+      }
+
+      return total + (baseImpuestos * toNumber(impuesto.porcentaje)) / 100;
+    }, 0);
+  }
+
+  return 0;
+}
+
+function getCompraTotalFinal(compra) {
+  if (compra.totalGeneral !== null && compra.totalGeneral !== undefined) {
+    return toNumber(compra.totalGeneral);
+  }
+
+  if (compra.costoTotal !== null && compra.costoTotal !== undefined) {
+    return toNumber(compra.costoTotal);
+  }
+
+  return getCompraSubtotal(compra) + getCompraIgv(compra) - getCompraImporteImpuestos(compra);
 }
 
 export default function GestionarCompras() {
@@ -208,6 +263,7 @@ export default function GestionarCompras() {
 
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  const [searchTerm, setSearchTerm] = React.useState('');
 
   const cargarCompras = React.useCallback(async () => {
     try {
@@ -473,24 +529,6 @@ export default function GestionarCompras() {
     return total.toFixed(2);
   }, [form.detalles]);
 
-  const totalImpuestosPreview = React.useMemo(() => {
-    const subtotal = Number(subtotalPreview);
-
-    const total = form.impuestos.reduce((acc, impuestoForm) => {
-      if (!impuestoForm.idImpuesto) return acc;
-
-      const impuesto = impuestos.find(
-        (item) => item.idImpuesto === Number(impuestoForm.idImpuesto)
-      );
-
-      if (!impuesto) return acc;
-
-      return acc + (subtotal * Number(impuesto.valor || 0)) / 100;
-    }, 0);
-
-    return total.toFixed(2);
-  }, [form.impuestos, impuestos, subtotalPreview]);
-
   const igvPreview = React.useMemo(() => {
     if (!form.aplicaIgv) return '0.00';
 
@@ -502,8 +540,26 @@ export default function GestionarCompras() {
     return ((subtotal * porcentajeIgv) / 100).toFixed(2);
   }, [form.aplicaIgv, form.porcentajeIgv, subtotalPreview]);
 
+  const totalImpuestosPreview = React.useMemo(() => {
+    const baseImpuestos = Number(subtotalPreview) + Number(igvPreview);
+
+    const total = form.impuestos.reduce((acc, impuestoForm) => {
+      if (!impuestoForm.idImpuesto) return acc;
+
+      const impuesto = impuestos.find(
+        (item) => item.idImpuesto === Number(impuestoForm.idImpuesto)
+      );
+
+      if (!impuesto) return acc;
+
+      return acc + (baseImpuestos * Number(impuesto.valor || 0)) / 100;
+    }, 0);
+
+    return total.toFixed(2);
+  }, [form.impuestos, igvPreview, impuestos, subtotalPreview]);
+
   const totalGeneralPreview = React.useMemo(() => {
-    return (Number(subtotalPreview) + Number(totalImpuestosPreview) + Number(igvPreview)).toFixed(2);
+    return (Number(subtotalPreview) + Number(igvPreview) - Number(totalImpuestosPreview)).toFixed(2);
   }, [igvPreview, subtotalPreview, totalImpuestosPreview]);
 
   const validate = () => {
@@ -674,11 +730,38 @@ export default function GestionarCompras() {
     setPage(0);
   };
 
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
+    setPage(0);
+  };
+
+  const comprasFiltradas = React.useMemo(() => {
+    const criterio = searchTerm.trim().toLowerCase();
+
+    if (!criterio) return compras;
+
+    return compras.filter((compra) => {
+      const valoresBusqueda = [
+        formatCodigo('COMP', compra.idCompras),
+        compra.idCompras,
+        formatDateTimeForTable(compra.fechaCompras),
+        compra.fechaCompras,
+        compra.ruc,
+        compra.razonSocial,
+        compra.estado,
+      ];
+
+      return valoresBusqueda.some((value) =>
+        String(value || '').toLowerCase().includes(criterio)
+      );
+    });
+  }, [compras, searchTerm]);
+
   const comprasPaginadas = React.useMemo(() => {
     const inicio = page * rowsPerPage;
     const fin = inicio + rowsPerPage;
-    return compras.slice(inicio, fin);
-  }, [compras, page, rowsPerPage]);
+    return comprasFiltradas.slice(inicio, fin);
+  }, [comprasFiltradas, page, rowsPerPage]);
 
   return (
     <Box>
@@ -700,20 +783,43 @@ export default function GestionarCompras() {
               </Typography>
             </Box>
 
-            <Button
-              variant="contained"
-              onClick={handleOpenCreate}
-              startIcon={<Icon name="add" size={18} color="#fff" />}
-              sx={{
-                alignSelf: { xs: 'flex-start', md: 'auto' },
-                textTransform: 'none',
-                fontWeight: 700,
-                borderRadius: 2,
-                boxShadow: 'none',
-              }}
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={1.5}
+              alignItems={{ xs: 'stretch', sm: 'center' }}
             >
-              Nueva compra
-            </Button>
+              <TextField
+                size="small"
+                placeholder="Buscar compra"
+                value={searchTerm}
+                onChange={handleSearchChange}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Icon name="search" size={18} color="#64748b" />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+                sx={{ minWidth: { xs: '100%', sm: 260 } }}
+              />
+
+              <Button
+                variant="contained"
+                onClick={handleOpenCreate}
+                startIcon={<Icon name="add" size={18} color="#fff" />}
+                sx={{
+                  alignSelf: { xs: 'flex-start', sm: 'auto' },
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  borderRadius: 2,
+                  boxShadow: 'none',
+                }}
+              >
+                Nueva compra
+              </Button>
+            </Stack>
           </Stack>
 
           {successMessage ? (
@@ -737,17 +843,18 @@ export default function GestionarCompras() {
               overflowX: 'auto',
             }}
           >
-            <Table>
+            <Table sx={{ minWidth: 1180 }}>
               <TableHead>
                 <TableRow sx={{ backgroundColor: '#f8fafc' }}>
                   <TableCell sx={{ fontWeight: 700 }}>CÓDIGO</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>FECHA</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>RUC</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>PROVEEDOR</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>ARTÍCULOS</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>IMPUESTOS</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>PESO TOTAL</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>TOTAL</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }} align="right">SUBTOTAL</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }} align="right">IGV</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }} align="right">RET./DET.</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }} align="right">PESO TOTAL</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }} align="right">TOTAL FINAL</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>ESTADO</TableCell>
                   <TableCell sx={{ fontWeight: 700, textAlign: 'center' }}>ACCIONES</TableCell>
                 </TableRow>
@@ -756,27 +863,34 @@ export default function GestionarCompras() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
+                    <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
                       <CircularProgress size={28} />
                     </TableCell>
                   </TableRow>
                 ) : compras.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} align="center" sx={{ py: 4, color: '#64748b' }}>
+                    <TableCell colSpan={11} align="center" sx={{ py: 4, color: '#64748b' }}>
                       No hay compras registradas.
+                    </TableCell>
+                  </TableRow>
+                ) : comprasFiltradas.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={11} align="center" sx={{ py: 4, color: '#64748b' }}>
+                      No se encontraron compras con ese criterio.
                     </TableCell>
                   </TableRow>
                 ) : (
                   comprasPaginadas.map((compra) => (
                     <TableRow key={compra.idCompras} hover>
-                      <TableCell>{compra.idCompras}</TableCell>
+                      <TableCell>{formatCodigo('COMP', compra.idCompras)}</TableCell>
                       <TableCell>{formatDateTimeForTable(compra.fechaCompras)}</TableCell>
                       <TableCell>{compra.ruc}</TableCell>
                       <TableCell>{compra.razonSocial}</TableCell>
-                      <TableCell>{getResumenArticulos(compra)}</TableCell>
-                      <TableCell>{getResumenImpuestos(compra)}</TableCell>
-                      <TableCell>{formatNumber(compra.peso)}</TableCell>
-                      <TableCell>{formatNumber(compra.totalGeneral || compra.costoTotal)}</TableCell>
+                      <TableCell align="right">{formatNumber(getCompraSubtotal(compra))}</TableCell>
+                      <TableCell align="right">{formatNumber(getCompraIgv(compra))}</TableCell>
+                      <TableCell align="right">{formatNumber(getCompraImporteImpuestos(compra))}</TableCell>
+                      <TableCell align="right">{formatNumber(compra.peso)}</TableCell>
+                      <TableCell align="right">{formatNumber(getCompraTotalFinal(compra))}</TableCell>
                       <TableCell>
                         <Chip
                           label={compra.estado || '-'}
@@ -806,10 +920,10 @@ export default function GestionarCompras() {
               </TableBody>
             </Table>
 
-            {!loading && compras.length > 0 ? (
+            {!loading && comprasFiltradas.length > 0 ? (
               <TablePagination
                 component="div"
-                count={compras.length}
+                count={comprasFiltradas.length}
                 page={page}
                 onPageChange={handleChangePage}
                 rowsPerPage={rowsPerPage}

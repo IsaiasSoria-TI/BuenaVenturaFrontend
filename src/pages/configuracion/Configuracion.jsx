@@ -6,6 +6,7 @@ import ConfiguracionMenu from './components/ConfiguracionMenu';
 import PerfilSection from './sections/perfil/PerfilSection';
 import SeguridadSection from './sections/seguridad/SeguridadSection';
 import CuentasContablesSection from './sections/cuentascontables/CuentasContablesSection';
+import TiposProveedorSection from './sections/tiposproveedor/TiposProveedorSection';
 import CategoriasSection from './sections/categorias/CategoriasSection';
 import BancosSection from './sections/bancos/BancosSection';
 
@@ -22,6 +23,9 @@ export default function Configuracion() {
 
             case 'cuentas-contables':
                 return <CuentasContablesSection />;
+
+            case 'tipos-proveedor':
+                return <TiposProveedorSection />;
 
             case 'categorias':
                 return <CategoriasSection />;

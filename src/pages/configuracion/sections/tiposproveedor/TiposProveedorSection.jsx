@@ -26,10 +26,9 @@ import {
     Typography,
 } from '@mui/material';
 
-import { cuentaContableService } from '../../../../services/cuentaContableService';
-import ModalCuentaContable from './ModalCuentaContable';
+import { tipoProveedorService } from '../../../../services/tipoProveedorService';
+import ModalTipoProveedor from './ModalTipoProveedor';
 
-/* ICON COMPONENT */
 function Icon({ name, size = 20, color = 'inherit' }) {
     return (
         <Box
@@ -57,27 +56,27 @@ Icon.propTypes = {
 };
 
 const initialForm = {
-    idCuentaContable: null,
-    codigo: '',
-    descripcion: '',
-    estado: 'Activo',
+    idTipoProveedor: null,
+    nombre: '',
+    flgActivo: 'true',
 };
 
-function getEstadoChipStyles(estado) {
-    if (estado === 'Activo') {
+function getEstadoChipStyles(flgActivo) {
+    if (flgActivo) {
         return {
             backgroundColor: '#dcfce7',
             color: '#16a34a',
         };
     }
+
     return {
         backgroundColor: '#fee2e2',
         color: '#dc2626',
     };
 }
 
-export default function CuentasContablesSection() {
-    const [cuentas, setCuentas] = React.useState([]);
+export default function TiposProveedorSection() {
+    const [tiposProveedor, setTiposProveedor] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
     const [saving, setSaving] = React.useState(false);
 
@@ -96,24 +95,24 @@ export default function CuentasContablesSection() {
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
 
-    const cargarCuentas = React.useCallback(async () => {
+    const cargarTiposProveedor = React.useCallback(async () => {
         try {
             setLoading(true);
             setServerError('');
-            const data = await cuentaContableService.listar();
-            setCuentas(Array.isArray(data) ? data : []);
+            const data = await tipoProveedorService.listarTodos();
+            setTiposProveedor(Array.isArray(data) ? data : []);
             setPage(0);
         } catch (error) {
             console.error(error);
-            setServerError('No se pudo listar las cuentas contables.');
+            setServerError('No se pudo listar los tipos de proveedor.');
         } finally {
             setLoading(false);
         }
     }, []);
 
     React.useEffect(() => {
-        cargarCuentas();
-    }, [cargarCuentas]);
+        cargarTiposProveedor();
+    }, [cargarTiposProveedor]);
 
     const handleOpenCreate = () => {
         setEditing(false);
@@ -122,13 +121,12 @@ export default function CuentasContablesSection() {
         setOpen(true);
     };
 
-    const handleOpenEdit = (cuenta) => {
+    const handleOpenEdit = (tipoProveedor) => {
         setEditing(true);
         setForm({
-            idCuentaContable: cuenta.idCuentaContable,
-            codigo: cuenta.codigo || '',
-            descripcion: cuenta.descripcion || '',
-            estado: cuenta.estado || 'Activo',
+            idTipoProveedor: tipoProveedor.idTipoProveedor,
+            nombre: tipoProveedor.nombre || '',
+            flgActivo: String(Boolean(tipoProveedor.flgActivo)),
         });
         setErrors({});
         setOpen(true);
@@ -151,12 +149,8 @@ export default function CuentasContablesSection() {
     const validate = () => {
         const newErrors = {};
 
-        if (!form.codigo.trim()) {
-            newErrors.codigo = 'Código requerido';
-        }
-
-        if (!form.descripcion.trim()) {
-            newErrors.descripcion = 'Descripción requerida';
+        if (!form.nombre.trim()) {
+            newErrors.nombre = 'Nombre requerido';
         }
 
         setErrors(newErrors);
@@ -171,24 +165,20 @@ export default function CuentasContablesSection() {
             setServerError('');
 
             const payload = {
-                codigo: form.codigo.trim(),
-                descripcion: form.descripcion.trim(),
-                estado: form.estado,
+                nombre: form.nombre.trim(),
+                flgActivo: form.flgActivo === 'true',
             };
 
-            if (editing && form.idCuentaContable) {
-                await cuentaContableService.actualizar(
-                    form.idCuentaContable,
-                    payload
-                );
+            if (editing && form.idTipoProveedor) {
+                await tipoProveedorService.actualizar(form.idTipoProveedor, payload);
                 setSuccessMessage('Actualizado correctamente');
             } else {
-                await cuentaContableService.crear(payload);
+                await tipoProveedorService.crear(payload);
                 setSuccessMessage('Registrado correctamente');
             }
 
             handleClose();
-            await cargarCuentas();
+            await cargarTiposProveedor();
         } catch (error) {
             console.error(error);
             setServerError('Error al guardar');
@@ -197,8 +187,8 @@ export default function CuentasContablesSection() {
         }
     };
 
-    const handleOpenDeleteDialog = (cuenta) => {
-        setSelectedDelete(cuenta);
+    const handleOpenDeleteDialog = (tipoProveedor) => {
+        setSelectedDelete(tipoProveedor);
         setDeleteDialogOpen(true);
     };
 
@@ -206,22 +196,20 @@ export default function CuentasContablesSection() {
         if (!selectedDelete) return;
 
         try {
-            await cuentaContableService.eliminar(
-                selectedDelete.idCuentaContable
-            );
+            await tipoProveedorService.eliminar(selectedDelete.idTipoProveedor);
             setSuccessMessage('Inactivado correctamente');
             setDeleteDialogOpen(false);
-            await cargarCuentas();
+            await cargarTiposProveedor();
         } catch (error) {
             console.error(error);
             setServerError('Error al eliminar');
         }
     };
 
-    const cuentasPaginadas = React.useMemo(() => {
+    const tiposProveedorPaginados = React.useMemo(() => {
         const start = page * rowsPerPage;
-        return cuentas.slice(start, start + rowsPerPage);
-    }, [cuentas, page, rowsPerPage]);
+        return tiposProveedor.slice(start, start + rowsPerPage);
+    }, [tiposProveedor, page, rowsPerPage]);
 
     return (
         <Box>
@@ -235,7 +223,7 @@ export default function CuentasContablesSection() {
                         sx={{ mb: 2 }}
                     >
                         <Typography fontWeight={700}>
-                            Cuentas Contables
+                            Tipos de proveedor
                         </Typography>
 
                         <Button
@@ -250,7 +238,7 @@ export default function CuentasContablesSection() {
                                 boxShadow: 'none',
                             }}
                         >
-                            Nueva cuenta
+                            Nuevo tipo
                         </Button>
                     </Stack>
 
@@ -261,8 +249,7 @@ export default function CuentasContablesSection() {
                         <Table>
                             <TableHead>
                                 <TableRow>
-                                    <TableCell>Código</TableCell>
-                                    <TableCell>Descripción</TableCell>
+                                    <TableCell>Nombre</TableCell>
                                     <TableCell>Estado</TableCell>
                                     <TableCell align="center">Acciones</TableCell>
                                 </TableRow>
@@ -271,27 +258,26 @@ export default function CuentasContablesSection() {
                             <TableBody>
                                 {loading ? (
                                     <TableRow>
-                                        <TableCell colSpan={4} align="center">
+                                        <TableCell colSpan={3} align="center">
                                             <CircularProgress />
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    cuentasPaginadas.map((c) => (
-                                        <TableRow key={c.idCuentaContable}>
-                                            <TableCell>{c.codigo}</TableCell>
-                                            <TableCell>{c.descripcion}</TableCell>
+                                    tiposProveedorPaginados.map((tipoProveedor) => (
+                                        <TableRow key={tipoProveedor.idTipoProveedor}>
+                                            <TableCell>{tipoProveedor.nombre}</TableCell>
                                             <TableCell>
                                                 <Chip
-                                                    label={c.estado}
+                                                    label={tipoProveedor.flgActivo ? 'Activo' : 'Inactivo'}
                                                     size="small"
-                                                    sx={getEstadoChipStyles(c.estado)}
+                                                    sx={getEstadoChipStyles(tipoProveedor.flgActivo)}
                                                 />
                                             </TableCell>
                                             <TableCell align="center">
-                                                <IconButton onClick={() => handleOpenEdit(c)}>
+                                                <IconButton onClick={() => handleOpenEdit(tipoProveedor)}>
                                                     <Icon name="edit" size={20} color="#1976d2" />
                                                 </IconButton>
-                                                <IconButton onClick={() => handleOpenDeleteDialog(c)}>
+                                                <IconButton onClick={() => handleOpenDeleteDialog(tipoProveedor)}>
                                                     <Icon name="delete" size={20} color="#ef4444" />
                                                 </IconButton>
                                             </TableCell>
@@ -303,7 +289,7 @@ export default function CuentasContablesSection() {
 
                         <TablePagination
                             component="div"
-                            count={cuentas.length}
+                            count={tiposProveedor.length}
                             page={page}
                             onPageChange={(e, p) => setPage(p)}
                             rowsPerPage={rowsPerPage}
@@ -317,7 +303,7 @@ export default function CuentasContablesSection() {
                 </CardContent>
             </Card>
 
-            <ModalCuentaContable
+            <ModalTipoProveedor
                 open={open}
                 onClose={handleClose}
                 editing={editing}
@@ -331,7 +317,7 @@ export default function CuentasContablesSection() {
             <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
                 <DialogTitle>Confirmar</DialogTitle>
                 <DialogContent>
-                    ¿Deseas inactivar esta cuenta?
+                    Deseas inactivar este tipo de proveedor?
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setDeleteDialogOpen(false)}>Cancelar</Button>

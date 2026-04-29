@@ -19,6 +19,11 @@ const MENU_OPTIONS = [
         description: 'Códigos contables',
     },
     {
+        key: 'tipos-proveedor',
+        label: 'Tipos de proveedor',
+        description: 'Catalogo de proveedores',
+    },
+    {
         key: 'categorias',
         label: 'Categorías',
         description: 'Asignación a cuenta contable',

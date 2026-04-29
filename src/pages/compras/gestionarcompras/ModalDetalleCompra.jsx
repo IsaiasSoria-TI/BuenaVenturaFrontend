@@ -124,41 +124,53 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
             return detalles.reduce((total, detalle) => total + getDetalleSubtotal(detalle), 0);
         }
 
-        return toNumber(compra?.subtotal ?? compra?.costoTotal);
+        if (compra?.subtotal !== null && compra?.subtotal !== undefined) {
+            return toNumber(compra.subtotal);
+        }
+
+        return toNumber(compra?.totalGeneral ?? compra?.costoTotal)
+            + toNumber(compra?.importeImpuesto ?? compra?.totalImpuestos)
+            - toNumber(compra?.importeIgv);
     }, [compra, detalles]);
 
+    const aplicaIgv = Boolean(compra?.aplicaIgv);
+    const porcentajeIgv = compra?.porcentajeIgv ?? 18;
+    const importeIgv = React.useMemo(() => {
+        if (compra?.importeIgv !== null && compra?.importeIgv !== undefined) {
+            return toNumber(compra.importeIgv);
+        }
+
+        if (!aplicaIgv) return 0;
+
+        return (subtotalArticulos * toNumber(porcentajeIgv)) / 100;
+    }, [aplicaIgv, compra, porcentajeIgv, subtotalArticulos]);
+
     const totalImpuestos = React.useMemo(() => {
+        if (compra?.importeImpuesto !== null && compra?.importeImpuesto !== undefined) {
+            return toNumber(compra.importeImpuesto);
+        }
+
         if (impuestos.length > 0) {
+            const baseImpuestos = subtotalArticulos + importeIgv;
+
             return impuestos.reduce((total, impuesto) => {
                 if (impuesto.importe !== null && impuesto.importe !== undefined) {
                     return total + toNumber(impuesto.importe);
                 }
 
-                return total + (subtotalArticulos * toNumber(impuesto.porcentaje)) / 100;
+                return total + (baseImpuestos * toNumber(impuesto.porcentaje)) / 100;
             }, 0);
         }
 
         return toNumber(compra?.totalImpuestos);
-    }, [compra, impuestos, subtotalArticulos]);
-
-    const aplicaIgv = Boolean(compra?.aplicaIgv);
-    const porcentajeIgv = compra?.porcentajeIgv ?? 18;
-    const importeIgv = React.useMemo(() => {
-        if (!aplicaIgv) return 0;
-
-        if (compra?.importeIgv !== null && compra?.importeIgv !== undefined) {
-            return toNumber(compra.importeIgv);
-        }
-
-        return (subtotalArticulos * toNumber(porcentajeIgv)) / 100;
-    }, [aplicaIgv, compra, porcentajeIgv, subtotalArticulos]);
+    }, [compra, importeIgv, impuestos, subtotalArticulos]);
 
     const totalGeneral = React.useMemo(() => {
         if (compra?.totalGeneral !== null && compra?.totalGeneral !== undefined) {
             return toNumber(compra.totalGeneral);
         }
 
-        return subtotalArticulos + totalImpuestos + importeIgv;
+        return subtotalArticulos + importeIgv - totalImpuestos;
     }, [compra, importeIgv, subtotalArticulos, totalImpuestos]);
 
     const condicionPago = compra?.condicionPago || compra?.pago || '-';
@@ -274,7 +286,7 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
 
                     <Box>
                         <Typography sx={{ fontWeight: 700, color: '#0f172a', mb: 1 }}>
-                            Impuestos
+                            Retencion / detraccion
                         </Typography>
 
                         <TableContainer
@@ -289,7 +301,7 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                             <Table sx={{ minWidth: 620 }}>
                                 <TableHead>
                                     <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                                        <TableCell sx={{ fontWeight: 700 }}>IMPUESTO</TableCell>
+                                        <TableCell sx={{ fontWeight: 700 }}>RET./DET.</TableCell>
                                         <TableCell sx={{ fontWeight: 700 }} align="right">
                                             PORCENTAJE
                                         </TableCell>
@@ -303,7 +315,7 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                                     {impuestos.length === 0 ? (
                                         <TableRow>
                                             <TableCell colSpan={3} align="center" sx={{ py: 3, color: '#64748b' }}>
-                                                No hay impuestos registrados para esta compra.
+                                                No hay retenciones o detracciones registradas para esta compra.
                                             </TableCell>
                                         </TableRow>
                                     ) : (
@@ -311,7 +323,7 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                                             const importe =
                                                 impuesto.importe !== null && impuesto.importe !== undefined
                                                     ? toNumber(impuesto.importe)
-                                                    : (subtotalArticulos * toNumber(impuesto.porcentaje)) / 100;
+                                                    : ((subtotalArticulos + importeIgv) * toNumber(impuesto.porcentaje)) / 100;
 
                                             return (
                                                 <TableRow key={impuesto.idCompraImpuesto || `${impuesto.idImpuesto}-${index}`} hover>
@@ -353,10 +365,10 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                             sx={{ p: 2, border: '1px solid #e2e8f0', borderRadius: 2 }}
                         >
                             <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                Total impuestos
+                                IGV
                             </Typography>
                             <Typography sx={{ mt: 0.5, fontWeight: 700, color: '#0f172a' }}>
-                                {formatNumber(totalImpuestos)}
+                                {formatNumber(importeIgv)}
                             </Typography>
                         </Paper>
 
@@ -365,10 +377,10 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                             sx={{ p: 2, border: '1px solid #e2e8f0', borderRadius: 2 }}
                         >
                             <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                IGV
+                                Retencion / detraccion
                             </Typography>
                             <Typography sx={{ mt: 0.5, fontWeight: 700, color: '#0f172a' }}>
-                                {formatNumber(importeIgv)}
+                                {formatNumber(totalImpuestos)}
                             </Typography>
                         </Paper>
 
@@ -382,7 +394,7 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                             }}
                         >
                             <Typography sx={{ fontSize: '0.8rem', color: '#1d4ed8' }}>
-                                Total general
+                                Total final
                             </Typography>
                             <Typography sx={{ mt: 0.5, fontWeight: 800, color: '#1e40af' }}>
                                 {formatNumber(totalGeneral)}
@@ -416,6 +428,7 @@ ModalDetalleCompra.propTypes = {
         estado: PropTypes.string,
         subtotal: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         costoTotal: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        importeImpuesto: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         totalImpuestos: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         aplicaIgv: PropTypes.bool,
         porcentajeIgv: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),

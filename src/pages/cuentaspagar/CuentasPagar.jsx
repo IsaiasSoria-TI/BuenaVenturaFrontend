@@ -65,6 +65,11 @@ function formatDateTimeForTable(value) {
   return date.toLocaleString();
 }
 
+function formatCodigo(prefix, id) {
+  if (id === null || id === undefined || id === '') return '-';
+  return `${prefix}-${String(id).padStart(4, '0')}`;
+}
+
 function getEstadoChipStyles(estado) {
   if (estado === 'Completo' || estado === 'Pagado') {
     return {
@@ -288,7 +293,7 @@ export default function CuentasPagar() {
                 {showRows
                   ? cuentasPaginadas.map((cuenta) => (
                     <TableRow key={cuenta.idCuentaPagar} hover>
-                      <TableCell>{cuenta.idCuentaPagar}</TableCell>
+                      <TableCell>{formatCodigo('CXP', cuenta.idCuentaPagar)}</TableCell>
                       <TableCell>{cuenta.idCompras}</TableCell>
                       <TableCell>{cuenta.idRecepciones}</TableCell>
                       <TableCell>{cuenta.proveedor || '-'}</TableCell>
