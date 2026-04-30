@@ -115,15 +115,6 @@ export default function ModalProveedor({
                             error={Boolean(errors.correo)}
                             helperText={errors.correo || ''}
                         />
-                    </Box>
-
-                    <Box
-                        sx={{
-                            display: 'grid',
-                            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr 1fr' },
-                            gap: 2,
-                        }}
-                    >
                         <TextField
                             fullWidth
                             label="Dirección"
@@ -131,15 +122,6 @@ export default function ModalProveedor({
                             onChange={onChange('direccion')}
                             error={Boolean(errors.direccion)}
                             helperText={errors.direccion || ''}
-                        />
-
-                        <TextField
-                            fullWidth
-                            label="Representante"
-                            value={form.representante || ''}
-                            onChange={onChange('representante')}
-                            error={Boolean(errors.representante)}
-                            helperText={errors.representante || ''}
                         />
 
                         <TextField
@@ -159,15 +141,15 @@ export default function ModalProveedor({
                             error={Boolean(errors.provincia)}
                             helperText={errors.provincia || ''}
                         />
-                    </Box>
 
-                    <Box
-                        sx={{
-                            display: 'grid',
-                            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
-                            gap: 2,
-                        }}
-                    >
+                        <TextField
+                            fullWidth
+                            label="Representante"
+                            value={form.representante || ''}
+                            onChange={onChange('representante')}
+                            error={Boolean(errors.representante)}
+                            helperText={errors.representante || ''}
+                        />
                         <TextField
                             select
                             fullWidth

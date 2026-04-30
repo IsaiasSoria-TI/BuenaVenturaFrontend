@@ -61,7 +61,7 @@ export default function ModalCategoria({
                             .filter((item) => item.estado === 'Activo')
                             .map((item) => (
                                 <MenuItem key={item.idCuentaContable} value={item.idCuentaContable}>
-                                    {item.codigo}
+                                    {item.codigo} - {item.descripcion}
                                 </MenuItem>
                             ))}
                     </TextField>
@@ -118,6 +118,7 @@ ModalCategoria.propTypes = {
         PropTypes.shape({
             idCuentaContable: PropTypes.number.isRequired,
             codigo: PropTypes.string.isRequired,
+            descripcion: PropTypes.string.isRequired,
             estado: PropTypes.string.isRequired,
         })
     ).isRequired,

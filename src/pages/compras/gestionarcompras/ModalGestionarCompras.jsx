@@ -79,7 +79,6 @@ export default function ModalGestionarCompras({
     handleAddImpuesto,
     handleRemoveImpuesto,
     subtotalPreview,
-    totalImpuestosPreview,
     igvPreview,
     totalGeneralPreview,
 }) {
@@ -449,6 +448,43 @@ export default function ModalGestionarCompras({
 
                         <Divider />
 
+                        <Box
+                            sx={{
+                                display: 'grid',
+                                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
+                                gap: 2,
+                            }}
+                        >
+                            <TextField
+                                fullWidth
+                                label="Subtotal"
+                                value={subtotalPreview}
+                                slotProps={{
+                                    input: { readOnly: true },
+                                }}
+                            />
+
+                            <TextField
+                                fullWidth
+                                label="IGV"
+                                value={form.aplicaIgv ? igvPreview : '0.00'}
+                                slotProps={{
+                                    input: { readOnly: true },
+                                }}
+                            />
+
+                            <TextField
+                                fullWidth
+                                label="Total final"
+                                value={totalGeneralPreview}
+                                slotProps={{
+                                    input: { readOnly: true },
+                                }}
+                            />
+                        </Box>
+
+                        <Divider />
+
                         <Box>
                             <Stack
                                 direction={{ xs: 'column', md: 'row' }}
@@ -459,10 +495,10 @@ export default function ModalGestionarCompras({
                             >
                                 <Box>
                                     <Typography sx={{ fontWeight: 700, color: '#0f172a' }}>
-                                        Retencion / detraccion
+                                        Retención / detracción referencial
                                     </Typography>
                                     <Typography sx={{ fontSize: '0.85rem', color: '#64748b' }}>
-                                        Agrega retenciones o detracciones aplicables.
+                                        Agrega retenciones o detracciones solo como referencia; no afectan el total final.
                                     </Typography>
                                 </Box>
 
@@ -502,7 +538,7 @@ export default function ModalGestionarCompras({
                                                     display: 'grid',
                                                     gridTemplateColumns: {
                                                         xs: '1fr',
-                                                        md: '1.5fr 1fr 1fr auto',
+                                                        md: '1.5fr 1fr auto',
                                                     },
                                                     gap: 1.5,
                                                     alignItems: 'center',
@@ -511,7 +547,7 @@ export default function ModalGestionarCompras({
                                                 <TextField
                                                     select
                                                     fullWidth
-                                                    label="Retencion / detraccion"
+                                                    label="Retención / detracción referencial"
                                                     value={impuestoItem.idImpuesto}
                                                     onChange={(event) =>
                                                         handleImpuestoChange(index, 'idImpuesto', event.target.value)
@@ -531,16 +567,7 @@ export default function ModalGestionarCompras({
 
                                                 <TextField
                                                     fullWidth
-                                                    label="Porcentaje"
-                                                    value={impuestoSeleccionado ? `${impuestoSeleccionado.valor}%` : '0%'}
-                                                    slotProps={{
-                                                        input: { readOnly: true },
-                                                    }}
-                                                />
-
-                                                <TextField
-                                                    fullWidth
-                                                    label="Importe"
+                                                    label="Importe referencial"
                                                     value={importe.toFixed(2)}
                                                     slotProps={{
                                                         input: { readOnly: true },
@@ -567,51 +594,6 @@ export default function ModalGestionarCompras({
                             ) : null}
                         </Box>
 
-                        <Divider />
-
-                        <Box
-                            sx={{
-                                display: 'grid',
-                                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr 1fr' },
-                                gap: 2,
-                            }}
-                        >
-                            <TextField
-                                fullWidth
-                                label="Subtotal"
-                                value={subtotalPreview}
-                                slotProps={{
-                                    input: { readOnly: true },
-                                }}
-                            />
-
-                            <TextField
-                                fullWidth
-                                label="IGV"
-                                value={form.aplicaIgv ? igvPreview : '0.00'}
-                                slotProps={{
-                                    input: { readOnly: true },
-                                }}
-                            />
-
-                            <TextField
-                                fullWidth
-                                label="Retencion / detraccion"
-                                value={totalImpuestosPreview}
-                                slotProps={{
-                                    input: { readOnly: true },
-                                }}
-                            />
-
-                            <TextField
-                                fullWidth
-                                label="Total final"
-                                value={totalGeneralPreview}
-                                slotProps={{
-                                    input: { readOnly: true },
-                                }}
-                            />
-                        </Box>
                     </Stack>
                 )}
             </DialogContent>
@@ -683,7 +665,6 @@ ModalGestionarCompras.propTypes = {
     handleAddImpuesto: PropTypes.func.isRequired,
     handleRemoveImpuesto: PropTypes.func.isRequired,
     subtotalPreview: PropTypes.string.isRequired,
-    totalImpuestosPreview: PropTypes.string.isRequired,
     igvPreview: PropTypes.string.isRequired,
     totalGeneralPreview: PropTypes.string.isRequired,
 };

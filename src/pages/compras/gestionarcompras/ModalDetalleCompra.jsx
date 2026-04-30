@@ -129,7 +129,6 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
         }
 
         return toNumber(compra?.totalGeneral ?? compra?.costoTotal)
-            + toNumber(compra?.importeImpuesto ?? compra?.totalImpuestos)
             - toNumber(compra?.importeIgv);
     }, [compra, detalles]);
 
@@ -166,12 +165,16 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
     }, [compra, importeIgv, impuestos, subtotalArticulos]);
 
     const totalGeneral = React.useMemo(() => {
-        if (compra?.totalGeneral !== null && compra?.totalGeneral !== undefined) {
-            return toNumber(compra.totalGeneral);
-        }
+        return subtotalArticulos + importeIgv;
+    }, [importeIgv, subtotalArticulos]);
 
-        return subtotalArticulos + importeIgv - totalImpuestos;
-    }, [compra, importeIgv, subtotalArticulos, totalImpuestos]);
+    const impuestosReferencialesLabel = React.useMemo(() => {
+        const seleccionados = impuestos
+            .map((impuesto) => impuesto.tipoImpuesto)
+            .filter(Boolean);
+
+        return seleccionados.length > 0 ? seleccionados.join(', ') : 'Sin ret./det.';
+    }, [impuestos]);
 
     const condicionPago = compra?.condicionPago || compra?.pago || '-';
     const estado = compra?.estado || '-';
@@ -286,7 +289,10 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
 
                     <Box>
                         <Typography sx={{ fontWeight: 700, color: '#0f172a', mb: 1 }}>
-                            Retencion / detraccion
+                            Retención / detracción referencial
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.85rem', color: '#64748b', mb: 1 }}>
+                            Importe informativo; no suma ni resta al total final.
                         </Typography>
 
                         <TableContainer
@@ -301,12 +307,12 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                             <Table sx={{ minWidth: 620 }}>
                                 <TableHead>
                                     <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                                        <TableCell sx={{ fontWeight: 700 }}>RET./DET.</TableCell>
+                                        <TableCell sx={{ fontWeight: 700 }}>RET./DET. REF.</TableCell>
                                         <TableCell sx={{ fontWeight: 700 }} align="right">
                                             PORCENTAJE
                                         </TableCell>
                                         <TableCell sx={{ fontWeight: 700 }} align="right">
-                                            IMPORTE
+                                            IMPORTE REF.
                                         </TableCell>
                                     </TableRow>
                                 </TableHead>
@@ -344,7 +350,7 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                     <Box
                         sx={{
                             display: 'grid',
-                            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr 1fr' },
+                            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
                             gap: 2,
                         }}
                     >
@@ -353,7 +359,7 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                             sx={{ p: 2, border: '1px solid #e2e8f0', borderRadius: 2 }}
                         >
                             <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                Subtotal artículos
+                                Subtotal
                             </Typography>
                             <Typography sx={{ mt: 0.5, fontWeight: 700, color: '#0f172a' }}>
                                 {formatNumber(subtotalArticulos)}
@@ -374,18 +380,6 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
 
                         <Paper
                             elevation={0}
-                            sx={{ p: 2, border: '1px solid #e2e8f0', borderRadius: 2 }}
-                        >
-                            <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                Retencion / detraccion
-                            </Typography>
-                            <Typography sx={{ mt: 0.5, fontWeight: 700, color: '#0f172a' }}>
-                                {formatNumber(totalImpuestos)}
-                            </Typography>
-                        </Paper>
-
-                        <Paper
-                            elevation={0}
                             sx={{
                                 p: 2,
                                 border: '1px solid #bfdbfe',
@@ -398,6 +392,33 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                             </Typography>
                             <Typography sx={{ mt: 0.5, fontWeight: 800, color: '#1e40af' }}>
                                 {formatNumber(totalGeneral)}
+                            </Typography>
+                        </Paper>
+
+                        <Paper
+                            elevation={0}
+                            sx={{ p: 2, border: '1px solid #e2e8f0', borderRadius: 2 }}
+                        >
+                            <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
+                                Retención / detracción referencial
+                            </Typography>
+                            <Typography sx={{ mt: 0.5, fontWeight: 700, color: '#0f172a' }}>
+                                {impuestosReferencialesLabel}
+                            </Typography>
+                        </Paper>
+
+                        <Paper
+                            elevation={0}
+                            sx={{ p: 2, border: '1px solid #e2e8f0', borderRadius: 2 }}
+                        >
+                            <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
+                                Importe referencial
+                            </Typography>
+                            <Typography sx={{ fontSize: '0.72rem', color: '#64748b' }}>
+                                No suma ni resta al total final
+                            </Typography>
+                            <Typography sx={{ mt: 0.5, fontWeight: 700, color: '#0f172a' }}>
+                                {formatNumber(totalImpuestos)}
                             </Typography>
                         </Paper>
                     </Box>

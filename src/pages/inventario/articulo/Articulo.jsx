@@ -225,7 +225,7 @@ export default function Articulo() {
       newErrors.medida = 'La medida es obligatoria';
     }
 
-    if (form.stock === '' || Number(form.stock) < 0) {
+    if (form.stock !== '' && Number(form.stock) < 0) {
       newErrors.stock = 'El stock no puede ser negativo';
     }
 
@@ -248,7 +248,7 @@ export default function Articulo() {
       const payload = {
         descripcion: form.descripcion.trim(),
         medida: form.medida,
-        stock: Number(form.stock),
+        stock: form.stock === '' ? null : Number(form.stock),
         idCategoria: Number(form.idCategoria),
         estado: form.estado,
       };

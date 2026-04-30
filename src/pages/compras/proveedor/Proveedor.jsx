@@ -14,6 +14,7 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  InputAdornment,
   Paper,
   Stack,
   Table,
@@ -23,6 +24,7 @@ import {
   TableHead,
   TablePagination,
   TableRow,
+  TextField,
   Typography,
 } from '@mui/material';
 
@@ -112,6 +114,7 @@ export default function Proveedor() {
 
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  const [searchTerm, setSearchTerm] = React.useState('');
 
   const cargarProveedores = React.useCallback(async () => {
     try {
@@ -247,9 +250,11 @@ export default function Proveedor() {
       newErrors.razonSocial = 'La razón social es obligatoria';
     }
 
-    if (!form.telefono.trim()) {
-      newErrors.telefono = 'El teléfono es obligatorio';
-    } else if (!/^[0-9]{9}$/.test(form.telefono.trim())) {
+    if (!form.idTipoProveedor) {
+      newErrors.idTipoProveedor = 'Seleccione un tipo de proveedor';
+    }
+
+    if (form.telefono.trim() && !/^[0-9]{9}$/.test(form.telefono.trim())) {
       newErrors.telefono = 'El teléfono debe tener 9 dígitos';
     }
 
@@ -257,8 +262,12 @@ export default function Proveedor() {
       newErrors.direccion = 'La dirección es obligatoria';
     }
 
-    if (!form.representante.trim()) {
-      newErrors.representante = 'El representante es obligatorio';
+    if (!form.departamento.trim()) {
+      newErrors.departamento = 'El departamento es obligatorio';
+    }
+
+    if (!form.provincia.trim()) {
+      newErrors.provincia = 'La provincia es obligatoria';
     }
 
     if (form.correo.trim()) {
@@ -266,10 +275,6 @@ export default function Proveedor() {
       if (!emailRegex.test(form.correo.trim())) {
         newErrors.correo = 'El correo no es válido';
       }
-    }
-
-    if (!form.idBanco) {
-      newErrors.idBanco = 'Seleccione un banco';
     }
 
     setErrors(newErrors);
@@ -281,10 +286,10 @@ export default function Proveedor() {
     ruc: form.ruc.trim(),
     razonSocial: form.razonSocial.trim(),
     idTipoProveedor: form.idTipoProveedor === '' ? null : Number(form.idTipoProveedor),
-    telefono: form.telefono.trim(),
+    telefono: form.telefono.trim() || null,
     correo: form.correo.trim() || null,
     direccion: form.direccion.trim(),
-    representante: form.representante.trim(),
+    representante: form.representante.trim() || null,
     departamento: form.departamento.trim() || null,
     provincia: form.provincia.trim() || null,
     idBanco: form.idBanco === '' ? null : Number(form.idBanco),
@@ -383,17 +388,46 @@ export default function Proveedor() {
     setPage(0);
   };
 
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
+    setPage(0);
+  };
+
   const proveedoresOrdenados = React.useMemo(() => {
     return [...proveedores].sort(
       (a, b) => Number(b.idProveedor) - Number(a.idProveedor)
     );
   }, [proveedores]);
 
+  const proveedoresFiltrados = React.useMemo(() => {
+    const criterio = searchTerm.trim().toLowerCase();
+
+    if (!criterio) return proveedoresOrdenados;
+
+    return proveedoresOrdenados.filter((proveedor) => {
+      const valoresBusqueda = [
+        formatCodigo('PROV', proveedor.idProveedor),
+        proveedor.ruc,
+        proveedor.razonSocial,
+        proveedor.nombreTipoProveedor,
+        proveedor.direccion,
+        proveedor.departamento,
+        proveedor.provincia,
+        proveedor.telefono,
+        proveedor.representante,
+      ];
+
+      return valoresBusqueda.some((value) =>
+        String(value || '').toLowerCase().includes(criterio)
+      );
+    });
+  }, [proveedoresOrdenados, searchTerm]);
+
   const proveedoresPaginados = React.useMemo(() => {
     const inicio = page * rowsPerPage;
     const fin = inicio + rowsPerPage;
-    return proveedoresOrdenados.slice(inicio, fin);
-  }, [proveedoresOrdenados, page, rowsPerPage]);
+    return proveedoresFiltrados.slice(inicio, fin);
+  }, [proveedoresFiltrados, page, rowsPerPage]);
 
   return (
     <Box>
@@ -430,6 +464,24 @@ export default function Proveedor() {
               Nuevo proveedor
             </Button>
           </Stack>
+
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Buscar proveedor..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Icon name="search" size={18} color="#64748b" />
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={{ mb: 2 }}
+          />
 
           {serverSuccess ? (
             <Alert severity="success" sx={{ mb: 2 }}>
@@ -485,6 +537,12 @@ export default function Proveedor() {
                       No hay proveedores registrados.
                     </TableCell>
                   </TableRow>
+                ) : proveedoresFiltrados.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={14} align="center" sx={{ py: 4, color: '#64748b' }}>
+                      No se encontraron proveedores con ese criterio.
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   proveedoresPaginados.map((proveedor) => (
                     <TableRow key={proveedor.idProveedor} hover>
@@ -495,8 +553,8 @@ export default function Proveedor() {
                       <TableCell>{proveedor.direccion}</TableCell>
                       <TableCell>{proveedor.departamento || '-'}</TableCell>
                       <TableCell>{proveedor.provincia || '-'}</TableCell>
-                      <TableCell>{proveedor.telefono}</TableCell>
-                      <TableCell>{proveedor.representante}</TableCell>
+                      <TableCell>{proveedor.telefono || '-'}</TableCell>
+                      <TableCell>{proveedor.representante || '-'}</TableCell>
                       <TableCell>{proveedor.nombreBanco || '-'}</TableCell>
                       <TableCell>{proveedor.cuentaBancaria || '-'}</TableCell>
                       <TableCell>{proveedor.cuentaInterbancaria || '-'}</TableCell>
@@ -525,10 +583,10 @@ export default function Proveedor() {
               </TableBody>
             </Table>
 
-            {!loading && proveedores.length > 0 ? (
+            {!loading && proveedoresFiltrados.length > 0 ? (
               <TablePagination
                 component="div"
-                count={proveedoresOrdenados.length}
+                count={proveedoresFiltrados.length}
                 page={page}
                 onPageChange={handleChangePage}
                 rowsPerPage={rowsPerPage}

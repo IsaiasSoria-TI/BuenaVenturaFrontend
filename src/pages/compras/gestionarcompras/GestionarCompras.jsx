@@ -187,7 +187,6 @@ function getCompraSubtotal(compra) {
   }
 
   return toNumber(compra.totalGeneral ?? compra.costoTotal)
-    + toNumber(compra.importeImpuesto)
     - toNumber(compra.importeIgv);
 }
 
@@ -224,15 +223,7 @@ function getCompraImporteImpuestos(compra) {
 }
 
 function getCompraTotalFinal(compra) {
-  if (compra.totalGeneral !== null && compra.totalGeneral !== undefined) {
-    return toNumber(compra.totalGeneral);
-  }
-
-  if (compra.costoTotal !== null && compra.costoTotal !== undefined) {
-    return toNumber(compra.costoTotal);
-  }
-
-  return getCompraSubtotal(compra) + getCompraIgv(compra) - getCompraImporteImpuestos(compra);
+  return getCompraSubtotal(compra) + getCompraIgv(compra);
 }
 
 export default function GestionarCompras() {
@@ -540,27 +531,9 @@ export default function GestionarCompras() {
     return ((subtotal * porcentajeIgv) / 100).toFixed(2);
   }, [form.aplicaIgv, form.porcentajeIgv, subtotalPreview]);
 
-  const totalImpuestosPreview = React.useMemo(() => {
-    const baseImpuestos = Number(subtotalPreview) + Number(igvPreview);
-
-    const total = form.impuestos.reduce((acc, impuestoForm) => {
-      if (!impuestoForm.idImpuesto) return acc;
-
-      const impuesto = impuestos.find(
-        (item) => item.idImpuesto === Number(impuestoForm.idImpuesto)
-      );
-
-      if (!impuesto) return acc;
-
-      return acc + (baseImpuestos * Number(impuesto.valor || 0)) / 100;
-    }, 0);
-
-    return total.toFixed(2);
-  }, [form.impuestos, igvPreview, impuestos, subtotalPreview]);
-
   const totalGeneralPreview = React.useMemo(() => {
-    return (Number(subtotalPreview) + Number(igvPreview) - Number(totalImpuestosPreview)).toFixed(2);
-  }, [igvPreview, subtotalPreview, totalImpuestosPreview]);
+    return (Number(subtotalPreview) + Number(igvPreview)).toFixed(2);
+  }, [igvPreview, subtotalPreview]);
 
   const validate = () => {
     const newErrors = {};
@@ -852,7 +825,7 @@ export default function GestionarCompras() {
                   <TableCell sx={{ fontWeight: 700 }}>PROVEEDOR</TableCell>
                   <TableCell sx={{ fontWeight: 700 }} align="right">SUBTOTAL</TableCell>
                   <TableCell sx={{ fontWeight: 700 }} align="right">IGV</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }} align="right">RET./DET.</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }} align="right">RET./DET. REF.</TableCell>
                   <TableCell sx={{ fontWeight: 700 }} align="right">PESO TOTAL</TableCell>
                   <TableCell sx={{ fontWeight: 700 }} align="right">TOTAL FINAL</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>ESTADO</TableCell>
@@ -962,7 +935,6 @@ export default function GestionarCompras() {
         handleAddImpuesto={handleAddImpuesto}
         handleRemoveImpuesto={handleRemoveImpuesto}
         subtotalPreview={subtotalPreview}
-        totalImpuestosPreview={totalImpuestosPreview}
         igvPreview={igvPreview}
         totalGeneralPreview={totalGeneralPreview}
       />

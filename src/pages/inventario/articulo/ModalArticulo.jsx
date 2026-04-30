@@ -30,7 +30,7 @@ export default function ModalArticulo({
     const helperDescripcion = errors.descripcion || '';
     const helperMedida = errors.medida || 'Seleccione la unidad';
     const helperStock =
-        errors.stock || 'Opcional. Si lo dejas vacío, se guardará en 0.';
+        errors.stock || 'Opcional. Puede quedar vacío.';
     const helperCategoria = errors.idCategoria || 'Seleccione una categoría';
 
     const titulo = editing ? 'Editar artículo' : 'Nuevo artículo';
@@ -87,7 +87,7 @@ export default function ModalArticulo({
                     <TextField
                         fullWidth
                         type="number"
-                        label="Stock De Seguridad"
+                        label="Stock de seguridad"
                         value={form.stock}
                         onChange={onChange('stock')}
                         error={!!errors.stock}
