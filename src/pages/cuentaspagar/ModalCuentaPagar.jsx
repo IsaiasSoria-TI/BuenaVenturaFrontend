@@ -28,6 +28,11 @@ import {
 } from '@mui/material';
 
 import { cuentaPagarService } from '../../services/cuentaPagarService';
+import {
+  formatCompraCode,
+  formatDateTimePeru,
+  formatRecepcionCode,
+} from '../../utils/formatters';
 
 const initialForm = {
   tipoFactura: 'UNICA',
@@ -35,17 +40,6 @@ const initialForm = {
   moneda: 'PEN',
   codigoDetRet: '',
 };
-
-function formatDateTimeForTable(value) {
-  if (!value) return '-';
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return String(value).replace('T', ' ').slice(0, 16);
-  }
-
-  return date.toLocaleString();
-}
 
 function formatNumber(value) {
   if (value === null || value === undefined || value === '') return '0.00';
@@ -129,8 +123,8 @@ function RecepcionesTable({
                   />
                 </TableCell>
 
-                <TableCell>{recepcion.idRecepciones}</TableCell>
-                <TableCell>{formatDateTimeForTable(recepcion.fechaRecepcion)}</TableCell>
+                <TableCell>{formatRecepcionCode(recepcion.idRecepciones)}</TableCell>
+                <TableCell>{formatDateTimePeru(recepcion.fechaRecepcion)}</TableCell>
                 <TableCell>{formatNumber(recepcion.recibido)}</TableCell>
 
                 <TableCell>
@@ -497,7 +491,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
                 onChange={handleSelectCompra}
                 getOptionLabel={(option) =>
                   option
-                    ? `Compra #${option.idCompras} - ${option.ruc} - ${option.razonSocial}`
+                    ? `Compra ${formatCompraCode(option.idCompras)} - ${option.ruc} - ${option.razonSocial}`
                     : ''
                 }
                 isOptionEqualToValue={(option, value) =>
@@ -510,17 +504,21 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
                     .filter(
                       (option) =>
                         String(option.idCompras).includes(input) ||
+                        formatCompraCode(option.idCompras).toLowerCase().includes(input) ||
                         option.ruc?.toLowerCase().includes(input) ||
                         option.razonSocial?.toLowerCase().includes(input) ||
                         option.articulo?.toLowerCase().includes(input)
                     )
                     .slice(0, 20);
                 }}
-                renderOption={(props, option) => (
-                  <Box component="li" {...props}>
+                renderOption={(props, option) => {
+                  const { key, ...optionProps } = props;
+
+                  return (
+                  <Box key={key} component="li" {...optionProps}>
                     <Box>
                       <Typography sx={{ fontWeight: 700, fontSize: '0.92rem' }}>
-                        Compra #{option.idCompras}
+                        Compra {formatCompraCode(option.idCompras)}
                       </Typography>
                       <Typography sx={{ fontSize: '0.82rem', color: '#64748b' }}>
                         {option.ruc} - {option.razonSocial}
@@ -530,7 +528,8 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
                       </Typography>
                     </Box>
                   </Box>
-                )}
+                  );
+                }}
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -574,7 +573,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
                           Operación
                         </Typography>
                         <Typography sx={{ fontWeight: 700 }}>
-                          #{detalleCompra.numeroOperacion}
+                          {formatCompraCode(detalleCompra.numeroOperacion)}
                         </Typography>
                       </Box>
 
@@ -592,13 +591,6 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
                         <Typography sx={{ fontWeight: 700 }}>
                           {detalleCompra.razonSocial}
                         </Typography>
-                      </Box>
-
-                      <Box>
-                        <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                          Artículo
-                        </Typography>
-                        <Typography>{detalleCompra.descripcionArticulo || 'Varios artículos'}</Typography>
                       </Box>
 
                       <Box>

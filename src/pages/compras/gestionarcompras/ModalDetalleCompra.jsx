@@ -21,16 +21,7 @@ import {
     Typography,
 } from '@mui/material';
 
-function formatDateTime(value) {
-    if (!value) return '-';
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-        return String(value).replace('T', ' ').slice(0, 16);
-    }
-
-    return date.toLocaleString();
-}
+import { formatCompraCode, formatDateTimePeru } from '../../../utils/formatters';
 
 function toNumber(value) {
     if (value === null || value === undefined || value === '') return 0;
@@ -209,8 +200,8 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                                 gap: 1.5,
                             }}
                         >
-                            <InfoItem label="Código" value={compra?.idCompras ? `#${compra.idCompras}` : '-'} strong />
-                            <InfoItem label="Fecha" value={formatDateTime(compra?.fechaCompras)} />
+                            <InfoItem label="Código" value={formatCompraCode(compra?.idCompras)} strong />
+                            <InfoItem label="Fecha" value={formatDateTimePeru(compra?.fechaCompras)} />
                             <InfoItem label="RUC proveedor" value={compra?.ruc || '-'} />
                             <InfoItem label="Proveedor" value={compra?.razonSocial || '-'} strong />
                             <InfoItem label="Condición de pago" value={condicionPago} />

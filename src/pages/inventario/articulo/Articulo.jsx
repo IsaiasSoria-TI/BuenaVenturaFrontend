@@ -24,6 +24,8 @@ import {
   DialogActions,
   TablePagination,
   Alert,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 
 import { articuloService } from '../../../services/articuloService';
@@ -111,6 +113,7 @@ export default function Articulo() {
 
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  const [searchTerm, setSearchTerm] = React.useState('');
 
   const cargarArticulos = React.useCallback(async () => {
     try {
@@ -328,11 +331,40 @@ export default function Articulo() {
     setPage(0);
   };
 
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
+    setPage(0);
+  };
+
+  const articulosOrdenados = React.useMemo(() => {
+    return [...articulos].sort(
+      (a, b) => Number(b.idArticulo) - Number(a.idArticulo)
+    );
+  }, [articulos]);
+
+  const articulosFiltrados = React.useMemo(() => {
+    const criterio = searchTerm.trim().toLowerCase();
+    if (!criterio) return articulosOrdenados;
+
+    return articulosOrdenados.filter((articulo) => {
+      const valoresBusqueda = [
+        articulo.descripcion,
+        articulo.medida,
+        articulo.descripcionCategoria,
+        articulo.estado,
+      ];
+
+      return valoresBusqueda.some((value) =>
+        String(value || '').toLowerCase().includes(criterio)
+      );
+    });
+  }, [articulosOrdenados, searchTerm]);
+
   const articulosPaginados = React.useMemo(() => {
     const inicio = page * rowsPerPage;
     const fin = inicio + rowsPerPage;
-    return articulos.slice(inicio, fin);
-  }, [articulos, page, rowsPerPage]);
+    return articulosFiltrados.slice(inicio, fin);
+  }, [articulosFiltrados, page, rowsPerPage]);
 
   return (
     <Box>
@@ -369,6 +401,24 @@ export default function Articulo() {
               Nuevo artículo
             </Button>
           </Stack>
+
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Buscar por descripción, medida, categoría, estado..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Icon name="search" size={18} color="#64748b" />
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={{ mb: 2 }}
+          />
 
           {successMessage ? (
             <Alert severity="success" sx={{ mb: 2 }}>
@@ -416,6 +466,12 @@ export default function Articulo() {
                       No hay artículos registrados.
                     </TableCell>
                   </TableRow>
+                ) : articulosFiltrados.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center" sx={{ py: 4, color: '#64748b' }}>
+                      No se encontraron artículos con ese criterio.
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   articulosPaginados.map((articulo) => (
                     <TableRow key={articulo.idArticulo} hover>
@@ -447,10 +503,10 @@ export default function Articulo() {
               </TableBody>
             </Table>
 
-            {!loading && !catalogLoading && articulos.length > 0 ? (
+            {!loading && !catalogLoading && articulosFiltrados.length > 0 ? (
               <TablePagination
                 component="div"
-                count={articulos.length}
+                count={articulosFiltrados.length}
                 page={page}
                 onPageChange={handleChangePage}
                 rowsPerPage={rowsPerPage}

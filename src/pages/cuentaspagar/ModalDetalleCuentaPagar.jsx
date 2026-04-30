@@ -20,16 +20,12 @@ import {
   Typography,
 } from '@mui/material';
 
-function formatDateTime(value) {
-  if (!value) return '-';
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return String(value).replace('T', ' ').slice(0, 16);
-  }
-
-  return date.toLocaleString();
-}
+import {
+  formatCompraCode,
+  formatCuentaPagarCode,
+  formatDateTimePeru,
+  formatRecepcionCode,
+} from '../../utils/formatters';
 
 function toNumber(value) {
   if (value === null || value === undefined || value === '') return 0;
@@ -148,16 +144,16 @@ export default function ModalDetalleCuentaPagar({ open, onClose, cuenta = null }
             >
               <InfoItem
                 label="Código cuenta"
-                value={cuenta?.idCuentaPagar ? `#${cuenta.idCuentaPagar}` : '-'}
+                value={formatCuentaPagarCode(cuenta?.idCuentaPagar)}
                 strong
               />
               <InfoItem
-                label="Código compra"
-                value={cuenta?.idCompras ? `#${cuenta.idCompras}` : '-'}
+                label="Operación"
+                value={formatCompraCode(cuenta?.idCompras)}
               />
               <InfoItem
                 label="Código recepción"
-                value={cuenta?.idRecepciones ? `#${cuenta.idRecepciones}` : '-'}
+                value={formatRecepcionCode(cuenta?.idRecepciones)}
               />
               <InfoItem label="RUC proveedor" value={cuenta?.ruc || '-'} />
               <InfoItem label="Proveedor" value={cuenta?.proveedor || '-'} strong />
@@ -175,7 +171,7 @@ export default function ModalDetalleCuentaPagar({ open, onClose, cuenta = null }
                   }}
                 />
               </InfoItem>
-              <InfoItem label="Fecha creación" value={formatDateTime(cuenta?.fechaCreacion)} />
+              <InfoItem label="Fecha creación" value={formatDateTimePeru(cuenta?.fechaCreacion)} />
             </Box>
           </Paper>
 

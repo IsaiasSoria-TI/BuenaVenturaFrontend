@@ -20,11 +20,18 @@ import {
     TablePagination,
     IconButton,
     Tooltip,
+    TextField,
+    InputAdornment,
 } from '@mui/material';
 
 import { recepcionService } from '../../../services/recepcionService';
 import ModalDetalleRecepcion from './ModalDetalleRecepcion';
 import ModalRecepcion from './ModalRecepcion';
+import {
+    formatCompraCode,
+    formatDateTimePeru,
+    formatRecepcionCode,
+} from '../../../utils/formatters';
 
 function Icon({ name, size = 20, color = 'inherit' }) {
     return (
@@ -58,17 +65,6 @@ const initialForm = {
     detalles: [],
 };
 
-function formatDateTimeForTable(value) {
-    if (!value) return '-';
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-        return String(value).replace('T', ' ').slice(0, 16);
-    }
-
-    return date.toLocaleString();
-}
-
 function formatNumber(value) {
     if (value === null || value === undefined || value === '') return '0.00';
 
@@ -76,11 +72,6 @@ function formatNumber(value) {
     if (Number.isNaN(number)) return '0.00';
 
     return number.toFixed(2);
-}
-
-function formatCodigo(prefix, id) {
-    if (id === null || id === undefined || id === '') return '-';
-    return `${prefix}-${String(id).padStart(4, '0')}`;
 }
 
 function getEstadoChipStyles(estado) {
@@ -136,6 +127,7 @@ export default function Recepciones() {
 
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
+    const [searchTerm, setSearchTerm] = React.useState('');
 
     const cargarRecepciones = React.useCallback(async () => {
         try {
@@ -385,15 +377,41 @@ export default function Recepciones() {
         setPage(0);
     };
 
+    const handleSearchChange = (event) => {
+        setSearchTerm(event.target.value);
+        setPage(0);
+    };
+
+    const recepcionesFiltradas = React.useMemo(() => {
+        const criterio = searchTerm.trim().toLowerCase();
+        if (!criterio) return recepciones;
+
+        return recepciones.filter((recepcion) => {
+            const valoresBusqueda = [
+                formatRecepcionCode(recepcion.idRecepciones),
+                formatCompraCode(recepcion.idCompras),
+                recepcion.ruc,
+                recepcion.razonSocial,
+                recepcion.estadoCompra,
+                recepcion.estado,
+                getArticulosResumen(recepcion),
+            ];
+            return valoresBusqueda.some((value) =>
+                String(value || '').toLowerCase().includes(criterio)
+            );
+        });
+    }, [recepciones, searchTerm]);
+
     const recepcionesPaginadas = React.useMemo(() => {
         const inicio = page * rowsPerPage;
         const fin = inicio + rowsPerPage;
-        return recepciones.slice(inicio, fin);
-    }, [recepciones, page, rowsPerPage]);
+        return recepcionesFiltradas.slice(inicio, fin);
+    }, [recepcionesFiltradas, page, rowsPerPage]);
 
     const showLoading = loading;
     const showEmpty = !loading && recepciones.length === 0;
-    const showRows = !loading && recepciones.length > 0;
+    const showNoResults = !loading && recepciones.length > 0 && recepcionesFiltradas.length === 0;
+    const showRows = !loading && recepcionesFiltradas.length > 0;
 
     return (
         <Box>
@@ -430,6 +448,24 @@ export default function Recepciones() {
                             Nueva recepción
                         </Button>
                     </Stack>
+
+                    <TextField
+                        fullWidth
+                        size="small"
+                        placeholder="Buscar recepciones por código, RUC, proveedor, estado o artículos..."
+                        value={searchTerm}
+                        onChange={handleSearchChange}
+                        slotProps={{
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <Icon name="search" size={18} color="#64748b" />
+                                    </InputAdornment>
+                                ),
+                            },
+                        }}
+                        sx={{ mb: 2 }}
+                    />
 
                     <TableContainer
                         component={Paper}
@@ -474,12 +510,20 @@ export default function Recepciones() {
                                     </TableRow>
                                 ) : null}
 
+                                {showNoResults ? (
+                                    <TableRow>
+                                        <TableCell colSpan={11} align="center" sx={{ py: 4, color: '#64748b' }}>
+                                            No se encontraron recepciones con ese criterio.
+                                        </TableCell>
+                                    </TableRow>
+                                ) : null}
+
                                 {showRows
                                     ? recepcionesPaginadas.map((recepcion) => (
                                         <TableRow key={recepcion.idRecepciones} hover>
-                                            <TableCell>{formatCodigo('REC', recepcion.idRecepciones)}</TableCell>
-                                            <TableCell>{formatDateTimeForTable(recepcion.fechaRecepcion)}</TableCell>
-                                            <TableCell>{recepcion.idCompras}</TableCell>
+                                            <TableCell>{formatRecepcionCode(recepcion.idRecepciones)}</TableCell>
+                                            <TableCell>{formatDateTimePeru(recepcion.fechaRecepcion)}</TableCell>
+                                            <TableCell>{formatCompraCode(recepcion.idCompras)}</TableCell>
                                             <TableCell>{recepcion.ruc}</TableCell>
                                             <TableCell>{recepcion.razonSocial}</TableCell>
                                             <TableCell>{getArticulosResumen(recepcion)}</TableCell>
@@ -521,7 +565,7 @@ export default function Recepciones() {
                         {showRows ? (
                             <TablePagination
                                 component="div"
-                                count={recepciones.length}
+                                count={recepcionesFiltradas.length}
                                 page={page}
                                 onPageChange={handleChangePage}
                                 rowsPerPage={rowsPerPage}

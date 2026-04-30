@@ -19,16 +19,7 @@ import {
     Typography,
 } from '@mui/material';
 
-function formatDateTimeForTable(value) {
-    if (!value) return '-';
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-        return String(value).replace('T', ' ').slice(0, 16);
-    }
-
-    return date.toLocaleString();
-}
+import { formatCompraCode, formatDateTimePeru } from '../../../utils/formatters';
 
 function formatNumber(value) {
     if (value === null || value === undefined || value === '') return '0.00';
@@ -116,11 +107,14 @@ export default function ModalRecepcion({
         }
     };
 
-    const renderCompraOption = (props, option) => (
-        <Box component="li" {...props}>
+    const renderCompraOption = (props, option) => {
+        const { key, ...optionProps } = props;
+
+        return (
+        <Box key={key} component="li" {...optionProps}>
             <Box>
                 <Typography sx={{ fontWeight: 700, fontSize: '0.92rem' }}>
-                    Compra #{option.idCompras}
+                    Compra {formatCompraCode(option.idCompras)}
                 </Typography>
                 <Typography sx={{ fontSize: '0.82rem', color: '#64748b' }}>
                     {option.ruc} - {option.razonSocial}
@@ -130,7 +124,8 @@ export default function ModalRecepcion({
                 </Typography>
             </Box>
         </Box>
-    );
+        );
+    };
 
     const renderDetalleCompra = () => (
         <>
@@ -157,14 +152,14 @@ export default function ModalRecepcion({
                         <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
                             Código de compra
                         </Typography>
-                        <Typography sx={{ fontWeight: 700 }}>#{detalleCompra.idCompras}</Typography>
+                        <Typography sx={{ fontWeight: 700 }}>{formatCompraCode(detalleCompra.idCompras)}</Typography>
                     </Box>
 
                     <Box>
                         <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
                             Fecha de compra
                         </Typography>
-                        <Typography>{formatDateTimeForTable(detalleCompra.fechaCompras)}</Typography>
+                        <Typography>{formatDateTimePeru(detalleCompra.fechaCompras)}</Typography>
                     </Box>
 
                     <Box>
@@ -387,7 +382,7 @@ export default function ModalRecepcion({
                                 onChange={handleSelectCompra}
                                 getOptionLabel={(option) =>
                                     option
-                                        ? `Compra #${option.idCompras} - ${option.ruc} - ${option.razonSocial}`
+                                        ? `Compra ${formatCompraCode(option.idCompras)} - ${option.ruc} - ${option.razonSocial}`
                                         : ''
                                 }
                                 isOptionEqualToValue={(option, value) =>
@@ -400,6 +395,7 @@ export default function ModalRecepcion({
                                         .filter(
                                             (option) =>
                                                 String(option.idCompras).includes(input) ||
+                                                formatCompraCode(option.idCompras).toLowerCase().includes(input) ||
                                                 option.ruc?.toLowerCase().includes(input) ||
                                                 option.razonSocial?.toLowerCase().includes(input) ||
                                                 option.articulo?.toLowerCase().includes(input)

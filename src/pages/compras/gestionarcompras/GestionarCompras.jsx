@@ -37,6 +37,11 @@ import { pagoService } from '../../../services/pagoService';
 
 import ModalDetalleCompra from './ModalDetalleCompra';
 import ModalGestionarCompras from './ModalGestionarCompras';
+import {
+  formatCompraCode,
+  formatDateTimeInputPeru,
+  formatDateTimePeru,
+} from '../../../utils/formatters';
 
 function Icon({ name, size = 20, color = 'inherit' }) {
   return (
@@ -93,30 +98,6 @@ const initialForm = {
   importeIgv: 0,
 };
 
-function formatDateTimeForInput(value) {
-  if (!value) return '';
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-
-  const pad = (number) => String(number).padStart(2, '0');
-
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
-    date.getHours()
-  )}:${pad(date.getMinutes())}`;
-}
-
-function formatDateTimeForTable(value) {
-  if (!value) return '-';
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return String(value).replace('T', ' ').slice(0, 16);
-  }
-
-  return date.toLocaleString();
-}
-
 function formatNumber(value) {
   if (value === null || value === undefined || value === '') return '0.00';
 
@@ -124,11 +105,6 @@ function formatNumber(value) {
   if (Number.isNaN(number)) return '0.00';
 
   return number.toFixed(2);
-}
-
-function formatCodigo(prefix, id) {
-  if (id === null || id === undefined || id === '') return '-';
-  return `${prefix}-${String(id).padStart(4, '0')}`;
 }
 
 function toNumber(value) {
@@ -366,7 +342,7 @@ export default function GestionarCompras() {
       idCompras: compra.idCompras,
       idPago: compra.idPago ?? '',
       idProveedor: compra.idProveedor ?? null,
-      fechaCompras: formatDateTimeForInput(compra.fechaCompras),
+      fechaCompras: formatDateTimeInputPeru(compra.fechaCompras),
       zonaProduccion: compra.zonaProduccion || '',
       hectareas: compra.hectareas ?? '',
       detalles,
@@ -715,9 +691,9 @@ export default function GestionarCompras() {
 
     return compras.filter((compra) => {
       const valoresBusqueda = [
-        formatCodigo('COMP', compra.idCompras),
+        formatCompraCode(compra.idCompras),
         compra.idCompras,
-        formatDateTimeForTable(compra.fechaCompras),
+        formatDateTimePeru(compra.fechaCompras),
         compra.fechaCompras,
         compra.ruc,
         compra.razonSocial,
@@ -756,44 +732,39 @@ export default function GestionarCompras() {
               </Typography>
             </Box>
 
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              spacing={1.5}
-              alignItems={{ xs: 'stretch', sm: 'center' }}
+            <Button
+              variant="contained"
+              onClick={handleOpenCreate}
+              startIcon={<Icon name="add" size={18} color="#fff" />}
+              sx={{
+                alignSelf: { xs: 'flex-start', md: 'auto' },
+                textTransform: 'none',
+                fontWeight: 700,
+                borderRadius: 2,
+                boxShadow: 'none',
+              }}
             >
-              <TextField
-                size="small"
-                placeholder="Buscar compra"
-                value={searchTerm}
-                onChange={handleSearchChange}
-                slotProps={{
-                  input: {
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Icon name="search" size={18} color="#64748b" />
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-                sx={{ minWidth: { xs: '100%', sm: 260 } }}
-              />
-
-              <Button
-                variant="contained"
-                onClick={handleOpenCreate}
-                startIcon={<Icon name="add" size={18} color="#fff" />}
-                sx={{
-                  alignSelf: { xs: 'flex-start', sm: 'auto' },
-                  textTransform: 'none',
-                  fontWeight: 700,
-                  borderRadius: 2,
-                  boxShadow: 'none',
-                }}
-              >
-                Nueva compra
-              </Button>
-            </Stack>
+              Nueva compra
+            </Button>
           </Stack>
+
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Buscar por código, RUC, proveedor, fecha, estado..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Icon name="search" size={18} color="#64748b" />
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={{ mb: 2 }}
+          />
 
           {successMessage ? (
             <Alert severity="success" sx={{ mb: 2 }}>
@@ -855,8 +826,8 @@ export default function GestionarCompras() {
                 ) : (
                   comprasPaginadas.map((compra) => (
                     <TableRow key={compra.idCompras} hover>
-                      <TableCell>{formatCodigo('COMP', compra.idCompras)}</TableCell>
-                      <TableCell>{formatDateTimeForTable(compra.fechaCompras)}</TableCell>
+                      <TableCell>{formatCompraCode(compra.idCompras)}</TableCell>
+                      <TableCell>{formatDateTimePeru(compra.fechaCompras)}</TableCell>
                       <TableCell>{compra.ruc}</TableCell>
                       <TableCell>{compra.razonSocial}</TableCell>
                       <TableCell align="right">{formatNumber(getCompraSubtotal(compra))}</TableCell>
@@ -953,7 +924,7 @@ export default function GestionarCompras() {
           </Typography>
           {selectedDelete ? (
             <Typography sx={{ mt: 1, fontWeight: 700, color: '#0f172a' }}>
-              Compra #{selectedDelete.idCompras} - {selectedDelete.razonSocial}
+              Compra {formatCompraCode(selectedDelete.idCompras)} - {selectedDelete.razonSocial}
             </Typography>
           ) : null}
         </DialogContent>

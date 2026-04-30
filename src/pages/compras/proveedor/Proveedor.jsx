@@ -468,7 +468,7 @@ export default function Proveedor() {
           <TextField
             fullWidth
             size="small"
-            placeholder="Buscar proveedor..."
+            placeholder="Buscar proveedor por código, RUC, razón social, tipo, dirección, departamento, provincia, teléfono o contacto..."
             value={searchTerm}
             onChange={handleSearchChange}
             slotProps={{

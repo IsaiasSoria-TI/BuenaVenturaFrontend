@@ -20,16 +20,11 @@ import {
     Typography,
 } from '@mui/material';
 
-function formatDateTime(value) {
-    if (!value) return '-';
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-        return String(value).replace('T', ' ').slice(0, 16);
-    }
-
-    return date.toLocaleString();
-}
+import {
+    formatCompraCode,
+    formatDateTimePeru,
+    formatRecepcionCode,
+} from '../../../utils/formatters';
 
 function toNumber(value) {
     if (value === null || value === undefined || value === '') return 0;
@@ -136,13 +131,13 @@ export default function ModalDetalleRecepcion({ open, onClose, recepcion = null 
                         >
                             <InfoItem
                                 label="Código recepción"
-                                value={recepcion?.idRecepciones ? `#${recepcion.idRecepciones}` : '-'}
+                                value={formatRecepcionCode(recepcion?.idRecepciones)}
                                 strong
                             />
-                            <InfoItem label="Fecha recepción" value={formatDateTime(recepcion?.fechaRecepcion)} />
+                            <InfoItem label="Fecha recepción" value={formatDateTimePeru(recepcion?.fechaRecepcion)} />
                             <InfoItem
                                 label="Código compra"
-                                value={recepcion?.idCompras ? `#${recepcion.idCompras}` : '-'}
+                                value={formatCompraCode(recepcion?.idCompras)}
                                 strong
                             />
                             <InfoItem label="RUC proveedor" value={recepcion?.ruc || '-'} />
@@ -201,7 +196,7 @@ export default function ModalDetalleRecepcion({ open, onClose, recepcion = null 
                                             COSTO KILO
                                         </TableCell>
                                         <TableCell sx={{ fontWeight: 700 }} align="right">
-                                            SUBTOTAL
+                                            IMPORTE COMPRA
                                         </TableCell>
                                         <TableCell sx={{ fontWeight: 700 }}>ESTADO DETALLE</TableCell>
                                     </TableRow>
