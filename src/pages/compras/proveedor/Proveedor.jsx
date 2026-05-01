@@ -75,6 +75,11 @@ const initialForm = {
   cuentaInterbancaria: '',
 };
 
+const DUPLICATE_BANK_ACCOUNT_MESSAGE =
+  'La cuenta bancaria ya está registrada en otro proveedor';
+const DUPLICATE_INTERBANK_ACCOUNT_MESSAGE =
+  'La cuenta interbancaria ya está registrada en otro proveedor';
+
 function getEstadoChipStyles(flgActivo) {
   if (flgActivo) {
     return {
@@ -92,6 +97,10 @@ function getEstadoChipStyles(flgActivo) {
 function formatCodigo(prefix, id) {
   if (id === null || id === undefined || id === '') return '-';
   return `${prefix}-${String(id).padStart(4, '0')}`;
+}
+
+function normalizeAccount(value) {
+  return String(value || '').trim();
 }
 
 export default function Proveedor() {
@@ -277,8 +286,53 @@ export default function Proveedor() {
       }
     }
 
+    const cuentaBancaria = normalizeAccount(form.cuentaBancaria);
+    const cuentaInterbancaria = normalizeAccount(form.cuentaInterbancaria);
+    const idProveedorActual = form.idProveedor === null ? null : Number(form.idProveedor);
+
+    const existeCuentaBancaria = cuentaBancaria
+      ? proveedores.some((proveedor) =>
+          proveedor.flgActivo !== false &&
+          Number(proveedor.idProveedor) !== idProveedorActual &&
+          normalizeAccount(proveedor.cuentaBancaria) === cuentaBancaria
+        )
+      : false;
+
+    const existeCuentaInterbancaria = cuentaInterbancaria
+      ? proveedores.some((proveedor) =>
+          proveedor.flgActivo !== false &&
+          Number(proveedor.idProveedor) !== idProveedorActual &&
+          normalizeAccount(proveedor.cuentaInterbancaria) === cuentaInterbancaria
+        )
+      : false;
+
+    if (existeCuentaBancaria) {
+      newErrors.cuentaBancaria = DUPLICATE_BANK_ACCOUNT_MESSAGE;
+    }
+
+    if (existeCuentaInterbancaria) {
+      newErrors.cuentaInterbancaria = DUPLICATE_INTERBANK_ACCOUNT_MESSAGE;
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const setBackendFieldError = (message) => {
+    if (message === DUPLICATE_BANK_ACCOUNT_MESSAGE) {
+      setErrors((prev) => ({
+        ...prev,
+        cuentaBancaria: message,
+      }));
+      return;
+    }
+
+    if (message === DUPLICATE_INTERBANK_ACCOUNT_MESSAGE) {
+      setErrors((prev) => ({
+        ...prev,
+        cuentaInterbancaria: message,
+      }));
+    }
   };
 
   const buildPayload = () => ({
@@ -327,11 +381,13 @@ export default function Proveedor() {
         error?.response?.data ||
         'No se pudo guardar el proveedor.';
 
-      setServerError(
+      const errorMessage =
         typeof message === 'string'
           ? message
-          : 'No se pudo guardar el proveedor.'
-      );
+          : 'No se pudo guardar el proveedor.';
+
+      setBackendFieldError(errorMessage);
+      setServerError(errorMessage);
     } finally {
       setSaving(false);
     }
