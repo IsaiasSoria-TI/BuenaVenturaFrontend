@@ -1,10 +1,12 @@
 import * as React from 'react';
 import {
   Box,
+  ButtonBase,
   Card,
   CardContent,
   Typography,
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 const Icon = ({ name, size = 22, color = 'inherit' }) => (
   <span
@@ -31,15 +33,14 @@ const KPI_CARDS = [
 ];
 
 const QUICK_MODULES = [
-  { id: 'cobrar', label: 'Ctas. Cobrar', icon: 'payments', color: '#1976d2', bg: '#eff6ff' },
-  { id: 'pagar', label: 'Ctas. Pagar', icon: 'receipt_long', color: '#ef4444', bg: '#fef2f2' },
-  { id: 'inventarios', label: 'Inventarios', icon: 'inventory_2', color: '#10b981', bg: '#ecfdf5' },
-  { id: 'compras', label: 'Compras', icon: 'shopping_cart', color: '#f59e0b', bg: '#fef9ec' },
-  { id: 'reportes', label: 'Reportes', icon: 'bar_chart', color: '#7c3aed', bg: '#f5f3ff' },
-  { id: 'costos', label: 'Costos', icon: 'monitoring', color: '#0891b2', bg: '#ecfeff' },
-  { id: 'sunat', label: 'SUNAT', icon: 'account_balance', color: '#dc2626', bg: '#fef2f2' },
-  { id: 'integraciones', label: 'Integrac.', icon: 'hub', color: '#7c3aed', bg: '#f5f3ff' },
-  { id: 'configuracion', label: 'Config.', icon: 'settings', color: '#475569', bg: '#f8fafc' },
+  { id: 'kardex', label: 'Kardex', icon: 'inventory', color: '#10b981', bg: '#ecfdf5', to: '/dashboard/inventarios/kardex' },
+  { id: 'transferencia', label: 'Transferencia', icon: 'sync_alt', color: '#0891b2', bg: '#ecfeff', to: '/dashboard/inventarios/transferencia' },
+  { id: 'articulos', label: 'Articulos', icon: 'inventory_2', color: '#0f766e', bg: '#f0fdfa', to: '/dashboard/inventarios/articulos' },
+  { id: 'gestionar-compras', label: 'Gestionar Compra', icon: 'shopping_cart', color: '#f59e0b', bg: '#fef9ec', to: '/dashboard/compras/gestionar' },
+  { id: 'recepciones', label: 'Recepciones', icon: 'move_to_inbox', color: '#7c3aed', bg: '#f5f3ff', to: '/dashboard/compras/recepciones' },
+  { id: 'proveedor', label: 'Proveedor', icon: 'local_shipping', color: '#1976d2', bg: '#eff6ff', to: '/dashboard/compras/proveedor' },
+  { id: 'pagar', label: 'Ctas. Pagar', icon: 'receipt_long', color: '#ef4444', bg: '#fef2f2', to: '/dashboard/pagar' },
+  { id: 'configuracion', label: 'Config.', icon: 'settings', color: '#475569', bg: '#f8fafc', to: '/dashboard/configuracion' },
 ];
 
 function EmptyStateCard({ title, description }) {
@@ -65,6 +66,8 @@ function EmptyStateCard({ title, description }) {
 }
 
 export default function DashboardHome() {
+  const navigate = useNavigate();
+
   return (
     <>
       <Box
@@ -173,12 +176,12 @@ export default function DashboardHome() {
             }}
           >
             {QUICK_MODULES.map((m) => (
-              <Box
+              <ButtonBase
                 key={m.id}
+                onClick={() => navigate(m.to)}
                 sx={{
                   p: { xs: 1.25, md: 1.75 },
                   borderRadius: 2.5,
-                  cursor: 'pointer',
                   backgroundColor: '#f8fafc',
                   border: '1.5px solid #e2e8f0',
                   transition: 'all .15s',
@@ -193,6 +196,7 @@ export default function DashboardHome() {
                   alignItems: 'center',
                   textAlign: 'center',
                   gap: 0.75,
+                  width: '100%',
                 }}
               >
                 <Box
@@ -219,7 +223,7 @@ export default function DashboardHome() {
                 >
                   {m.label}
                 </Typography>
-              </Box>
+              </ButtonBase>
             ))}
           </Box>
         </CardContent>

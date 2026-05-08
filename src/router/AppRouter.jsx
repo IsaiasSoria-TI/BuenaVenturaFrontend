@@ -10,6 +10,8 @@ import Dashboard from '../pages/dashboard/Dashboard';
 import DashboardHome from '../pages/dashboard/DashboardHome';
 
 import Articulo from '../pages/inventario/articulo/Articulo';
+import Kardex from '../pages/inventario/kardex/Kardex';
+import Transferencia from '../pages/inventario/transferencia/Transferencia';
 import CuentasPagar from '../pages/cuentaspagar/CuentasPagar';
 
 const PrivateRoute = ({ children }) => {
@@ -35,6 +37,8 @@ function AppRouter() {
           <Route path="compras/proveedor" element={<Proveedor />} />
           <Route path="compras/gestionar" element={<GestionarCompras />} />
           <Route path="compras/recepciones" element={<Recepciones />} />
+          <Route path="inventarios/kardex" element={<Kardex />} />
+          <Route path="inventarios/transferencia" element={<Transferencia />} />
           <Route path="inventarios/articulos" element={<Articulo />} />
           <Route path="pagar" element={<CuentasPagar />} />
           <Route path="configuracion" element={<Configuracion />} />
