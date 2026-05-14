@@ -34,6 +34,7 @@ import { proveedorService } from '../../../services/proveedorService';
 import { articuloService } from '../../../services/articuloService';
 import { impuestoService } from '../../../services/impuestoService';
 import { pagoService } from '../../../services/pagoService';
+import { monedaService } from '../../../services/monedaService';
 
 import ModalDetalleCompra from './ModalDetalleCompra';
 import ModalGestionarCompras from './ModalGestionarCompras';
@@ -42,6 +43,17 @@ import {
   formatDateTimeInputPeru,
   formatDateTimePeru,
 } from '../../../utils/formatters';
+import {
+  DEFAULT_IGV_PERCENTAGE,
+  calcularCompraPreview,
+  formatNumber,
+  getCompraIgv,
+  getCompraImporteImpuestos,
+  getCompraSubtotal,
+  getCompraTotalFinal,
+  getDefaultMonedaId,
+  isIgvImpuesto,
+} from './compraCalculations';
 
 function Icon({ name, size = 20, color = 'inherit' }) {
   return (
@@ -82,15 +94,14 @@ const createImpuesto = () => ({
   idImpuesto: '',
 });
 
-const DEFAULT_IGV_PERCENTAGE = 18;
-
 const initialForm = {
   idCompras: null,
   idPago: '',
+  idMoneda: '',
   idProveedor: null,
   fechaCompras: '',
   zonaProduccion: '',
-  hectareas: '',
+  numeroLote: '',
   detalles: [createDetalle()],
   impuestos: [createImpuesto()],
   aplicaIgv: false,
@@ -98,28 +109,14 @@ const initialForm = {
   importeIgv: 0,
 };
 
-function formatNumber(value) {
-  if (value === null || value === undefined || value === '') return '0.00';
-
-  const number = Number(value);
-  if (Number.isNaN(number)) return '0.00';
-
-  return number.toFixed(2);
-}
-
-function toNumber(value) {
-  if (value === null || value === undefined || value === '') return 0;
-
-  const number = Number(value);
-  return Number.isNaN(number) ? 0 : number;
-}
-
-function isIgvImpuesto(impuesto) {
-  const tipo = String(impuesto?.tipoImpuesto || '').replace(/[.\s]/g, '').toUpperCase();
-  return tipo === 'IGV';
-}
-
 function getEstadoChipStyles(estado) {
+  if (estado === 'Inactivo') {
+    return {
+      backgroundColor: '#f1f5f9',
+      color: '#64748b',
+    };
+  }
+
   if (estado === 'Completo') {
     return {
       backgroundColor: '#dcfce7',
@@ -147,59 +144,9 @@ function getEstadoChipStyles(estado) {
   };
 }
 
-function getCompraSubtotal(compra) {
-  if (Array.isArray(compra.detalles) && compra.detalles.length > 0) {
-    return compra.detalles.reduce((total, detalle) => {
-      if (detalle.costoTotal !== null && detalle.costoTotal !== undefined) {
-        return total + toNumber(detalle.costoTotal);
-      }
-
-      return total + toNumber(detalle.peso) * toNumber(detalle.costoKilo);
-    }, 0);
-  }
-
-  if (compra.subtotal !== null && compra.subtotal !== undefined) {
-    return toNumber(compra.subtotal);
-  }
-
-  return toNumber(compra.totalGeneral ?? compra.costoTotal)
-    - toNumber(compra.importeIgv);
-}
-
-function getCompraIgv(compra) {
-  if (compra.importeIgv !== null && compra.importeIgv !== undefined) {
-    return toNumber(compra.importeIgv);
-  }
-
-  if (!compra.aplicaIgv) return 0;
-
-  return (getCompraSubtotal(compra) * toNumber(compra.porcentajeIgv ?? DEFAULT_IGV_PERCENTAGE)) / 100;
-}
-
-function getCompraImporteImpuestos(compra) {
-  if (compra.importeImpuesto !== null && compra.importeImpuesto !== undefined) {
-    return toNumber(compra.importeImpuesto);
-  }
-
-  if (Array.isArray(compra.impuestos) && compra.impuestos.length > 0) {
-    const baseImpuestos = getCompraSubtotal(compra) + getCompraIgv(compra);
-
-    return compra.impuestos.reduce((total, impuesto) => {
-      if (isIgvImpuesto(impuesto)) return total;
-
-      if (impuesto.importe !== null && impuesto.importe !== undefined) {
-        return total + toNumber(impuesto.importe);
-      }
-
-      return total + (baseImpuestos * toNumber(impuesto.porcentaje)) / 100;
-    }, 0);
-  }
-
-  return 0;
-}
-
-function getCompraTotalFinal(compra) {
-  return getCompraSubtotal(compra) + getCompraIgv(compra);
+function getEstadoCompra(compra) {
+  if (compra?.flgActivo === false) return 'Inactivo';
+  return compra?.estado || '-';
 }
 
 export default function GestionarCompras() {
@@ -208,6 +155,7 @@ export default function GestionarCompras() {
   const [articulos, setArticulos] = React.useState([]);
   const [impuestos, setImpuestos] = React.useState([]);
   const [pagos, setPagos] = React.useState([]);
+  const [monedas, setMonedas] = React.useState([]);
 
   const [loading, setLoading] = React.useState(true);
   const [catalogLoading, setCatalogLoading] = React.useState(true);
@@ -260,17 +208,19 @@ export default function GestionarCompras() {
     try {
       setCatalogLoading(true);
 
-      const [proveedoresData, articulosData, impuestosData, pagosData] = await Promise.all([
+      const [proveedoresData, articulosData, impuestosData, pagosData, monedasData] = await Promise.all([
         proveedorService.listar(),
         articuloService.listar(),
         impuestoService.listar(),
         pagoService.listar(),
+        monedaService.listar(),
       ]);
 
       setProveedores(Array.isArray(proveedoresData) ? proveedoresData : []);
       setArticulos(Array.isArray(articulosData) ? articulosData : []);
       setImpuestos(Array.isArray(impuestosData) ? impuestosData.filter((item) => !isIgvImpuesto(item)) : []);
       setPagos(Array.isArray(pagosData) ? pagosData : []);
+      setMonedas(Array.isArray(monedasData) ? monedasData : []);
     } catch (error) {
       console.error('Error al cargar catálogos:', error);
       console.error('status:', error?.response?.status);
@@ -290,6 +240,7 @@ export default function GestionarCompras() {
     setEditing(false);
     setForm({
       ...initialForm,
+      idMoneda: getDefaultMonedaId(monedas),
       detalles: [createDetalle()],
       impuestos: [createImpuesto()],
     });
@@ -341,10 +292,11 @@ export default function GestionarCompras() {
     setForm({
       idCompras: compra.idCompras,
       idPago: compra.idPago ?? '',
+      idMoneda: compra.idMoneda ?? getDefaultMonedaId(monedas),
       idProveedor: compra.idProveedor ?? null,
       fechaCompras: formatDateTimeInputPeru(compra.fechaCompras),
       zonaProduccion: compra.zonaProduccion || '',
-      hectareas: compra.hectareas ?? '',
+      numeroLote: compra.numeroLote ?? '',
       detalles,
       impuestos: impuestosCompra,
       aplicaIgv: Boolean(compra.aplicaIgv),
@@ -486,36 +438,20 @@ export default function GestionarCompras() {
     });
   };
 
-  const subtotalPreview = React.useMemo(() => {
-    const total = form.detalles.reduce((acc, detalle) => {
-      const peso = Number(detalle.peso || 0);
-      const costoKilo = Number(detalle.costoKilo || 0);
-      return acc + peso * costoKilo;
-    }, 0);
-
-    return total.toFixed(2);
-  }, [form.detalles]);
-
-  const igvPreview = React.useMemo(() => {
-    if (!form.aplicaIgv) return '0.00';
-
-    const subtotal = Number(subtotalPreview);
-    const porcentajeIgv = Number(form.porcentajeIgv || DEFAULT_IGV_PERCENTAGE);
-
-    if (Number.isNaN(porcentajeIgv)) return '0.00';
-
-    return ((subtotal * porcentajeIgv) / 100).toFixed(2);
-  }, [form.aplicaIgv, form.porcentajeIgv, subtotalPreview]);
-
-  const totalGeneralPreview = React.useMemo(() => {
-    return (Number(subtotalPreview) + Number(igvPreview)).toFixed(2);
-  }, [igvPreview, subtotalPreview]);
+  const { subtotalPreview, igvPreview, totalGeneralPreview } = React.useMemo(
+    () => calcularCompraPreview(form),
+    [form]
+  );
 
   const validate = () => {
     const newErrors = {};
 
     if (!form.idPago) {
       newErrors.idPago = 'Seleccione una condición de pago';
+    }
+
+    if (!form.idMoneda || !monedas.some((moneda) => moneda.idMoneda === Number(form.idMoneda))) {
+      newErrors.idMoneda = 'Seleccione una moneda';
     }
 
     if (!form.idProveedor) {
@@ -530,8 +466,8 @@ export default function GestionarCompras() {
       newErrors.zonaProduccion = 'La zona de producción es obligatoria';
     }
 
-    if (form.hectareas === '' || Number(form.hectareas) < 0) {
-      newErrors.hectareas = 'Las hectáreas deben ser 0 o mayores';
+    if (form.numeroLote === '' || Number(form.numeroLote) < 0) {
+      newErrors.numeroLote = 'El número de lotes debe ser 0 o mayor';
     }
 
     if (!form.detalles.length) {
@@ -571,10 +507,11 @@ export default function GestionarCompras() {
 
   const buildPayload = () => ({
     idPago: Number(form.idPago),
+    idMoneda: Number(form.idMoneda),
     idProveedor: Number(form.idProveedor),
     fechaCompras: form.fechaCompras,
     zonaProduccion: form.zonaProduccion.trim(),
-    hectareas: Number(form.hectareas),
+    numeroLote: Number(form.numeroLote),
     detalles: form.detalles.map((detalle) => ({
       idArticulo: Number(detalle.idArticulo),
       peso: Number(detalle.peso),
@@ -697,7 +634,7 @@ export default function GestionarCompras() {
         compra.fechaCompras,
         compra.ruc,
         compra.razonSocial,
-        compra.estado,
+        getEstadoCompra(compra),
       ];
 
       return valoresBusqueda.some((value) =>
@@ -837,11 +774,11 @@ export default function GestionarCompras() {
                       <TableCell align="right">{formatNumber(getCompraTotalFinal(compra))}</TableCell>
                       <TableCell>
                         <Chip
-                          label={compra.estado || '-'}
+                          label={getEstadoCompra(compra)}
                           size="small"
                           sx={{
                             fontWeight: 700,
-                            ...getEstadoChipStyles(compra.estado),
+                            ...getEstadoChipStyles(getEstadoCompra(compra)),
                           }}
                         />
                       </TableCell>
@@ -851,10 +788,16 @@ export default function GestionarCompras() {
                             <Icon name="visibility" size={20} color="#0f766e" />
                           </IconButton>
                         </Tooltip>
-                        <IconButton onClick={() => handleOpenEdit(compra)}>
+                        <IconButton
+                          onClick={() => handleOpenEdit(compra)}
+                          disabled={compra.flgActivo === false}
+                        >
                           <Icon name="edit" size={20} color="#1976d2" />
                         </IconButton>
-                        <IconButton onClick={() => handleOpenDeleteDialog(compra)}>
+                        <IconButton
+                          onClick={() => handleOpenDeleteDialog(compra)}
+                          disabled={compra.flgActivo === false}
+                        >
                           <Icon name="delete" size={20} color="#ef4444" />
                         </IconButton>
                       </TableCell>
@@ -892,6 +835,7 @@ export default function GestionarCompras() {
         articulos={articulos}
         impuestos={impuestos}
         pagos={pagos}
+        monedas={monedas}
         selectedProveedor={selectedProveedor}
         setSelectedProveedor={setSelectedProveedor}
         setForm={setForm}

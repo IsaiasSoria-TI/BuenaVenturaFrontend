@@ -37,9 +37,19 @@ import {
 const initialForm = {
   tipoFactura: 'UNICA',
   numeroFactura: '',
-  moneda: 'PEN',
+  moneda: '',
   codigoDetRet: '',
 };
+
+function getDefaultMonedaCodigo(monedas) {
+  const monedaPen = monedas.find((moneda) => moneda.codigo === 'PEN');
+  return monedaPen?.codigo || monedas[0]?.codigo || '';
+}
+
+function formatMonedaOption(moneda) {
+  const simbolo = moneda.simbolo ? ` (${moneda.simbolo})` : '';
+  return `${moneda.codigo} - ${moneda.nombre}${simbolo}`;
+}
 
 function formatNumber(value) {
   if (value === null || value === undefined || value === '') return '0.00';
@@ -196,7 +206,7 @@ RecepcionesTable.propTypes = {
   errors: PropTypes.objectOf(PropTypes.string).isRequired,
 };
 
-export default function ModalCuentaPagar({ open, onClose, onSaved }) {
+export default function ModalCuentaPagar({ open, onClose, onSaved, monedas }) {
   const [comprasValidas, setComprasValidas] = React.useState([]);
   const [detalleCompra, setDetalleCompra] = React.useState(null);
 
@@ -240,7 +250,10 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
   React.useEffect(() => {
     if (!open) return;
 
-    setForm(initialForm);
+    setForm({
+      ...initialForm,
+      moneda: getDefaultMonedaCodigo(monedas),
+    });
     setErrors({});
     setServerError('');
     setServerSuccess('');
@@ -249,6 +262,15 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
     setSelectedRecepciones([]);
     cargarComprasValidas();
   }, [open, cargarComprasValidas]);
+
+  React.useEffect(() => {
+    if (!open || form.moneda || monedas.length === 0) return;
+
+    setForm((prev) => ({
+      ...prev,
+      moneda: getDefaultMonedaCodigo(monedas),
+    }));
+  }, [open, form.moneda, monedas]);
 
   const handleChange = (field) => (event) => {
     const { value } = event.target;
@@ -381,7 +403,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
       newErrors.tipoFactura = 'Seleccione el tipo de factura';
     }
 
-    if (!form.moneda) {
+    if (!form.moneda || !monedas.some((moneda) => moneda.codigo === form.moneda)) {
       newErrors.moneda = 'Seleccione la moneda';
     }
 
@@ -410,7 +432,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [selectedCompra, form, selectedRecepciones]);
+  }, [selectedCompra, form, selectedRecepciones, monedas]);
 
   const buildPayload = React.useCallback(() => {
     return {
@@ -668,10 +690,13 @@ export default function ModalCuentaPagar({ open, onClose, onSaved }) {
                       value={form.moneda}
                       onChange={handleChange('moneda')}
                       error={!!errors.moneda}
-                      helperText={errors.moneda || ''}
+                      helperText={errors.moneda || (monedas.length === 0 ? 'No hay monedas configuradas' : '')}
                     >
-                      <MenuItem value="PEN">PEN</MenuItem>
-                      <MenuItem value="USD">USD</MenuItem>
+                      {monedas.map((moneda) => (
+                        <MenuItem key={moneda.idMoneda} value={moneda.codigo}>
+                          {formatMonedaOption(moneda)}
+                        </MenuItem>
+                      ))}
                     </TextField>
 
                     <TextField
@@ -739,4 +764,12 @@ ModalCuentaPagar.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onSaved: PropTypes.func.isRequired,
+  monedas: PropTypes.arrayOf(
+    PropTypes.shape({
+      idMoneda: PropTypes.number,
+      codigo: PropTypes.string.isRequired,
+      nombre: PropTypes.string.isRequired,
+      simbolo: PropTypes.string,
+    })
+  ).isRequired,
 };

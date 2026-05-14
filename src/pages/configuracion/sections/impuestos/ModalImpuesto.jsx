@@ -10,7 +10,7 @@ import {
     TextField,
 } from '@mui/material';
 
-export default function ModalBanco({
+export default function ModalImpuesto({
     open,
     onClose,
     editing,
@@ -23,21 +23,36 @@ export default function ModalBanco({
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
             <DialogTitle sx={{ fontWeight: 700 }}>
-                {editing ? 'Editar banco' : 'Nuevo banco'}
+                {editing ? 'Editar impuesto' : 'Nuevo impuesto'}
             </DialogTitle>
 
             <DialogContent dividers>
                 <Stack spacing={2}>
                     <TextField
-                        label="Nombre del banco"
+                        label="Tipo de impuesto"
                         fullWidth
-                        value={form.nombre}
-                        onChange={handleChange('nombre')}
-                        error={!!errors.nombre}
-                        helperText={errors.nombre}
+                        value={form.tipoImpuesto}
+                        onChange={handleChange('tipoImpuesto')}
+                        error={!!errors.tipoImpuesto}
+                        helperText={errors.tipoImpuesto}
                     />
 
-                    {editing && (
+                    <TextField
+                        label="Valor (%)"
+                        type="number"
+                        fullWidth
+                        value={form.valor}
+                        onChange={handleChange('valor')}
+                        error={!!errors.valor}
+                        helperText={errors.valor}
+                        slotProps={{
+                            input: {
+                                inputProps: { min: 0, step: '0.01', inputMode: 'decimal' },
+                            },
+                        }}
+                    />
+
+                    {editing ? (
                         <TextField
                             select
                             label="Estado"
@@ -48,18 +63,13 @@ export default function ModalBanco({
                             <MenuItem value="true">Activo</MenuItem>
                             <MenuItem value="false">Inactivo</MenuItem>
                         </TextField>
-                    )}
+                    ) : null}
                 </Stack>
             </DialogContent>
 
             <DialogActions>
-                <Button onClick={onClose}>Cancelar</Button>
-
-                <Button
-                    variant="contained"
-                    onClick={handleSubmit}
-                    disabled={saving}
-                >
+                <Button onClick={onClose} disabled={saving}>Cancelar</Button>
+                <Button variant="contained" onClick={handleSubmit} disabled={saving}>
                     {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Registrar'}
                 </Button>
             </DialogActions>

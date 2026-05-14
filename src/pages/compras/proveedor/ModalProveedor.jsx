@@ -14,15 +14,6 @@ import {
     TextField,
 } from '@mui/material';
 
-const BANCOS = [
-    { id: 1, nombre: 'BCP' },
-    { id: 2, nombre: 'BBVA' },
-    { id: 3, nombre: 'Interbank' },
-    { id: 4, nombre: 'Scotiabank' },
-    { id: 5, nombre: 'Banco de la Nación' },
-    { id: 6, nombre: 'Otros' },
-];
-
 export default function ModalProveedor({
     open,
     onClose,
@@ -33,6 +24,7 @@ export default function ModalProveedor({
     serverError,
     serverSuccess,
     tiposProveedor,
+    bancos,
     onChange,
     onSubmit,
 }) {
@@ -174,8 +166,8 @@ export default function ModalProveedor({
                                 <em>Seleccione</em>
                             </MenuItem>
 
-                            {BANCOS.map((banco) => (
-                                <MenuItem key={banco.id} value={banco.id}>
+                            {bancos.map((banco) => (
+                                <MenuItem key={banco.idBanco} value={banco.idBanco}>
                                     {banco.nombre}
                                 </MenuItem>
                             ))}
@@ -245,6 +237,12 @@ ModalProveedor.propTypes = {
     tiposProveedor: PropTypes.arrayOf(
         PropTypes.shape({
             idTipoProveedor: PropTypes.number,
+            nombre: PropTypes.string,
+        })
+    ).isRequired,
+    bancos: PropTypes.arrayOf(
+        PropTypes.shape({
+            idBanco: PropTypes.number,
             nombre: PropTypes.string,
         })
     ).isRequired,

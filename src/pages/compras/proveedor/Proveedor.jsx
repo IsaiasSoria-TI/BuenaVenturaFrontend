@@ -30,6 +30,7 @@ import {
 
 import { proveedorService } from '../../../services/proveedorService';
 import { tipoProveedorService } from '../../../services/tipoProveedorService';
+import { bancoService } from '../../../services/bancoService';
 import ModalProveedor from './ModalProveedor';
 
 function Icon({ name, size = 20, color = 'inherit' }) {
@@ -106,6 +107,7 @@ function normalizeAccount(value) {
 export default function Proveedor() {
   const [proveedores, setProveedores] = React.useState([]);
   const [tiposProveedor, setTiposProveedor] = React.useState([]);
+  const [bancos, setBancos] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
 
@@ -175,10 +177,33 @@ export default function Proveedor() {
     }
   }, []);
 
+  const cargarBancos = React.useCallback(async () => {
+    try {
+      const data = await bancoService.listar();
+      setBancos(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error al listar bancos:', error);
+      console.error('status:', error?.response?.status);
+      console.error('data:', error?.response?.data);
+
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        'No se pudo listar los bancos.';
+
+      setServerError(
+        typeof message === 'string'
+          ? message
+          : 'No se pudo listar los bancos.'
+      );
+    }
+  }, []);
+
   React.useEffect(() => {
     cargarProveedores();
     cargarTiposProveedor();
-  }, [cargarProveedores, cargarTiposProveedor]);
+    cargarBancos();
+  }, [cargarProveedores, cargarTiposProveedor, cargarBancos]);
 
   const handleOpenCreate = () => {
     setEditing(false);
@@ -665,6 +690,7 @@ export default function Proveedor() {
         serverError={serverError}
         serverSuccess={serverSuccess}
         tiposProveedor={tiposProveedor}
+        bancos={bancos}
         onChange={handleChange}
         onSubmit={handleSubmit}
       />

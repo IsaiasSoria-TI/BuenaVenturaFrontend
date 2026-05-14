@@ -9,6 +9,7 @@ import CuentasContablesSection from './sections/cuentascontables/CuentasContable
 import TiposProveedorSection from './sections/tiposproveedor/TiposProveedorSection';
 import CategoriasSection from './sections/categorias/CategoriasSection';
 import BancosSection from './sections/bancos/BancosSection';
+import ImpuestosSection from './sections/impuestos/ImpuestosSection';
 
 export default function Configuracion() {
     const [seccionActiva, setSeccionActiva] = React.useState('perfil');
@@ -32,6 +33,9 @@ export default function Configuracion() {
 
             case 'bancos':
                 return <BancosSection />;
+
+            case 'impuestos':
+                return <ImpuestosSection />;
 
             default:
                 return <PerfilSection />;

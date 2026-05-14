@@ -31,6 +31,7 @@ import {
 } from '@mui/material';
 
 import { cuentaPagarService } from '../../services/cuentaPagarService';
+import { monedaService } from '../../services/monedaService';
 import ModalDetalleCuentaPagar from './ModalDetalleCuentaPagar';
 import ModalCuentaPagar from './ModalCuentaPagar';
 import {
@@ -88,8 +89,19 @@ function getEstadoChipStyles(estado) {
   };
 }
 
+function getDefaultMonedaCodigo(monedas) {
+  const monedaPen = monedas.find((moneda) => moneda.codigo === 'PEN');
+  return monedaPen?.codigo || monedas[0]?.codigo || '';
+}
+
+function formatMonedaOption(moneda) {
+  const simbolo = moneda.simbolo ? ` (${moneda.simbolo})` : '';
+  return `${moneda.codigo} - ${moneda.nombre}${simbolo}`;
+}
+
 export default function CuentasPagar() {
   const [cuentas, setCuentas] = React.useState([]);
+  const [monedas, setMonedas] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [open, setOpen] = React.useState(false);
   const [serverError, setServerError] = React.useState('');
@@ -103,7 +115,7 @@ export default function CuentasPagar() {
   const [selectedEdit, setSelectedEdit] = React.useState(null);
   const [editForm, setEditForm] = React.useState({
     numeroFactura: '',
-    moneda: 'PEN',
+    moneda: '',
     codigoDetRet: '',
   });
   const [editSaving, setEditSaving] = React.useState(false);
@@ -137,9 +149,20 @@ export default function CuentasPagar() {
     }
   }, []);
 
+  const cargarMonedas = React.useCallback(async () => {
+    try {
+      const data = await monedaService.listar();
+      setMonedas(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error al cargar monedas:', error);
+      setServerError('No se pudieron cargar las monedas.');
+    }
+  }, []);
+
   React.useEffect(() => {
     cargarCuentas();
-  }, [cargarCuentas]);
+    cargarMonedas();
+  }, [cargarCuentas, cargarMonedas]);
 
   const handleOpenCreate = () => {
     setServerError('');
@@ -172,7 +195,7 @@ export default function CuentasPagar() {
     setSelectedEdit(cuenta);
     setEditForm({
       numeroFactura: cuenta.numeroFactura || '',
-      moneda: cuenta.moneda || 'PEN',
+      moneda: cuenta.moneda || getDefaultMonedaCodigo(monedas),
       codigoDetRet: cuenta.codigoDetRet || '',
     });
     setServerError('');
@@ -538,6 +561,7 @@ export default function CuentasPagar() {
         open={open}
         onClose={handleCloseCreate}
         onSaved={handleSaved}
+        monedas={monedas}
       />
 
       <ModalDetalleCuentaPagar
@@ -570,8 +594,11 @@ export default function CuentasPagar() {
               value={editForm.moneda}
               onChange={handleEditChange('moneda')}
             >
-              <MenuItem value="PEN">PEN</MenuItem>
-              <MenuItem value="USD">USD</MenuItem>
+              {monedas.map((moneda) => (
+                <MenuItem key={moneda.idMoneda} value={moneda.codigo}>
+                  {formatMonedaOption(moneda)}
+                </MenuItem>
+              ))}
             </TextField>
 
             <TextField
@@ -589,7 +616,7 @@ export default function CuentasPagar() {
           <Button
             variant="contained"
             onClick={handleSubmitEdit}
-            disabled={editSaving || !editForm.numeroFactura.trim() || !editForm.codigoDetRet.trim()}
+            disabled={editSaving || !editForm.numeroFactura.trim() || !editForm.moneda || !editForm.codigoDetRet.trim()}
             sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
           >
             {editSaving ? 'Guardando...' : 'Actualizar'}

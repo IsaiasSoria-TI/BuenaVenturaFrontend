@@ -33,6 +33,11 @@ const MENU_OPTIONS = [
         label: 'Bancos',
         description: 'Catálogo de bancos',
     },
+    {
+        key: 'impuestos',
+        label: 'Impuestos',
+        description: 'Catálogo tributario',
+    },
 ];
 
 export default function ConfiguracionMenu({ seccionActiva, onChangeSeccion }) {

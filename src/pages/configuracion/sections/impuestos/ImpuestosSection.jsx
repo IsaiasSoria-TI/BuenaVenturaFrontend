@@ -24,12 +24,13 @@ import {
     Typography,
 } from '@mui/material';
 
-import { bancoService } from '../../../../services/bancoService';
-import ModalBanco from './ModalBanco';
+import { impuestoService } from '../../../../services/impuestoService';
+import ModalImpuesto from './ModalImpuesto';
 
 const initialForm = {
-    idBanco: null,
-    nombre: '',
+    idImpuesto: null,
+    tipoImpuesto: '',
+    valor: '',
     flgActivo: 'true',
 };
 
@@ -59,8 +60,29 @@ function getEstadoChipStyles(flgActivo) {
         : { backgroundColor: '#fee2e2', color: '#dc2626' };
 }
 
-export default function BancosSection() {
-    const [bancos, setBancos] = React.useState([]);
+function formatPorcentaje(value) {
+    const numero = Number(value);
+    if (!Number.isFinite(numero)) return '0.00';
+
+    return numero.toLocaleString('es-PE', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+}
+
+function parseValorDecimal(value) {
+    const normalizado = String(value).trim().replace(',', '.');
+
+    if (!/^\d+(\.\d{1,2})?$/.test(normalizado)) {
+        return null;
+    }
+
+    const numero = Number(normalizado);
+    return Number.isFinite(numero) ? numero : null;
+}
+
+export default function ImpuestosSection() {
+    const [impuestos, setImpuestos] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
     const [saving, setSaving] = React.useState(false);
     const [form, setForm] = React.useState(initialForm);
@@ -74,24 +96,24 @@ export default function BancosSection() {
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
 
-    const cargarBancos = React.useCallback(async () => {
+    const cargarImpuestos = React.useCallback(async () => {
         try {
             setLoading(true);
             setServerError('');
-            const data = await bancoService.listarTodos();
-            setBancos(Array.isArray(data) ? data : []);
+            const data = await impuestoService.listarTodos();
+            setImpuestos(Array.isArray(data) ? data : []);
             setPage(0);
         } catch (error) {
             console.error(error);
-            setServerError('Error al cargar bancos');
+            setServerError('Error al cargar impuestos');
         } finally {
             setLoading(false);
         }
     }, []);
 
     React.useEffect(() => {
-        cargarBancos();
-    }, [cargarBancos]);
+        cargarImpuestos();
+    }, [cargarImpuestos]);
 
     const handleOpenCreate = () => {
         setForm(initialForm);
@@ -102,11 +124,12 @@ export default function BancosSection() {
         setOpen(true);
     };
 
-    const handleOpenEdit = (banco) => {
+    const handleOpenEdit = (impuesto) => {
         setForm({
-            idBanco: banco.idBanco,
-            nombre: banco.nombre || '',
-            flgActivo: String(Boolean(banco.flgActivo)),
+            idImpuesto: impuesto.idImpuesto,
+            tipoImpuesto: impuesto.tipoImpuesto || '',
+            valor: impuesto.valor ?? '',
+            flgActivo: String(Boolean(impuesto.flgActivo)),
         });
         setEditing(true);
         setErrors({});
@@ -126,60 +149,73 @@ export default function BancosSection() {
         }
     };
 
-    const handleSubmit = async () => {
-        if (!form.nombre.trim()) {
-            setErrors({ nombre: 'Campo obligatorio' });
-            return;
+    const validate = () => {
+        const newErrors = {};
+
+        if (!form.tipoImpuesto.trim()) {
+            newErrors.tipoImpuesto = 'Campo obligatorio';
         }
+
+        if (form.valor === '' || parseValorDecimal(form.valor) === null) {
+            newErrors.valor = 'Ingrese un valor válido con hasta 2 decimales';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleSubmit = async () => {
+        if (!validate()) return;
 
         try {
             setSaving(true);
             setServerError('');
 
             const payload = {
-                nombre: form.nombre.trim(),
+                tipoImpuesto: form.tipoImpuesto.trim(),
+                valor: parseValorDecimal(form.valor),
                 flgActivo: form.flgActivo === 'true',
             };
 
-            if (editing && form.idBanco) {
-                await bancoService.actualizar(form.idBanco, payload);
-                setSuccess('Banco actualizado');
+            if (editing && form.idImpuesto) {
+                await impuestoService.actualizar(form.idImpuesto, payload);
+                setSuccess('Impuesto actualizado');
             } else {
-                await bancoService.crear(payload);
-                setSuccess('Banco creado');
+                await impuestoService.crear(payload);
+                setSuccess('Impuesto creado');
             }
 
             setOpen(false);
-            await cargarBancos();
+            await cargarImpuestos();
         } catch (error) {
             console.error(error);
-            const message = error?.response?.data?.message || error?.response?.data || 'Error al guardar banco';
-            setServerError(typeof message === 'string' ? message : 'Error al guardar banco');
+            const message = error?.response?.data?.message || error?.response?.data || 'Error al guardar impuesto';
+            setServerError(typeof message === 'string' ? message : 'Error al guardar impuesto');
         } finally {
             setSaving(false);
         }
     };
 
     const handleDelete = async () => {
-        if (!selectedDelete?.idBanco) return;
+        if (!selectedDelete?.idImpuesto) return;
 
         try {
             setServerError('');
-            await bancoService.eliminar(selectedDelete.idBanco);
-            setSuccess('Banco inactivado');
+            await impuestoService.eliminar(selectedDelete.idImpuesto);
+            setSuccess('Impuesto inactivado');
             setDeleteDialog(false);
             setSelectedDelete(null);
-            await cargarBancos();
+            await cargarImpuestos();
         } catch (error) {
             console.error(error);
             setServerError('Error al eliminar');
         }
     };
 
-    const bancosPaginados = React.useMemo(() => {
+    const impuestosPaginados = React.useMemo(() => {
         const start = page * rowsPerPage;
-        return bancos.slice(start, start + rowsPerPage);
-    }, [bancos, page, rowsPerPage]);
+        return impuestos.slice(start, start + rowsPerPage);
+    }, [impuestos, page, rowsPerPage]);
 
     return (
         <Box>
@@ -192,18 +228,14 @@ export default function BancosSection() {
                         spacing={1.5}
                         sx={{ mb: 2 }}
                     >
-                        <Typography fontWeight={700}>Bancos</Typography>
+                        <Typography fontWeight={700}>Impuestos</Typography>
                         <Button
                             variant="contained"
                             onClick={handleOpenCreate}
                             startIcon={<Icon name="add" size={18} color="#fff" />}
-                            sx={{
-                                alignSelf: { xs: 'flex-start', sm: 'auto' },
-                                textTransform: 'none',
-                                fontWeight: 700,
-                            }}
+                            sx={{ alignSelf: { xs: 'flex-start', sm: 'auto' } }}
                         >
-                            Nuevo banco
+                            Nuevo impuesto
                         </Button>
                     </Stack>
 
@@ -214,7 +246,8 @@ export default function BancosSection() {
                         <Table>
                             <TableHead>
                                 <TableRow>
-                                    <TableCell>Nombre</TableCell>
+                                    <TableCell>Tipo impuesto</TableCell>
+                                    <TableCell>Valor</TableCell>
                                     <TableCell>Estado</TableCell>
                                     <TableCell align="center">Acciones</TableCell>
                                 </TableRow>
@@ -223,33 +256,34 @@ export default function BancosSection() {
                             <TableBody>
                                 {loading ? (
                                     <TableRow>
-                                        <TableCell colSpan={3} align="center">
+                                        <TableCell colSpan={4} align="center">
                                             <CircularProgress />
                                         </TableCell>
                                     </TableRow>
-                                ) : bancos.length === 0 ? (
+                                ) : impuestos.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={3} align="center">
+                                        <TableCell colSpan={4} align="center">
                                             Sin registros
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    bancosPaginados.map((banco) => (
-                                        <TableRow key={banco.idBanco}>
-                                            <TableCell>{banco.nombre}</TableCell>
+                                    impuestosPaginados.map((impuesto) => (
+                                        <TableRow key={impuesto.idImpuesto}>
+                                            <TableCell>{impuesto.tipoImpuesto}</TableCell>
+                                            <TableCell>{formatPorcentaje(impuesto.valor)}%</TableCell>
                                             <TableCell>
                                                 <Chip
-                                                    label={banco.flgActivo ? 'Activo' : 'Inactivo'}
+                                                    label={impuesto.flgActivo ? 'Activo' : 'Inactivo'}
                                                     size="small"
-                                                    sx={getEstadoChipStyles(banco.flgActivo)}
+                                                    sx={getEstadoChipStyles(impuesto.flgActivo)}
                                                 />
                                             </TableCell>
                                             <TableCell align="center">
-                                                <IconButton onClick={() => handleOpenEdit(banco)}>
+                                                <IconButton onClick={() => handleOpenEdit(impuesto)}>
                                                     <Icon name="edit" size={20} color="#1976d2" />
                                                 </IconButton>
                                                 <IconButton onClick={() => {
-                                                    setSelectedDelete(banco);
+                                                    setSelectedDelete(impuesto);
                                                     setDeleteDialog(true);
                                                 }}>
                                                     <Icon name="delete" size={20} color="#ef4444" />
@@ -261,10 +295,10 @@ export default function BancosSection() {
                             </TableBody>
                         </Table>
 
-                        {!loading && bancos.length > 0 ? (
+                        {!loading && impuestos.length > 0 ? (
                             <TablePagination
                                 component="div"
-                                count={bancos.length}
+                                count={impuestos.length}
                                 page={page}
                                 onPageChange={(_, newPage) => setPage(newPage)}
                                 rowsPerPage={rowsPerPage}
@@ -279,7 +313,7 @@ export default function BancosSection() {
                 </CardContent>
             </Card>
 
-            <ModalBanco
+            <ModalImpuesto
                 open={open}
                 onClose={() => setOpen(false)}
                 editing={editing}
@@ -291,12 +325,12 @@ export default function BancosSection() {
             />
 
             <Dialog open={deleteDialog} onClose={() => setDeleteDialog(false)}>
-                <DialogTitle>Inactivar banco</DialogTitle>
+                <DialogTitle>Inactivar impuesto</DialogTitle>
                 <DialogContent>
-                    ¿Seguro que deseas inactivar este banco?
+                    ¿Seguro que deseas inactivar este impuesto?
                     {selectedDelete ? (
                         <Typography sx={{ mt: 1, fontWeight: 700 }}>
-                            {selectedDelete.nombre}
+                            {selectedDelete.tipoImpuesto}
                         </Typography>
                     ) : null}
                 </DialogContent>

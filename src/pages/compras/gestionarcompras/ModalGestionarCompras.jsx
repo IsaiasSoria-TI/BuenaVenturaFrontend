@@ -53,6 +53,21 @@ function isIgvImpuesto(impuesto) {
     return tipo === 'IGV';
 }
 
+function formatMonedaOption(moneda) {
+    const simbolo = moneda.simbolo ? ` (${moneda.simbolo})` : '';
+    return `${moneda.codigo} - ${moneda.nombre}${simbolo}`;
+}
+
+function formatPorcentaje(value) {
+    const numero = Number(value);
+    if (!Number.isFinite(numero)) return '0.00';
+
+    return numero.toLocaleString('es-PE', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+}
+
 export default function ModalGestionarCompras({
     open,
     onClose,
@@ -65,6 +80,7 @@ export default function ModalGestionarCompras({
     articulos,
     impuestos,
     pagos,
+    monedas,
     selectedProveedor,
     setSelectedProveedor,
     setForm,
@@ -202,6 +218,25 @@ export default function ModalGestionarCompras({
                             </TextField>
 
                             <TextField
+                                select
+                                fullWidth
+                                label="Moneda"
+                                value={form.idMoneda}
+                                onChange={handleChange('idMoneda')}
+                                error={!!errors.idMoneda}
+                                helperText={errors.idMoneda || (monedas.length === 0 ? 'No hay monedas configuradas' : '')}
+                            >
+                                <MenuItem value="">
+                                    <em>Seleccione</em>
+                                </MenuItem>
+                                {monedas.map((moneda) => (
+                                    <MenuItem key={moneda.idMoneda} value={moneda.idMoneda}>
+                                        {formatMonedaOption(moneda)}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+
+                            <TextField
                                 fullWidth
                                 type="datetime-local"
                                 label="Fecha de compra"
@@ -226,11 +261,11 @@ export default function ModalGestionarCompras({
                             <TextField
                                 fullWidth
                                 type="number"
-                                label="Hectáreas"
-                                value={form.hectareas}
-                                onChange={handleChange('hectareas')}
-                                error={!!errors.hectareas}
-                                helperText={errors.hectareas}
+                                label="Número de lotes"
+                                value={form.numeroLote}
+                                onChange={handleChange('numeroLote')}
+                                error={!!errors.numeroLote}
+                                helperText={errors.numeroLote}
                                 slotProps={{
                                     input: {
                                         inputProps: { min: 0, step: '0.01' },
@@ -331,7 +366,7 @@ export default function ModalGestionarCompras({
                                             <TextField
                                                 fullWidth
                                                 type="number"
-                                                label="Costo kilo"
+                                                label="Costo kilo (S/)"
                                                 value={detalle.costoKilo}
                                                 onChange={(event) =>
                                                     handleDetalleChange(index, 'costoKilo', event.target.value)
@@ -347,7 +382,7 @@ export default function ModalGestionarCompras({
 
                                             <TextField
                                                 fullWidth
-                                                label="Subtotal"
+                                                label="Subtotal (S/)"
                                                 value={(
                                                     Number(detalle.peso || 0) * Number(detalle.costoKilo || 0)
                                                 ).toFixed(2)}
@@ -435,7 +470,7 @@ export default function ModalGestionarCompras({
                                     {form.aplicaIgv ? (
                                         <TextField
                                             fullWidth
-                                            label="Importe IGV"
+                                            label="Importe IGV (S/)"
                                             value={igvPreview}
                                             slotProps={{
                                                 input: { readOnly: true },
@@ -457,7 +492,7 @@ export default function ModalGestionarCompras({
                         >
                             <TextField
                                 fullWidth
-                                label="Subtotal"
+                                label="Subtotal (S/)"
                                 value={subtotalPreview}
                                 slotProps={{
                                     input: { readOnly: true },
@@ -466,7 +501,7 @@ export default function ModalGestionarCompras({
 
                             <TextField
                                 fullWidth
-                                label="IGV"
+                                label="IGV (S/)"
                                 value={form.aplicaIgv ? igvPreview : '0.00'}
                                 slotProps={{
                                     input: { readOnly: true },
@@ -475,7 +510,7 @@ export default function ModalGestionarCompras({
 
                             <TextField
                                 fullWidth
-                                label="Total final"
+                                label="Total final (S/)"
                                 value={totalGeneralPreview}
                                 slotProps={{
                                     input: { readOnly: true },
@@ -560,7 +595,7 @@ export default function ModalGestionarCompras({
                                                     </MenuItem>
                                                     {impuestosDisponibles.map((item) => (
                                                         <MenuItem key={item.idImpuesto} value={item.idImpuesto}>
-                                                            {item.tipoImpuesto} ({item.valor}%)
+                                                            {item.tipoImpuesto} ({formatPorcentaje(item.valor)}%)
                                                         </MenuItem>
                                                     ))}
                                                 </TextField>
@@ -625,9 +660,10 @@ ModalGestionarCompras.propTypes = {
     form: PropTypes.shape({
         idProveedor: PropTypes.oneOfType([PropTypes.number, PropTypes.oneOf([null])]),
         idPago: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+        idMoneda: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
         fechaCompras: PropTypes.string.isRequired,
         zonaProduccion: PropTypes.string.isRequired,
-        hectareas: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+        numeroLote: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
         detalles: PropTypes.arrayOf(
             PropTypes.shape({
                 tempId: PropTypes.string.isRequired,
@@ -651,6 +687,14 @@ ModalGestionarCompras.propTypes = {
     articulos: PropTypes.arrayOf(PropTypes.object).isRequired,
     impuestos: PropTypes.arrayOf(PropTypes.object).isRequired,
     pagos: PropTypes.arrayOf(PropTypes.object).isRequired,
+    monedas: PropTypes.arrayOf(
+        PropTypes.shape({
+            idMoneda: PropTypes.number,
+            codigo: PropTypes.string.isRequired,
+            nombre: PropTypes.string.isRequired,
+            simbolo: PropTypes.string,
+        })
+    ).isRequired,
     selectedProveedor: PropTypes.object,
     setSelectedProveedor: PropTypes.func.isRequired,
     setForm: PropTypes.func.isRequired,

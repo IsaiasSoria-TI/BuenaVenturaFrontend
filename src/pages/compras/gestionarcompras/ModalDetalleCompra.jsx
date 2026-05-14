@@ -22,17 +22,16 @@ import {
 } from '@mui/material';
 
 import { formatCompraCode, formatDateTimePeru } from '../../../utils/formatters';
-
-function toNumber(value) {
-    if (value === null || value === undefined || value === '') return 0;
-
-    const number = Number(value);
-    return Number.isNaN(number) ? 0 : number;
-}
-
-function formatNumber(value) {
-    return toNumber(value).toFixed(2);
-}
+import {
+    DEFAULT_IGV_PERCENTAGE,
+    formatNumber,
+    getCompraIgv,
+    getCompraImporteImpuestos,
+    getCompraSubtotal,
+    getCompraTotalFinal,
+    getDetalleSubtotal,
+    toNumber,
+} from './compraCalculations';
 
 function formatPercentage(value) {
     if (value === null || value === undefined || value === '') return '0.00%';
@@ -44,6 +43,13 @@ function formatBoolean(value) {
 }
 
 function getEstadoChipStyles(estado) {
+    if (estado === 'Inactivo') {
+        return {
+            backgroundColor: '#f1f5f9',
+            color: '#64748b',
+        };
+    }
+
     if (estado === 'Completo') {
         return {
             backgroundColor: '#dcfce7',
@@ -69,14 +75,6 @@ function getEstadoChipStyles(estado) {
         backgroundColor: '#fee2e2',
         color: '#dc2626',
     };
-}
-
-function getDetalleSubtotal(detalle) {
-    if (detalle.costoTotal !== null && detalle.costoTotal !== undefined) {
-        return toNumber(detalle.costoTotal);
-    }
-
-    return toNumber(detalle.peso) * toNumber(detalle.costoKilo);
 }
 
 function InfoItem({ label, value, strong = false, children = null }) {
@@ -110,54 +108,12 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
         [compra]
     );
 
-    const subtotalArticulos = React.useMemo(() => {
-        if (detalles.length > 0) {
-            return detalles.reduce((total, detalle) => total + getDetalleSubtotal(detalle), 0);
-        }
-
-        if (compra?.subtotal !== null && compra?.subtotal !== undefined) {
-            return toNumber(compra.subtotal);
-        }
-
-        return toNumber(compra?.totalGeneral ?? compra?.costoTotal)
-            - toNumber(compra?.importeIgv);
-    }, [compra, detalles]);
-
     const aplicaIgv = Boolean(compra?.aplicaIgv);
-    const porcentajeIgv = compra?.porcentajeIgv ?? 18;
-    const importeIgv = React.useMemo(() => {
-        if (compra?.importeIgv !== null && compra?.importeIgv !== undefined) {
-            return toNumber(compra.importeIgv);
-        }
-
-        if (!aplicaIgv) return 0;
-
-        return (subtotalArticulos * toNumber(porcentajeIgv)) / 100;
-    }, [aplicaIgv, compra, porcentajeIgv, subtotalArticulos]);
-
-    const totalImpuestos = React.useMemo(() => {
-        if (compra?.importeImpuesto !== null && compra?.importeImpuesto !== undefined) {
-            return toNumber(compra.importeImpuesto);
-        }
-
-        if (impuestos.length > 0) {
-            const baseImpuestos = subtotalArticulos + importeIgv;
-
-            return impuestos.reduce((total, impuesto) => {
-                if (impuesto.importe !== null && impuesto.importe !== undefined) {
-                    return total + toNumber(impuesto.importe);
-                }
-
-                return total + (baseImpuestos * toNumber(impuesto.porcentaje)) / 100;
-            }, 0);
-        }
-
-        return toNumber(compra?.totalImpuestos);
-    }, [compra, importeIgv, impuestos, subtotalArticulos]);
-
-    const totalGeneral = React.useMemo(() => {
-        return subtotalArticulos + importeIgv;
-    }, [importeIgv, subtotalArticulos]);
+    const porcentajeIgv = compra?.porcentajeIgv ?? DEFAULT_IGV_PERCENTAGE;
+    const subtotalArticulos = React.useMemo(() => getCompraSubtotal(compra), [compra]);
+    const importeIgv = React.useMemo(() => getCompraIgv(compra), [compra]);
+    const totalImpuestos = React.useMemo(() => getCompraImporteImpuestos(compra), [compra]);
+    const totalGeneral = React.useMemo(() => getCompraTotalFinal(compra), [compra]);
 
     const impuestosReferencialesLabel = React.useMemo(() => {
         const seleccionados = impuestos
@@ -168,7 +124,10 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
     }, [impuestos]);
 
     const condicionPago = compra?.condicionPago || compra?.pago || '-';
-    const estado = compra?.estado || '-';
+    const moneda = compra?.codigoMoneda
+        ? `${compra.codigoMoneda}${compra.simboloMoneda ? ` (${compra.simboloMoneda})` : ''}`
+        : compra?.moneda || '-';
+    const estado = compra?.flgActivo === false ? 'Inactivo' : compra?.estado || '-';
 
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="lg">
@@ -205,11 +164,12 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                             <InfoItem label="RUC proveedor" value={compra?.ruc || '-'} />
                             <InfoItem label="Proveedor" value={compra?.razonSocial || '-'} strong />
                             <InfoItem label="Condición de pago" value={condicionPago} />
+                            <InfoItem label="Moneda" value={moneda} />
                             <InfoItem label="Zona de producción" value={compra?.zonaProduccion || '-'} />
-                            <InfoItem label="Hectáreas" value={formatNumber(compra?.hectareas)} />
+                            <InfoItem label="Número de lotes" value={formatNumber(compra?.numeroLote)} />
                             <InfoItem label="Aplica IGV" value={formatBoolean(aplicaIgv)} />
                             <InfoItem label="Porcentaje IGV" value={formatPercentage(porcentajeIgv)} />
-                            <InfoItem label="Importe IGV" value={formatNumber(importeIgv)} />
+                            <InfoItem label="Importe IGV (S/)" value={formatNumber(importeIgv)} />
                             <InfoItem label="Estado">
                                 <Chip
                                     label={estado}
@@ -247,10 +207,10 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                                             PESO
                                         </TableCell>
                                         <TableCell sx={{ fontWeight: 700 }} align="right">
-                                            COSTO KILO
+                                            COSTO KILO (S/)
                                         </TableCell>
                                         <TableCell sx={{ fontWeight: 700 }} align="right">
-                                            SUBTOTAL
+                                            SUBTOTAL (S/)
                                         </TableCell>
                                     </TableRow>
                                 </TableHead>
@@ -303,7 +263,7 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                                             PORCENTAJE
                                         </TableCell>
                                         <TableCell sx={{ fontWeight: 700 }} align="right">
-                                            IMPORTE REF.
+                                            IMPORTE REF. (S/)
                                         </TableCell>
                                     </TableRow>
                                 </TableHead>
@@ -350,7 +310,7 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                             sx={{ p: 2, border: '1px solid #e2e8f0', borderRadius: 2 }}
                         >
                             <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                Subtotal
+                                Subtotal (S/)
                             </Typography>
                             <Typography sx={{ mt: 0.5, fontWeight: 700, color: '#0f172a' }}>
                                 {formatNumber(subtotalArticulos)}
@@ -362,7 +322,7 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                             sx={{ p: 2, border: '1px solid #e2e8f0', borderRadius: 2 }}
                         >
                             <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                IGV
+                                IGV (S/)
                             </Typography>
                             <Typography sx={{ mt: 0.5, fontWeight: 700, color: '#0f172a' }}>
                                 {formatNumber(importeIgv)}
@@ -379,7 +339,7 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                             }}
                         >
                             <Typography sx={{ fontSize: '0.8rem', color: '#1d4ed8' }}>
-                                Total final
+                                Total final (S/)
                             </Typography>
                             <Typography sx={{ mt: 0.5, fontWeight: 800, color: '#1e40af' }}>
                                 {formatNumber(totalGeneral)}
@@ -403,7 +363,7 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                             sx={{ p: 2, border: '1px solid #e2e8f0', borderRadius: 2 }}
                         >
                             <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                Importe referencial
+                                Importe referencial (S/)
                             </Typography>
                             <Typography sx={{ fontSize: '0.72rem', color: '#64748b' }}>
                                 No suma ni resta al total final
@@ -435,9 +395,14 @@ ModalDetalleCompra.propTypes = {
         razonSocial: PropTypes.string,
         condicionPago: PropTypes.string,
         pago: PropTypes.string,
+        idMoneda: PropTypes.number,
+        codigoMoneda: PropTypes.string,
+        moneda: PropTypes.string,
+        simboloMoneda: PropTypes.string,
         zonaProduccion: PropTypes.string,
-        hectareas: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        numeroLote: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         estado: PropTypes.string,
+        flgActivo: PropTypes.bool,
         subtotal: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         costoTotal: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         importeImpuesto: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),

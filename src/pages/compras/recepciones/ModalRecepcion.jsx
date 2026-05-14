@@ -78,7 +78,7 @@ export default function ModalRecepcion({
     const pesoComprado = formatNumber(detalleCompra?.pesoComprado);
     const totalRecibido = formatNumber(detalleCompra?.totalRecibido);
     const pesoPendiente = formatNumber(detalleCompra?.pesoPendiente);
-    const hectareas = formatNumber(detalleCompra?.hectareas);
+    const numeroLote = formatNumber(detalleCompra?.numeroLote);
     const costoTotal = formatNumber(detalleCompra?.costoTotal);
 
     const mostrarCargaCompras = comprasLoading;
@@ -185,9 +185,9 @@ export default function ModalRecepcion({
 
                     <Box>
                         <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                            Hectáreas
+                            Número de lotes
                         </Typography>
-                        <Typography>{hectareas}</Typography>
+                        <Typography>{numeroLote}</Typography>
                     </Box>
 
                     <Box>
@@ -464,7 +464,7 @@ const detalleCompraShape = PropTypes.shape({
     razonSocial: PropTypes.string,
     ruc: PropTypes.string,
     zonaProduccion: PropTypes.string,
-    hectareas: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    numeroLote: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     costoTotal: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     estado: PropTypes.string,
     pesoComprado: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),

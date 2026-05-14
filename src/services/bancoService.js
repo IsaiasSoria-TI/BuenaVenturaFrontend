@@ -8,6 +8,11 @@ export const bancoService = {
         return data;
     },
 
+    listarTodos: async () => {
+        const { data } = await api.get(`${BASE_URL}/todos`);
+        return data;
+    },
+
     crear: async (payload) => {
         const { data } = await api.post(BASE_URL, payload);
         return data;
