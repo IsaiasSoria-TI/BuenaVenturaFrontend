@@ -35,6 +35,7 @@ import { articuloService } from '../../../services/articuloService';
 import { impuestoService } from '../../../services/impuestoService';
 import { pagoService } from '../../../services/pagoService';
 import { monedaService } from '../../../services/monedaService';
+import { tipoCambioService } from '../../../services/tipoCambioService';
 
 import ModalDetalleCompra from './ModalDetalleCompra';
 import ModalGestionarCompras from './ModalGestionarCompras';
@@ -98,6 +99,8 @@ const initialForm = {
   idCompras: null,
   idPago: '',
   idMoneda: '',
+  idTipoCambio: null,
+  tipoCambioAplicado: '',
   idProveedor: null,
   fechaCompras: '',
   zonaProduccion: '',
@@ -149,6 +152,16 @@ function getEstadoCompra(compra) {
   return compra?.estado || '-';
 }
 
+function isMonedaSoles(moneda) {
+  const codigo = String(moneda?.codigo || '').trim().toUpperCase();
+  const nombre = String(moneda?.nombre || '').trim().toUpperCase();
+  return codigo === 'PEN' || codigo === 'SOL' || nombre === 'SOLES' || nombre === 'SOL';
+}
+
+function getFechaTipoCambio(fechaCompras) {
+  return fechaCompras ? String(fechaCompras).slice(0, 10) : '';
+}
+
 export default function GestionarCompras() {
   const [compras, setCompras] = React.useState([]);
   const [proveedores, setProveedores] = React.useState([]);
@@ -160,11 +173,13 @@ export default function GestionarCompras() {
   const [loading, setLoading] = React.useState(true);
   const [catalogLoading, setCatalogLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
+  const [tipoCambioLoading, setTipoCambioLoading] = React.useState(false);
 
   const [open, setOpen] = React.useState(false);
   const [editing, setEditing] = React.useState(false);
 
   const [form, setForm] = React.useState(initialForm);
+  const [tipoCambioBase, setTipoCambioBase] = React.useState(null);
   const [errors, setErrors] = React.useState({});
   const [selectedProveedor, setSelectedProveedor] = React.useState(null);
 
@@ -236,14 +251,117 @@ export default function GestionarCompras() {
     cargarCatalogos();
   }, [cargarCompras, cargarCatalogos]);
 
+  React.useEffect(() => {
+    if (!open) return undefined;
+
+    const monedaSeleccionada = monedas.find((moneda) => moneda.idMoneda === Number(form.idMoneda));
+    const fechaTipoCambio = getFechaTipoCambio(form.fechaCompras);
+
+    if (!monedaSeleccionada || !fechaTipoCambio) {
+      setForm((prev) => ({
+        ...prev,
+        idTipoCambio: null,
+        tipoCambioAplicado: '',
+      }));
+      setTipoCambioLoading(false);
+      return undefined;
+    }
+
+    if (isMonedaSoles(monedaSeleccionada)) {
+      setForm((prev) => ({
+        ...prev,
+        idTipoCambio: null,
+        tipoCambioAplicado: '',
+      }));
+      setErrors((prev) => ({ ...prev, tipoCambioAplicado: '' }));
+      setTipoCambioLoading(false);
+      return undefined;
+    }
+
+    if (
+      editing &&
+      tipoCambioBase &&
+      tipoCambioBase.idMoneda === Number(form.idMoneda) &&
+      tipoCambioBase.fecha === fechaTipoCambio &&
+      form.tipoCambioAplicado
+    ) {
+      setErrors((prev) => ({ ...prev, tipoCambioAplicado: '' }));
+      setTipoCambioLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setTipoCambioLoading(true);
+
+    tipoCambioService.buscarAplicable(fechaTipoCambio)
+      .then((data) => {
+        if (cancelled) return;
+
+        setForm((prev) => {
+          if (
+            Number(prev.idMoneda) !== Number(form.idMoneda) ||
+            getFechaTipoCambio(prev.fechaCompras) !== fechaTipoCambio
+          ) {
+            return prev;
+          }
+
+          return {
+            ...prev,
+            idTipoCambio: data.idTipoCambio ?? null,
+            tipoCambioAplicado: data.valor ?? '',
+          };
+        });
+        setErrors((prev) => ({ ...prev, tipoCambioAplicado: '' }));
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        const message =
+          error?.response?.data?.message ||
+          error?.response?.data ||
+          'No existe tipo de cambio registrado para la fecha seleccionada.';
+
+        setForm((prev) => ({
+          ...prev,
+          idTipoCambio: null,
+          tipoCambioAplicado: '',
+        }));
+        setErrors((prev) => ({
+          ...prev,
+          tipoCambioAplicado: typeof message === 'string'
+            ? message
+            : 'No existe tipo de cambio registrado para la fecha seleccionada.',
+        }));
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setTipoCambioLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    editing,
+    form.fechaCompras,
+    form.idMoneda,
+    form.tipoCambioAplicado,
+    monedas,
+    open,
+    tipoCambioBase,
+  ]);
+
   const handleOpenCreate = () => {
     setEditing(false);
     setForm({
       ...initialForm,
       idMoneda: getDefaultMonedaId(monedas),
+      idTipoCambio: null,
+      tipoCambioAplicado: '',
       detalles: [createDetalle()],
       impuestos: [createImpuesto()],
     });
+    setTipoCambioBase(null);
     setSelectedProveedor(null);
     setErrors({});
     setServerError('');
@@ -289,12 +407,19 @@ export default function GestionarCompras() {
     setServerError('');
     setSuccessMessage('');
     setSelectedProveedor(proveedorEncontrado);
+    const fechaCompras = formatDateTimeInputPeru(compra.fechaCompras);
+    setTipoCambioBase({
+      idMoneda: compra.idMoneda ?? getDefaultMonedaId(monedas),
+      fecha: getFechaTipoCambio(fechaCompras),
+    });
     setForm({
       idCompras: compra.idCompras,
       idPago: compra.idPago ?? '',
       idMoneda: compra.idMoneda ?? getDefaultMonedaId(monedas),
+      idTipoCambio: compra.idTipoCambio ?? null,
+      tipoCambioAplicado: compra.tipoCambioAplicado ?? '',
       idProveedor: compra.idProveedor ?? null,
-      fechaCompras: formatDateTimeInputPeru(compra.fechaCompras),
+      fechaCompras,
       zonaProduccion: compra.zonaProduccion || '',
       numeroLote: compra.numeroLote ?? '',
       detalles,
@@ -310,8 +435,11 @@ export default function GestionarCompras() {
     if (saving) return;
 
     setOpen(false);
+    setTipoCambioBase(null);
     setForm({
       ...initialForm,
+      idTipoCambio: null,
+      tipoCambioAplicado: '',
       detalles: [createDetalle()],
       impuestos: [createImpuesto()],
     });
@@ -454,6 +582,11 @@ export default function GestionarCompras() {
       newErrors.idMoneda = 'Seleccione una moneda';
     }
 
+    const monedaSeleccionada = monedas.find((moneda) => moneda.idMoneda === Number(form.idMoneda));
+    if (monedaSeleccionada && !isMonedaSoles(monedaSeleccionada) && !form.tipoCambioAplicado) {
+      newErrors.tipoCambioAplicado = 'No existe tipo de cambio registrado para la fecha seleccionada.';
+    }
+
     if (!form.idProveedor) {
       newErrors.idProveedor = 'Seleccione un proveedor';
     }
@@ -508,6 +641,8 @@ export default function GestionarCompras() {
   const buildPayload = () => ({
     idPago: Number(form.idPago),
     idMoneda: Number(form.idMoneda),
+    idTipoCambio: form.idTipoCambio ? Number(form.idTipoCambio) : null,
+    tipoCambioAplicado: form.tipoCambioAplicado ? Number(form.tipoCambioAplicado) : null,
     idProveedor: Number(form.idProveedor),
     fechaCompras: form.fechaCompras,
     zonaProduccion: form.zonaProduccion.trim(),
@@ -849,6 +984,7 @@ export default function GestionarCompras() {
         handleImpuestoChange={handleImpuestoChange}
         handleAddImpuesto={handleAddImpuesto}
         handleRemoveImpuesto={handleRemoveImpuesto}
+        tipoCambioLoading={tipoCambioLoading}
         subtotalPreview={subtotalPreview}
         igvPreview={igvPreview}
         totalGeneralPreview={totalGeneralPreview}

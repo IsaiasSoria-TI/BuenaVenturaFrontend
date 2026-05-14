@@ -94,6 +94,7 @@ export default function ModalGestionarCompras({
     handleImpuestoChange,
     handleAddImpuesto,
     handleRemoveImpuesto,
+    tipoCambioLoading,
     subtotalPreview,
     igvPreview,
     totalGeneralPreview,
@@ -501,6 +502,17 @@ export default function ModalGestionarCompras({
 
                             <TextField
                                 fullWidth
+                                label="Tipo de cambio aplicado"
+                                value={tipoCambioLoading ? 'Consultando...' : form.tipoCambioAplicado || ''}
+                                error={!!errors.tipoCambioAplicado}
+                                helperText={errors.tipoCambioAplicado || 'Solo aplica para moneda distinta a soles'}
+                                slotProps={{
+                                    input: { readOnly: true },
+                                }}
+                            />
+
+                            <TextField
+                                fullWidth
                                 label="IGV (S/)"
                                 value={form.aplicaIgv ? igvPreview : '0.00'}
                                 slotProps={{
@@ -661,6 +673,8 @@ ModalGestionarCompras.propTypes = {
         idProveedor: PropTypes.oneOfType([PropTypes.number, PropTypes.oneOf([null])]),
         idPago: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
         idMoneda: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+        idTipoCambio: PropTypes.oneOfType([PropTypes.number, PropTypes.oneOf([null])]),
+        tipoCambioAplicado: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         fechaCompras: PropTypes.string.isRequired,
         zonaProduccion: PropTypes.string.isRequired,
         numeroLote: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
@@ -708,6 +722,7 @@ ModalGestionarCompras.propTypes = {
     handleImpuestoChange: PropTypes.func.isRequired,
     handleAddImpuesto: PropTypes.func.isRequired,
     handleRemoveImpuesto: PropTypes.func.isRequired,
+    tipoCambioLoading: PropTypes.bool.isRequired,
     subtotalPreview: PropTypes.string.isRequired,
     igvPreview: PropTypes.string.isRequired,
     totalGeneralPreview: PropTypes.string.isRequired,

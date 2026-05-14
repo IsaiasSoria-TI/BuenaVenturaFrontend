@@ -62,6 +62,8 @@ Icon.propTypes = {
 
 const initialForm = {
     idCompras: null,
+    guiaRemision: '',
+    cantidadJabas: '',
     detalles: [],
 };
 
@@ -285,6 +287,13 @@ export default function Recepciones() {
             newErrors.detalles = 'La compra no tiene detalles disponibles';
         }
 
+        const cantidadJabas = Number(form.cantidadJabas || 0);
+        if (!Number.isFinite(cantidadJabas)) {
+            newErrors.cantidadJabas = 'Ingrese una cantidad valida';
+        } else if (cantidadJabas < 0) {
+            newErrors.cantidadJabas = 'No puede ser negativo';
+        }
+
         let tieneRecibido = false;
 
         form.detalles.forEach((detalle, index) => {
@@ -314,6 +323,8 @@ export default function Recepciones() {
 
     const buildPayload = () => ({
         idCompras: Number(form.idCompras),
+        guiaRemision: form.guiaRemision.trim() || null,
+        cantidadJabas: Number(form.cantidadJabas || 0),
         detalles: form.detalles
             .filter((detalle) => Number(detalle.recibido || 0) > 0)
             .map((detalle) => ({
@@ -394,6 +405,8 @@ export default function Recepciones() {
                 recepcion.razonSocial,
                 recepcion.estadoCompra,
                 recepcion.estado,
+                recepcion.guiaRemision,
+                recepcion.cantidadJabas,
                 getArticulosResumen(recepcion),
             ];
             return valoresBusqueda.some((value) =>
@@ -482,6 +495,8 @@ export default function Recepciones() {
                                     <TableCell sx={{ fontWeight: 700 }}>CÓDIGO</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>FECHA</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>COMPRA</TableCell>
+                                    <TableCell sx={{ fontWeight: 700 }}>GUIA</TableCell>
+                                    <TableCell sx={{ fontWeight: 700 }}>JABAS</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>RUC</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>PROVEEDOR</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>ARTÍCULOS</TableCell>
@@ -496,7 +511,7 @@ export default function Recepciones() {
                             <TableBody>
                                 {showLoading ? (
                                     <TableRow>
-                                        <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
+                                        <TableCell colSpan={13} align="center" sx={{ py: 4 }}>
                                             <CircularProgress size={28} />
                                         </TableCell>
                                     </TableRow>
@@ -504,7 +519,7 @@ export default function Recepciones() {
 
                                 {showEmpty ? (
                                     <TableRow>
-                                        <TableCell colSpan={11} align="center" sx={{ py: 4, color: '#64748b' }}>
+                                        <TableCell colSpan={13} align="center" sx={{ py: 4, color: '#64748b' }}>
                                             No hay recepciones registradas.
                                         </TableCell>
                                     </TableRow>
@@ -512,7 +527,7 @@ export default function Recepciones() {
 
                                 {showNoResults ? (
                                     <TableRow>
-                                        <TableCell colSpan={11} align="center" sx={{ py: 4, color: '#64748b' }}>
+                                        <TableCell colSpan={13} align="center" sx={{ py: 4, color: '#64748b' }}>
                                             No se encontraron recepciones con ese criterio.
                                         </TableCell>
                                     </TableRow>
@@ -524,6 +539,8 @@ export default function Recepciones() {
                                             <TableCell>{formatRecepcionCode(recepcion.idRecepciones)}</TableCell>
                                             <TableCell>{formatDateTimePeru(recepcion.fechaRecepcion)}</TableCell>
                                             <TableCell>{formatCompraCode(recepcion.idCompras)}</TableCell>
+                                            <TableCell>{recepcion.guiaRemision || '-'}</TableCell>
+                                            <TableCell>{formatNumber(recepcion.cantidadJabas)}</TableCell>
                                             <TableCell>{recepcion.ruc}</TableCell>
                                             <TableCell>{recepcion.razonSocial}</TableCell>
                                             <TableCell>{getArticulosResumen(recepcion)}</TableCell>

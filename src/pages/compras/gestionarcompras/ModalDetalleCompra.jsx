@@ -127,6 +127,7 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
     const moneda = compra?.codigoMoneda
         ? `${compra.codigoMoneda}${compra.simboloMoneda ? ` (${compra.simboloMoneda})` : ''}`
         : compra?.moneda || '-';
+    const tipoCambio = compra?.tipoCambioAplicado ? formatNumber(compra.tipoCambioAplicado) : '-';
     const estado = compra?.flgActivo === false ? 'Inactivo' : compra?.estado || '-';
 
     return (
@@ -165,6 +166,7 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                             <InfoItem label="Proveedor" value={compra?.razonSocial || '-'} strong />
                             <InfoItem label="Condición de pago" value={condicionPago} />
                             <InfoItem label="Moneda" value={moneda} />
+                            <InfoItem label="Tipo de cambio" value={tipoCambio} />
                             <InfoItem label="Zona de producción" value={compra?.zonaProduccion || '-'} />
                             <InfoItem label="Número de lotes" value={formatNumber(compra?.numeroLote)} />
                             <InfoItem label="Aplica IGV" value={formatBoolean(aplicaIgv)} />
@@ -399,6 +401,8 @@ ModalDetalleCompra.propTypes = {
         codigoMoneda: PropTypes.string,
         moneda: PropTypes.string,
         simboloMoneda: PropTypes.string,
+        idTipoCambio: PropTypes.number,
+        tipoCambioAplicado: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         zonaProduccion: PropTypes.string,
         numeroLote: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         estado: PropTypes.string,

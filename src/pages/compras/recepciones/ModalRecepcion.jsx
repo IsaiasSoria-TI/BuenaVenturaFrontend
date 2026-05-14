@@ -51,6 +51,442 @@ function getEstadoChipStyles(estado) {
     };
 }
 
+function InfoValue({ label, value, strong = false, children = null }) {
+    return (
+        <Box>
+            <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
+                {label}
+            </Typography>
+            {children || (
+                <Typography sx={{ fontWeight: strong ? 700 : 500, color: '#0f172a' }}>
+                    {value || '-'}
+                </Typography>
+            )}
+        </Box>
+    );
+}
+
+InfoValue.propTypes = {
+    label: PropTypes.string.isRequired,
+    value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    strong: PropTypes.bool,
+    children: PropTypes.node,
+};
+
+function renderCompraOption(props, option) {
+    const { key, ...optionProps } = props;
+
+    return (
+        <Box key={key} component="li" {...optionProps}>
+            <Box>
+                <Typography sx={{ fontWeight: 700, fontSize: '0.92rem' }}>
+                    Compra {formatCompraCode(option.idCompras)}
+                </Typography>
+                <Typography sx={{ fontSize: '0.82rem', color: '#64748b' }}>
+                    {option.ruc} - {option.razonSocial}
+                </Typography>
+                <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
+                    {option.articulo || 'Varios articulos'} | Peso: {formatNumber(option.pesoComprado)}
+                </Typography>
+            </Box>
+        </Box>
+    );
+}
+
+function filterCompraOptions(options, state) {
+    const input = state.inputValue.toLowerCase().trim();
+
+    return options
+        .filter(
+            (option) =>
+                String(option.idCompras).includes(input) ||
+                formatCompraCode(option.idCompras).toLowerCase().includes(input) ||
+                option.ruc?.toLowerCase().includes(input) ||
+                option.razonSocial?.toLowerCase().includes(input) ||
+                option.articulo?.toLowerCase().includes(input)
+        )
+        .slice(0, 20);
+}
+
+function CompraSelector({
+    comprasPendientes,
+    selectedCompra,
+    onSelectCompra,
+    errorIdCompras,
+}) {
+    return (
+        <Autocomplete
+            fullWidth
+            options={comprasPendientes}
+            value={selectedCompra}
+            onChange={onSelectCompra}
+            getOptionLabel={(option) =>
+                option
+                    ? `Compra ${formatCompraCode(option.idCompras)} - ${option.ruc} - ${option.razonSocial}`
+                    : ''
+            }
+            isOptionEqualToValue={(option, value) => option.idCompras === value.idCompras}
+            filterOptions={filterCompraOptions}
+            renderOption={renderCompraOption}
+            renderInput={(params) => (
+                <TextField
+                    {...params}
+                    label="Compra disponible para recepcion"
+                    placeholder="Busca por codigo, RUC, proveedor o articulo"
+                    error={!!errorIdCompras}
+                    helperText={errorIdCompras}
+                />
+            )}
+        />
+    );
+}
+
+CompraSelector.propTypes = {
+    comprasPendientes: PropTypes.arrayOf(PropTypes.object).isRequired,
+    selectedCompra: PropTypes.oneOfType([PropTypes.object, PropTypes.oneOf([null])]),
+    onSelectCompra: PropTypes.func.isRequired,
+    errorIdCompras: PropTypes.string.isRequired,
+};
+
+function ResumenCompra({ detalleCompra }) {
+    const estadoCompra = detalleCompra?.estado || '-';
+
+    return (
+        <Box
+            sx={{
+                p: 2,
+                borderRadius: 2,
+                backgroundColor: '#f8fafc',
+                border: '1px solid #e2e8f0',
+            }}
+        >
+            <Typography sx={{ fontWeight: 700, color: '#0f172a', mb: 1.5 }}>
+                Detalle de compra seleccionada
+            </Typography>
+
+            <Box
+                sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                    gap: 1.5,
+                }}
+            >
+                <InfoValue
+                    label="Codigo de compra"
+                    value={formatCompraCode(detalleCompra.idCompras)}
+                    strong
+                />
+                <InfoValue label="Fecha de compra" value={formatDateTimePeru(detalleCompra.fechaCompras)} />
+                <InfoValue label="Proveedor" value={detalleCompra.razonSocial} strong />
+                <InfoValue label="RUC" value={detalleCompra.ruc} />
+                <InfoValue label="Zona de produccion" value={detalleCompra.zonaProduccion || '-'} />
+                <InfoValue label="Numero de lotes" value={formatNumber(detalleCompra.numeroLote)} />
+                <InfoValue label="Costo total" value={formatNumber(detalleCompra.costoTotal)} />
+                <InfoValue label="Estado de compra">
+                    <Chip
+                        label={estadoCompra}
+                        size="small"
+                        sx={{
+                            mt: 0.5,
+                            fontWeight: 700,
+                            ...getEstadoChipStyles(estadoCompra),
+                        }}
+                    />
+                </InfoValue>
+            </Box>
+        </Box>
+    );
+}
+
+ResumenCompra.propTypes = {
+    detalleCompra: PropTypes.object.isRequired,
+};
+
+function DatosRecepcion({ form, errors, onFieldChange }) {
+    return (
+        <Box
+            sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                gap: 2,
+            }}
+        >
+            <TextField
+                fullWidth
+                label="GUIA DE REMISION"
+                value={form.guiaRemision}
+                onChange={onFieldChange('guiaRemision')}
+            />
+
+            <TextField
+                fullWidth
+                type="number"
+                label="CANTIDAD JABAS"
+                value={form.cantidadJabas}
+                onChange={onFieldChange('cantidadJabas')}
+                error={!!errors.cantidadJabas}
+                helperText={errors.cantidadJabas || ''}
+                slotProps={{
+                    input: {
+                        inputProps: {
+                            min: 0,
+                            step: '0.01',
+                        },
+                    },
+                }}
+            />
+        </Box>
+    );
+}
+
+DatosRecepcion.propTypes = {
+    form: PropTypes.shape({
+        guiaRemision: PropTypes.string,
+        cantidadJabas: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    }).isRequired,
+    errors: PropTypes.objectOf(PropTypes.string).isRequired,
+    onFieldChange: PropTypes.func.isRequired,
+};
+
+function ResumenPesos({ detalleCompra }) {
+    return (
+        <Box
+            sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
+                gap: 2,
+            }}
+        >
+            <TextField
+                fullWidth
+                label="Peso comprado"
+                value={formatNumber(detalleCompra?.pesoComprado)}
+                slotProps={{ input: { readOnly: true } }}
+            />
+
+            <TextField
+                fullWidth
+                label="Total recibido"
+                value={formatNumber(detalleCompra?.totalRecibido)}
+                slotProps={{ input: { readOnly: true } }}
+            />
+
+            <TextField
+                fullWidth
+                label="Peso pendiente"
+                value={formatNumber(detalleCompra?.pesoPendiente)}
+                slotProps={{ input: { readOnly: true } }}
+            />
+        </Box>
+    );
+}
+
+ResumenPesos.propTypes = {
+    detalleCompra: PropTypes.object.isRequired,
+};
+
+const DetalleRecepcionItem = React.memo(function DetalleRecepcionItem({
+    detalle,
+    index,
+    error,
+    onDetalleChange,
+}) {
+    const pendiente = Number(detalle.pesoPendiente || 0);
+    const estaCompleto = pendiente <= 0;
+
+    return (
+        <Paper
+            elevation={0}
+            sx={{
+                p: 2,
+                border: '1px solid #e2e8f0',
+                borderRadius: 2,
+                backgroundColor: estaCompleto ? '#f8fafc' : '#fff',
+            }}
+        >
+            <Box
+                sx={{
+                    display: 'grid',
+                    gridTemplateColumns: {
+                        xs: '1fr',
+                        md: '1.5fr 0.8fr 0.8fr 0.8fr 1fr',
+                    },
+                    gap: 2,
+                    alignItems: 'center',
+                }}
+            >
+                <TextField
+                    fullWidth
+                    label="Articulo"
+                    value={detalle.articulo}
+                    slotProps={{ input: { readOnly: true } }}
+                />
+
+                <TextField
+                    fullWidth
+                    label="Medida"
+                    value={detalle.medida || '-'}
+                    slotProps={{ input: { readOnly: true } }}
+                />
+
+                <TextField
+                    fullWidth
+                    label="Comprado"
+                    value={formatNumber(detalle.pesoComprado)}
+                    slotProps={{ input: { readOnly: true } }}
+                />
+
+                <TextField
+                    fullWidth
+                    label="Pendiente"
+                    value={formatNumber(detalle.pesoPendiente)}
+                    slotProps={{ input: { readOnly: true } }}
+                />
+
+                <TextField
+                    fullWidth
+                    type="number"
+                    label="Recibir"
+                    value={detalle.recibido}
+                    onChange={(event) => onDetalleChange(index, event.target.value)}
+                    error={!!error}
+                    helperText={error || ''}
+                    disabled={estaCompleto}
+                    slotProps={{
+                        input: {
+                            inputProps: {
+                                min: 0,
+                                max: pendiente,
+                                step: '0.01',
+                            },
+                        },
+                    }}
+                />
+            </Box>
+        </Paper>
+    );
+});
+
+DetalleRecepcionItem.propTypes = {
+    detalle: PropTypes.shape({
+        articulo: PropTypes.string,
+        medida: PropTypes.string,
+        pesoComprado: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+        pesoPendiente: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+        recibido: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    }).isRequired,
+    index: PropTypes.number.isRequired,
+    error: PropTypes.string,
+    onDetalleChange: PropTypes.func.isRequired,
+};
+
+function DetallesRecepcion({ detalles, errors, onDetalleChange }) {
+    return (
+        <Box>
+            <Typography sx={{ fontWeight: 700, color: '#0f172a', mb: 1 }}>
+                Articulos pendientes
+            </Typography>
+
+            <Stack spacing={1.5}>
+                {detalles.map((detalle, index) => (
+                    <DetalleRecepcionItem
+                        key={detalle.idCompraDetalle}
+                        detalle={detalle}
+                        index={index}
+                        error={errors[`detalle_${index}_recibido`] || ''}
+                        onDetalleChange={onDetalleChange}
+                    />
+                ))}
+            </Stack>
+
+            {errors.detalles ? (
+                <Typography sx={{ mt: 1, color: '#dc2626', fontSize: '0.8rem' }}>
+                    {errors.detalles}
+                </Typography>
+            ) : null}
+        </Box>
+    );
+}
+
+DetallesRecepcion.propTypes = {
+    detalles: PropTypes.arrayOf(PropTypes.object).isRequired,
+    errors: PropTypes.objectOf(PropTypes.string).isRequired,
+    onDetalleChange: PropTypes.func.isRequired,
+};
+
+function TotalesRecepcion({ totalRecepcionActual, pendienteLuegoRegistro }) {
+    return (
+        <Box
+            sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                gap: 2,
+            }}
+        >
+            <TextField
+                fullWidth
+                label="Recepcion actual"
+                value={formatNumber(totalRecepcionActual)}
+                slotProps={{ input: { readOnly: true } }}
+            />
+
+            <TextField
+                fullWidth
+                label="Pendiente despues del registro"
+                value={formatNumber(pendienteLuegoRegistro)}
+                slotProps={{ input: { readOnly: true } }}
+            />
+        </Box>
+    );
+}
+
+TotalesRecepcion.propTypes = {
+    totalRecepcionActual: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+    pendienteLuegoRegistro: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+};
+
+function DetalleCompraSeleccionada({
+    detalleCompra,
+    form,
+    errors,
+    onFieldChange,
+    onDetalleChange,
+    totalRecepcionActual,
+    pendienteLuegoRegistro,
+}) {
+    return (
+        <>
+            <ResumenCompra detalleCompra={detalleCompra} />
+            <Divider />
+            <DatosRecepcion form={form} errors={errors} onFieldChange={onFieldChange} />
+            <ResumenPesos detalleCompra={detalleCompra} />
+            <DetallesRecepcion
+                detalles={form.detalles}
+                errors={errors}
+                onDetalleChange={onDetalleChange}
+            />
+            <TotalesRecepcion
+                totalRecepcionActual={totalRecepcionActual}
+                pendienteLuegoRegistro={pendienteLuegoRegistro}
+            />
+        </>
+    );
+}
+
+DetalleCompraSeleccionada.propTypes = {
+    detalleCompra: PropTypes.object.isRequired,
+    form: PropTypes.shape({
+        guiaRemision: PropTypes.string,
+        cantidadJabas: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        detalles: PropTypes.arrayOf(PropTypes.object).isRequired,
+    }).isRequired,
+    errors: PropTypes.objectOf(PropTypes.string).isRequired,
+    onFieldChange: PropTypes.func.isRequired,
+    onDetalleChange: PropTypes.func.isRequired,
+    totalRecepcionActual: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+    pendienteLuegoRegistro: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+};
+
 export default function ModalRecepcion({
     open,
     onClose,
@@ -74,19 +510,12 @@ export default function ModalRecepcion({
 }) {
     const errorIdCompras = errors.idCompras || '';
 
-    const estadoCompra = detalleCompra?.estado || '-';
-    const pesoComprado = formatNumber(detalleCompra?.pesoComprado);
-    const totalRecibido = formatNumber(detalleCompra?.totalRecibido);
-    const pesoPendiente = formatNumber(detalleCompra?.pesoPendiente);
-    const numeroLote = formatNumber(detalleCompra?.numeroLote);
-    const costoTotal = formatNumber(detalleCompra?.costoTotal);
-
     const mostrarCargaCompras = comprasLoading;
     const mostrarCargaDetalle = !comprasLoading && detalleLoading;
     const mostrarDetalle = !comprasLoading && !detalleLoading && !!detalleCompra;
     const mostrarInfoInicial = !comprasLoading && !detalleLoading && !detalleCompra;
 
-    const handleSelectCompra = (_event, newValue) => {
+    const handleSelectCompra = React.useCallback((_event, newValue) => {
         setSelectedCompra(newValue);
 
         setForm((prev) => ({
@@ -105,265 +534,25 @@ export default function ModalRecepcion({
         if (newValue?.idCompras) {
             cargarDetalleCompra(newValue.idCompras);
         }
-    };
+    }, [cargarDetalleCompra, errors.idCompras, setErrors, setForm, setSelectedCompra]);
 
-    const renderCompraOption = (props, option) => {
-        const { key, ...optionProps } = props;
+    const handleRecepcionFieldChange = React.useCallback((field) => (event) => {
+        setForm((prev) => ({
+            ...prev,
+            [field]: event.target.value,
+        }));
 
-        return (
-        <Box key={key} component="li" {...optionProps}>
-            <Box>
-                <Typography sx={{ fontWeight: 700, fontSize: '0.92rem' }}>
-                    Compra {formatCompraCode(option.idCompras)}
-                </Typography>
-                <Typography sx={{ fontSize: '0.82rem', color: '#64748b' }}>
-                    {option.ruc} - {option.razonSocial}
-                </Typography>
-                <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                    {option.articulo || 'Varios artículos'} | Peso: {formatNumber(option.pesoComprado)}
-                </Typography>
-            </Box>
-        </Box>
-        );
-    };
-
-    const renderDetalleCompra = () => (
-        <>
-            <Box
-                sx={{
-                    p: 2,
-                    borderRadius: 2,
-                    backgroundColor: '#f8fafc',
-                    border: '1px solid #e2e8f0',
-                }}
-            >
-                <Typography sx={{ fontWeight: 700, color: '#0f172a', mb: 1.5 }}>
-                    Detalle de compra seleccionada
-                </Typography>
-
-                <Box
-                    sx={{
-                        display: 'grid',
-                        gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-                        gap: 1.5,
-                    }}
-                >
-                    <Box>
-                        <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                            Código de compra
-                        </Typography>
-                        <Typography sx={{ fontWeight: 700 }}>{formatCompraCode(detalleCompra.idCompras)}</Typography>
-                    </Box>
-
-                    <Box>
-                        <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                            Fecha de compra
-                        </Typography>
-                        <Typography>{formatDateTimePeru(detalleCompra.fechaCompras)}</Typography>
-                    </Box>
-
-                    <Box>
-                        <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                            Proveedor
-                        </Typography>
-                        <Typography sx={{ fontWeight: 700 }}>{detalleCompra.razonSocial}</Typography>
-                    </Box>
-
-                    <Box>
-                        <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                            RUC
-                        </Typography>
-                        <Typography>{detalleCompra.ruc}</Typography>
-                    </Box>
-
-                    <Box>
-                        <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                            Zona de producción
-                        </Typography>
-                        <Typography>{detalleCompra.zonaProduccion || '-'}</Typography>
-                    </Box>
-
-                    <Box>
-                        <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                            Número de lotes
-                        </Typography>
-                        <Typography>{numeroLote}</Typography>
-                    </Box>
-
-                    <Box>
-                        <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                            Costo total
-                        </Typography>
-                        <Typography>{costoTotal}</Typography>
-                    </Box>
-
-                    <Box>
-                        <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                            Estado de compra
-                        </Typography>
-                        <Chip
-                            label={estadoCompra}
-                            size="small"
-                            sx={{
-                                mt: 0.5,
-                                fontWeight: 700,
-                                ...getEstadoChipStyles(estadoCompra),
-                            }}
-                        />
-                    </Box>
-                </Box>
-            </Box>
-
-            <Divider />
-
-            <Box
-                sx={{
-                    display: 'grid',
-                    gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
-                    gap: 2,
-                }}
-            >
-                <TextField
-                    fullWidth
-                    label="Peso comprado"
-                    value={pesoComprado}
-                    slotProps={{ input: { readOnly: true } }}
-                />
-
-                <TextField
-                    fullWidth
-                    label="Total recibido"
-                    value={totalRecibido}
-                    slotProps={{ input: { readOnly: true } }}
-                />
-
-                <TextField
-                    fullWidth
-                    label="Peso pendiente"
-                    value={pesoPendiente}
-                    slotProps={{ input: { readOnly: true } }}
-                />
-            </Box>
-
-            <Box>
-                <Typography sx={{ fontWeight: 700, color: '#0f172a', mb: 1 }}>
-                    Artículos pendientes
-                </Typography>
-
-                <Stack spacing={1.5}>
-                    {form.detalles.map((detalle, index) => {
-                        const pendiente = Number(detalle.pesoPendiente || 0);
-                        const estaCompleto = pendiente <= 0;
-
-                        return (
-                            <Paper
-                                key={detalle.idCompraDetalle}
-                                elevation={0}
-                                sx={{
-                                    p: 2,
-                                    border: '1px solid #e2e8f0',
-                                    borderRadius: 2,
-                                    backgroundColor: estaCompleto ? '#f8fafc' : '#fff',
-                                }}
-                            >
-                                <Box
-                                    sx={{
-                                        display: 'grid',
-                                        gridTemplateColumns: {
-                                            xs: '1fr',
-                                            md: '1.5fr 0.8fr 0.8fr 0.8fr 1fr',
-                                        },
-                                        gap: 2,
-                                        alignItems: 'center',
-                                    }}
-                                >
-                                    <TextField
-                                        fullWidth
-                                        label="Artículo"
-                                        value={detalle.articulo}
-                                        slotProps={{ input: { readOnly: true } }}
-                                    />
-
-                                    <TextField
-                                        fullWidth
-                                        label="Medida"
-                                        value={detalle.medida || '-'}
-                                        slotProps={{ input: { readOnly: true } }}
-                                    />
-
-                                    <TextField
-                                        fullWidth
-                                        label="Comprado"
-                                        value={formatNumber(detalle.pesoComprado)}
-                                        slotProps={{ input: { readOnly: true } }}
-                                    />
-
-                                    <TextField
-                                        fullWidth
-                                        label="Pendiente"
-                                        value={formatNumber(detalle.pesoPendiente)}
-                                        slotProps={{ input: { readOnly: true } }}
-                                    />
-
-                                    <TextField
-                                        fullWidth
-                                        type="number"
-                                        label="Recibir"
-                                        value={detalle.recibido}
-                                        onChange={(event) => handleDetalleChange(index, event.target.value)}
-                                        error={!!errors[`detalle_${index}_recibido`]}
-                                        helperText={errors[`detalle_${index}_recibido`] || ''}
-                                        disabled={estaCompleto}
-                                        slotProps={{
-                                            input: {
-                                                inputProps: {
-                                                    min: 0,
-                                                    max: pendiente,
-                                                    step: '0.01',
-                                                },
-                                            },
-                                        }}
-                                    />
-                                </Box>
-                            </Paper>
-                        );
-                    })}
-                </Stack>
-
-                {errors.detalles ? (
-                    <Typography sx={{ mt: 1, color: '#dc2626', fontSize: '0.8rem' }}>
-                        {errors.detalles}
-                    </Typography>
-                ) : null}
-            </Box>
-
-            <Box
-                sx={{
-                    display: 'grid',
-                    gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-                    gap: 2,
-                }}
-            >
-                <TextField
-                    fullWidth
-                    label="Recepción actual"
-                    value={formatNumber(totalRecepcionActual)}
-                    slotProps={{ input: { readOnly: true } }}
-                />
-
-                <TextField
-                    fullWidth
-                    label="Pendiente después del registro"
-                    value={formatNumber(pendienteLuegoRegistro)}
-                    slotProps={{ input: { readOnly: true } }}
-                />
-            </Box>
-        </>
-    );
+        if (errors[field]) {
+            setErrors((prev) => ({
+                ...prev,
+                [field]: '',
+            }));
+        }
+    }, [errors, setErrors, setForm]);
 
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="lg">
-            <DialogTitle sx={{ fontWeight: 700 }}>Nueva recepción</DialogTitle>
+            <DialogTitle sx={{ fontWeight: 700 }}>Nueva recepcion</DialogTitle>
 
             <DialogContent dividers sx={{ pt: 2.5 }}>
                 <Stack spacing={2}>
@@ -375,43 +564,11 @@ export default function ModalRecepcion({
                         </Box>
                     ) : (
                         <>
-                            <Autocomplete
-                                fullWidth
-                                options={comprasPendientes}
-                                value={selectedCompra}
-                                onChange={handleSelectCompra}
-                                getOptionLabel={(option) =>
-                                    option
-                                        ? `Compra ${formatCompraCode(option.idCompras)} - ${option.ruc} - ${option.razonSocial}`
-                                        : ''
-                                }
-                                isOptionEqualToValue={(option, value) =>
-                                    option.idCompras === value.idCompras
-                                }
-                                filterOptions={(options, state) => {
-                                    const input = state.inputValue.toLowerCase().trim();
-
-                                    return options
-                                        .filter(
-                                            (option) =>
-                                                String(option.idCompras).includes(input) ||
-                                                formatCompraCode(option.idCompras).toLowerCase().includes(input) ||
-                                                option.ruc?.toLowerCase().includes(input) ||
-                                                option.razonSocial?.toLowerCase().includes(input) ||
-                                                option.articulo?.toLowerCase().includes(input)
-                                        )
-                                        .slice(0, 20);
-                                }}
-                                renderOption={renderCompraOption}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        label="Compra disponible para recepción"
-                                        placeholder="Busca por código, RUC, proveedor o artículo"
-                                        error={!!errors.idCompras}
-                                        helperText={errorIdCompras}
-                                    />
-                                )}
+                            <CompraSelector
+                                comprasPendientes={comprasPendientes}
+                                selectedCompra={selectedCompra}
+                                onSelectCompra={handleSelectCompra}
+                                errorIdCompras={errorIdCompras}
                             />
 
                             {mostrarCargaDetalle ? (
@@ -420,11 +577,21 @@ export default function ModalRecepcion({
                                 </Box>
                             ) : null}
 
-                            {mostrarDetalle ? renderDetalleCompra() : null}
+                            {mostrarDetalle ? (
+                                <DetalleCompraSeleccionada
+                                    detalleCompra={detalleCompra}
+                                    form={form}
+                                    errors={errors}
+                                    onFieldChange={handleRecepcionFieldChange}
+                                    onDetalleChange={handleDetalleChange}
+                                    totalRecepcionActual={totalRecepcionActual}
+                                    pendienteLuegoRegistro={pendienteLuegoRegistro}
+                                />
+                            ) : null}
 
                             {mostrarInfoInicial ? (
                                 <Alert severity="info">
-                                    Selecciona una compra disponible para visualizar sus artículos pendientes.
+                                    Selecciona una compra disponible para visualizar sus articulos pendientes.
                                 </Alert>
                             ) : null}
                         </>
@@ -484,6 +651,8 @@ ModalRecepcion.propTypes = {
     setSelectedCompra: PropTypes.func.isRequired,
     form: PropTypes.shape({
         idCompras: PropTypes.oneOfType([PropTypes.number, PropTypes.oneOf([null])]),
+        guiaRemision: PropTypes.string,
+        cantidadJabas: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         detalles: PropTypes.arrayOf(
             PropTypes.shape({
                 idCompraDetalle: PropTypes.number,

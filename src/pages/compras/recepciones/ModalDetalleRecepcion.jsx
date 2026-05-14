@@ -140,6 +140,8 @@ export default function ModalDetalleRecepcion({ open, onClose, recepcion = null 
                                 value={formatCompraCode(recepcion?.idCompras)}
                                 strong
                             />
+                            <InfoItem label="Guia de remision" value={recepcion?.guiaRemision || '-'} />
+                            <InfoItem label="Cantidad jabas" value={formatNumber(recepcion?.cantidadJabas)} />
                             <InfoItem label="RUC proveedor" value={recepcion?.ruc || '-'} />
                             <InfoItem label="Proveedor" value={recepcion?.razonSocial || '-'} strong />
                             <InfoItem label="Estado recepción">
@@ -263,6 +265,8 @@ ModalDetalleRecepcion.propTypes = {
     recepcion: PropTypes.shape({
         idRecepciones: PropTypes.number,
         fechaRecepcion: PropTypes.string,
+        guiaRemision: PropTypes.string,
+        cantidadJabas: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         idCompras: PropTypes.number,
         ruc: PropTypes.string,
         razonSocial: PropTypes.string,

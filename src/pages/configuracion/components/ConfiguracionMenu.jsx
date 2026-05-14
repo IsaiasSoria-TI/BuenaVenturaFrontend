@@ -38,6 +38,11 @@ const MENU_OPTIONS = [
         label: 'Impuestos',
         description: 'Catálogo tributario',
     },
+    {
+        key: 'tipo-cambio',
+        label: 'Tipo de cambio',
+        description: 'Valor diario',
+    },
 ];
 
 export default function ConfiguracionMenu({ seccionActiva, onChangeSeccion }) {

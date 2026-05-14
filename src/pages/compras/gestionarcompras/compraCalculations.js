@@ -32,9 +32,16 @@ export function getDetalleSubtotal(detalle) {
   return toNumber(detalle?.peso) * toNumber(detalle?.costoKilo);
 }
 
+export function getTipoCambioFactor(compra) {
+  const tipoCambio = toNumber(compra?.tipoCambioAplicado);
+  return tipoCambio > 0 ? tipoCambio : 1;
+}
+
 export function getCompraSubtotal(compra) {
+  const factor = getTipoCambioFactor(compra);
+
   if (Array.isArray(compra?.detalles) && compra.detalles.length > 0) {
-    return compra.detalles.reduce((total, detalle) => total + getDetalleSubtotal(detalle), 0);
+    return compra.detalles.reduce((total, detalle) => total + getDetalleSubtotal(detalle), 0) * factor;
   }
 
   if (compra?.subtotal !== null && compra?.subtotal !== undefined) {
@@ -86,13 +93,14 @@ export function calcularCompraPreview(form) {
         return total + toNumber(detalle.peso) * toNumber(detalle.costoKilo);
       }, 0)
     : 0;
+  const subtotalTributario = subtotal * getTipoCambioFactor(form);
 
   const porcentajeIgv = toNumber(form?.porcentajeIgv || DEFAULT_IGV_PERCENTAGE);
-  const igv = form?.aplicaIgv ? (subtotal * porcentajeIgv) / 100 : 0;
+  const igv = form?.aplicaIgv ? (subtotalTributario * porcentajeIgv) / 100 : 0;
 
   return {
-    subtotalPreview: subtotal.toFixed(2),
+    subtotalPreview: subtotalTributario.toFixed(2),
     igvPreview: igv.toFixed(2),
-    totalGeneralPreview: (subtotal + igv).toFixed(2),
+    totalGeneralPreview: (subtotalTributario + igv).toFixed(2),
   };
 }

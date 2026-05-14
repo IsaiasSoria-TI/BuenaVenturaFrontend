@@ -10,6 +10,7 @@ import TiposProveedorSection from './sections/tiposproveedor/TiposProveedorSecti
 import CategoriasSection from './sections/categorias/CategoriasSection';
 import BancosSection from './sections/bancos/BancosSection';
 import ImpuestosSection from './sections/impuestos/ImpuestosSection';
+import TipoCambioSection from './sections/tipocambio/TipoCambioSection';
 
 export default function Configuracion() {
     const [seccionActiva, setSeccionActiva] = React.useState('perfil');
@@ -36,6 +37,9 @@ export default function Configuracion() {
 
             case 'impuestos':
                 return <ImpuestosSection />;
+
+            case 'tipo-cambio':
+                return <TipoCambioSection />;
 
             default:
                 return <PerfilSection />;
