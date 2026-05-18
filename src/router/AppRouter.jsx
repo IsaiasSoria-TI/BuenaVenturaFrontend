@@ -14,6 +14,8 @@ import Kardex from '../pages/inventario/kardex/Kardex';
 import Transferencia from '../pages/inventario/transferencia/Transferencia';
 import CuentasPagar from '../pages/cuentaspagar/CuentasPagar';
 
+// Protege las rutas internas del sistema.
+// Si no existe un token guardado en localStorage, redirige al login.
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token');
   return token ? children : <Navigate to="/login" replace />;
@@ -23,8 +25,10 @@ function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Ruta publica: pantalla de inicio de sesion. */}
         <Route path="/login" element={<Login />} />
 
+        {/* Ruta privada principal: carga el layout del dashboard y sus paginas hijas. */}
         <Route
           path="/dashboard"
           element={
@@ -33,17 +37,25 @@ function AppRouter() {
             </PrivateRoute>
           }
         >
+          {/* Pagina inicial que se muestra al entrar a /dashboard. */}
           <Route index element={<DashboardHome />} />
+
+          {/* Modulo de compras. */}
           <Route path="compras/proveedor" element={<Proveedor />} />
           <Route path="compras/gestionar" element={<GestionarCompras />} />
           <Route path="compras/recepciones" element={<Recepciones />} />
+
+          {/* Modulo de inventarios. */}
           <Route path="inventarios/kardex" element={<Kardex />} />
           <Route path="inventarios/transferencia" element={<Transferencia />} />
           <Route path="inventarios/articulos" element={<Articulo />} />
+
+          {/* Modulos financieros y de configuracion. */}
           <Route path="pagar" element={<CuentasPagar />} />
           <Route path="configuracion" element={<Configuracion />} />
         </Route>
 
+        {/* Redirecciones por defecto para entradas no reconocidas. */}
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

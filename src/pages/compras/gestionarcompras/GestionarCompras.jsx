@@ -47,7 +47,9 @@ import {
 import {
   DEFAULT_IGV_PERCENTAGE,
   calcularCompraPreview,
+  formatCompraCurrency,
   formatNumber,
+  formatSoles,
   getCompraIgv,
   getCompraImporteImpuestos,
   getCompraSubtotal,
@@ -566,7 +568,7 @@ export default function GestionarCompras() {
     });
   };
 
-  const { subtotalPreview, igvPreview, totalGeneralPreview } = React.useMemo(
+  const { subtotalPreview, subtotalTributarioPreview, igvPreview, totalGeneralPreview } = React.useMemo(
     () => calcularCompraPreview(form),
     [form]
   );
@@ -600,7 +602,7 @@ export default function GestionarCompras() {
     }
 
     if (form.numeroLote === '' || Number(form.numeroLote) < 0) {
-      newErrors.numeroLote = 'El número de lotes debe ser 0 o mayor';
+      newErrors.numeroLote = 'El numero de lote debe ser 0 o mayor';
     }
 
     if (!form.detalles.length) {
@@ -902,11 +904,11 @@ export default function GestionarCompras() {
                       <TableCell>{formatDateTimePeru(compra.fechaCompras)}</TableCell>
                       <TableCell>{compra.ruc}</TableCell>
                       <TableCell>{compra.razonSocial}</TableCell>
-                      <TableCell align="right">{formatNumber(getCompraSubtotal(compra))}</TableCell>
-                      <TableCell align="right">{formatNumber(getCompraIgv(compra))}</TableCell>
-                      <TableCell align="right">{formatNumber(getCompraImporteImpuestos(compra))}</TableCell>
+                      <TableCell align="right">{formatCompraCurrency(compra, getCompraSubtotal(compra))}</TableCell>
+                      <TableCell align="right">{formatSoles(getCompraIgv(compra))}</TableCell>
+                      <TableCell align="right">{formatSoles(getCompraImporteImpuestos(compra))}</TableCell>
                       <TableCell align="right">{formatNumber(compra.peso)}</TableCell>
-                      <TableCell align="right">{formatNumber(getCompraTotalFinal(compra))}</TableCell>
+                      <TableCell align="right">{formatCompraCurrency(compra, getCompraTotalFinal(compra))}</TableCell>
                       <TableCell>
                         <Chip
                           label={getEstadoCompra(compra)}
@@ -986,6 +988,7 @@ export default function GestionarCompras() {
         handleRemoveImpuesto={handleRemoveImpuesto}
         tipoCambioLoading={tipoCambioLoading}
         subtotalPreview={subtotalPreview}
+        subtotalTributarioPreview={subtotalTributarioPreview}
         igvPreview={igvPreview}
         totalGeneralPreview={totalGeneralPreview}
       />

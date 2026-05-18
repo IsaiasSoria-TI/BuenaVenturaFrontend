@@ -60,6 +60,23 @@ function formatNumber(value) {
   return number.toFixed(2);
 }
 
+function getCurrencyPrefix(item) {
+  const normalize = (value) => String(value || '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+  const codigo = normalize(item?.codigo || item?.codigoMoneda);
+  const nombre = normalize(item?.nombre || item?.moneda);
+  const simbolo = String(item?.simbolo || item?.simboloMoneda || '').trim();
+
+  if (codigo === 'PEN' || codigo === 'SOL' || nombre === 'SOLES' || nombre === 'SOL') return 'S/';
+  if (codigo === 'USD' || nombre.includes('DOLAR')) return 'USD';
+  return codigo || simbolo || item?.nombre || item?.moneda || '';
+}
+
+function formatCurrency(value, item) {
+  const prefix = getCurrencyPrefix(item);
+  const amount = formatNumber(value);
+  return prefix ? `${prefix} ${amount}` : amount;
+}
+
 function getEstadoChipStyles(estado) {
   if (estado === 'Completo' || estado === 'Pagado') {
     return {
@@ -261,7 +278,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas }) {
     setDetalleCompra(null);
     setSelectedRecepciones([]);
     cargarComprasValidas();
-  }, [open, cargarComprasValidas]);
+  }, [open, cargarComprasValidas, monedas]);
 
   React.useEffect(() => {
     if (!open || form.moneda || monedas.length === 0) return;
@@ -306,6 +323,10 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas }) {
 
       const data = await cuentaPagarService.verDetalleCompra(idCompras);
       setDetalleCompra(data);
+      setForm((prev) => ({
+        ...prev,
+        moneda: data.codigoMoneda || prev.moneda,
+      }));
     } catch (error) {
       console.error('Error al cargar detalle de compra:', error);
 
@@ -546,7 +567,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas }) {
                         {option.ruc} - {option.razonSocial}
                       </Typography>
                       <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                        {option.articulo || 'Varios artículos'} | Importe: {formatNumber(option.costoTotal)}
+                        {option.articulo || 'Varios artículos'} | Importe: {formatCurrency(option.costoTotal, option)}
                       </Typography>
                     </Box>
                   </Box>
@@ -617,9 +638,16 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas }) {
 
                       <Box>
                         <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                          Importe
+                          Moneda
                         </Typography>
-                        <Typography>{formatNumber(detalleCompra.importe)}</Typography>
+                        <Typography>{getCurrencyPrefix(detalleCompra) || '-'}</Typography>
+                      </Box>
+
+                      <Box>
+                        <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
+                          Importe compra
+                        </Typography>
+                        <Typography>{formatCurrency(detalleCompra.importe, detalleCompra)}</Typography>
                       </Box>
 
                       <Box>

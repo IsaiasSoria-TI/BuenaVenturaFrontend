@@ -30,6 +30,23 @@ function formatNumber(value) {
     return number.toFixed(2);
 }
 
+function getCurrencyPrefix(item) {
+    const normalize = (value) => String(value || '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+    const codigo = normalize(item?.codigo || item?.codigoMoneda);
+    const nombre = normalize(item?.nombre || item?.moneda);
+    const simbolo = String(item?.simbolo || item?.simboloMoneda || '').trim();
+
+    if (codigo === 'PEN' || codigo === 'SOL' || nombre === 'SOLES' || nombre === 'SOL') return 'S/';
+    if (codigo === 'USD' || nombre.includes('DOLAR')) return 'USD';
+    return codigo || simbolo || item?.nombre || item?.moneda || '';
+}
+
+function formatCurrency(value, item) {
+    const prefix = getCurrencyPrefix(item);
+    const amount = formatNumber(value);
+    return prefix ? `${prefix} ${amount}` : amount;
+}
+
 function getEstadoChipStyles(estado) {
     if (estado === 'Completo') {
         return {
@@ -180,8 +197,9 @@ function ResumenCompra({ detalleCompra }) {
                 <InfoValue label="Proveedor" value={detalleCompra.razonSocial} strong />
                 <InfoValue label="RUC" value={detalleCompra.ruc} />
                 <InfoValue label="Zona de produccion" value={detalleCompra.zonaProduccion || '-'} />
-                <InfoValue label="Numero de lotes" value={formatNumber(detalleCompra.numeroLote)} />
-                <InfoValue label="Costo total" value={formatNumber(detalleCompra.costoTotal)} />
+                <InfoValue label="Numero de lote" value={formatNumber(detalleCompra.numeroLote)} />
+                <InfoValue label="Moneda" value={getCurrencyPrefix(detalleCompra) || '-'} />
+                <InfoValue label="Total compra" value={formatCurrency(detalleCompra.costoTotal, detalleCompra)} />
                 <InfoValue label="Estado de compra">
                     <Chip
                         label={estadoCompra}

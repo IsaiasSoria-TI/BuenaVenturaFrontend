@@ -38,9 +38,22 @@ function formatNumber(value) {
   return toNumber(value).toFixed(2);
 }
 
-function formatOptionalNumber(value) {
+function getCurrencyPrefix(item) {
+  const normalize = (value) => String(value || '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+  const codigo = normalize(item?.codigo || item?.codigoMoneda || item?.moneda);
+  const nombre = normalize(item?.nombre);
+  const simbolo = String(item?.simbolo || item?.simboloMoneda || '').trim();
+
+  if (codigo === 'PEN' || codigo === 'SOL' || nombre === 'SOLES' || nombre === 'SOL') return 'S/';
+  if (codigo === 'USD' || nombre.includes('DOLAR')) return 'USD';
+  return codigo || simbolo || item?.moneda || '';
+}
+
+function formatCurrency(value, item) {
   if (value === null || value === undefined || value === '') return '-';
-  return formatNumber(value);
+  const prefix = getCurrencyPrefix(item);
+  const amount = formatNumber(value);
+  return prefix ? `${prefix} ${amount}` : amount;
 }
 
 function getEstadoChipStyles(estado) {
@@ -111,6 +124,7 @@ export default function ModalDetalleCuentaPagar({ open, onClose, cuenta = null }
   const detallesDisponibles = Array.isArray(cuenta?.detalles);
   const detalles = detallesDisponibles ? cuenta.detalles : [];
   const estado = cuenta?.estado || '-';
+  const monedaLabel = getCurrencyPrefix(cuenta) || '-';
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="lg">
@@ -158,7 +172,8 @@ export default function ModalDetalleCuentaPagar({ open, onClose, cuenta = null }
               <InfoItem label="RUC proveedor" value={cuenta?.ruc || '-'} />
               <InfoItem label="Proveedor" value={cuenta?.proveedor || '-'} strong />
               <InfoItem label="Factura" value={cuenta?.numeroFactura || '-'} />
-              <InfoItem label="Moneda" value={cuenta?.moneda || '-'} />
+              <InfoItem label="Moneda" value={monedaLabel} />
+              <InfoItem label="Importe compra" value={formatCurrency(cuenta?.importeCompra, cuenta)} />
               <InfoItem label="Código det/ret" value={cuenta?.codigoDetRet || '-'} />
               <InfoItem label="Estado">
                 <Chip
@@ -212,10 +227,10 @@ export default function ModalDetalleCuentaPagar({ open, onClose, cuenta = null }
                         RECIBIDO
                       </TableCell>
                       <TableCell sx={{ fontWeight: 700 }} align="right">
-                        COSTO KILO
+                        COSTO KILO ({monedaLabel})
                       </TableCell>
                       <TableCell sx={{ fontWeight: 700 }} align="right">
-                        IMPORTE
+                        IMPORTE ({monedaLabel})
                       </TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>ESTADO</TableCell>
                     </TableRow>
@@ -242,8 +257,8 @@ export default function ModalDetalleCuentaPagar({ open, onClose, cuenta = null }
                             <TableCell>{getDetalleArticulo(detalle)}</TableCell>
                             <TableCell>{getDetalleMedida(detalle)}</TableCell>
                             <TableCell align="right">{formatNumber(getDetalleRecibido(detalle))}</TableCell>
-                            <TableCell align="right">{formatOptionalNumber(detalle.costoKilo)}</TableCell>
-                            <TableCell align="right">{formatOptionalNumber(getDetalleImporte(detalle))}</TableCell>
+                            <TableCell align="right">{formatCurrency(detalle.costoKilo, cuenta)}</TableCell>
+                            <TableCell align="right">{formatCurrency(getDetalleImporte(detalle), cuenta)}</TableCell>
                             <TableCell>
                               <Chip
                                 label={estadoDetalle}

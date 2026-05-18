@@ -3,6 +3,8 @@ import PropTypes from 'prop-types';
 import { Box, Avatar, IconButton, Typography } from '@mui/material';
 import { useLocation } from 'react-router-dom';
 
+// Mapa de navegacion usado para convertir la ruta actual en un titulo visible.
+// Debe mantenerse alineado con las rutas e items definidos en Sidebar.jsx.
 const NAV_SECTIONS = [
   {
     label: 'Principal',
@@ -53,6 +55,7 @@ const NAV_SECTIONS = [
   },
 ];
 
+// Renderiza iconos de Google Material Symbols sin depender de un componente externo.
 function Icon({ name, size, color }) {
   return (
     <span
@@ -84,6 +87,7 @@ Icon.defaultProps = {
   color: 'inherit',
 };
 
+// Busca el label asociado a la URL actual para mostrarlo como titulo del topbar.
 function getTitleFromPath(pathname) {
   for (const section of NAV_SECTIONS) {
     for (const item of section.items) {
@@ -104,6 +108,7 @@ function getTitleFromPath(pathname) {
   return 'Panel Principal';
 }
 
+// Lee el usuario desde localStorage de forma segura.
 function getUserFromStorage() {
   try {
     return JSON.parse(localStorage.getItem('user') || '{}');
@@ -112,6 +117,7 @@ function getUserFromStorage() {
   }
 }
 
+// Genera iniciales para el avatar cuando el usuario no tiene foto.
 function getInitials(username) {
   return (
     username
@@ -127,6 +133,7 @@ function getInitials(username) {
 
 export default function Topbar({ isMobile, onMenuClick }) {
   const location = useLocation();
+  // Titulo dinamico calculado desde la ruta activa.
   const title = getTitleFromPath(location.pathname);
 
   const user = getUserFromStorage();
@@ -150,6 +157,7 @@ export default function Topbar({ isMobile, onMenuClick }) {
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        {/* En movil muestra el boton que abre el sidebar temporal. */}
         {isMobile ? (
           <IconButton onClick={onMenuClick} sx={{ color: '#475569', mr: 0.5 }}>
             <Icon name="menu" size={22} />
@@ -167,6 +175,7 @@ export default function Topbar({ isMobile, onMenuClick }) {
         </Typography>
       </Box>
 
+      {/* Acciones del usuario: notificaciones y avatar. */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <IconButton sx={{ color: '#475569' }}>
           <Icon name="notifications" size={20} />

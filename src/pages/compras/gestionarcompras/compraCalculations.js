@@ -11,6 +11,46 @@ export function formatNumber(value) {
   return toNumber(value).toFixed(2);
 }
 
+function normalizeText(value) {
+  return String(value || '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+}
+
+export function isMonedaSolesData(moneda) {
+  const codigo = normalizeText(moneda?.codigo || moneda?.codigoMoneda);
+  const nombre = normalizeText(moneda?.nombre || moneda?.moneda);
+  return codigo === 'PEN' || codigo === 'SOL' || nombre === 'SOLES' || nombre === 'SOL';
+}
+
+export function getCurrencyPrefix(moneda) {
+  const codigo = normalizeText(moneda?.codigo || moneda?.codigoMoneda);
+  const nombre = normalizeText(moneda?.nombre || moneda?.moneda);
+  const simbolo = String(moneda?.simbolo || moneda?.simboloMoneda || '').trim();
+
+  if (codigo === 'PEN' || codigo === 'SOL' || nombre === 'SOLES' || nombre === 'SOL') {
+    return 'S/';
+  }
+
+  if (codigo === 'USD' || nombre.includes('DOLAR')) {
+    return 'USD';
+  }
+
+  return codigo || simbolo || moneda?.nombre || moneda?.moneda || '';
+}
+
+export function formatCurrency(value, moneda) {
+  const prefix = getCurrencyPrefix(moneda);
+  const amount = formatNumber(value);
+  return prefix ? `${prefix} ${amount}` : amount;
+}
+
+export function formatSoles(value) {
+  return formatCurrency(value, { codigo: 'PEN' });
+}
+
+export function formatCompraCurrency(compra, value) {
+  return formatCurrency(value, compra);
+}
+
 export function isIgvImpuesto(impuesto) {
   const tipo = String(impuesto?.tipoImpuesto || '').replace(/[.\s]/g, '').toUpperCase();
   return tipo === 'IGV';
@@ -38,17 +78,26 @@ export function getTipoCambioFactor(compra) {
 }
 
 export function getCompraSubtotal(compra) {
-  const factor = getTipoCambioFactor(compra);
-
   if (Array.isArray(compra?.detalles) && compra.detalles.length > 0) {
-    return compra.detalles.reduce((total, detalle) => total + getDetalleSubtotal(detalle), 0) * factor;
+    return compra.detalles.reduce((total, detalle) => total + getDetalleSubtotal(detalle), 0);
   }
 
   if (compra?.subtotal !== null && compra?.subtotal !== undefined) {
     return toNumber(compra.subtotal);
   }
 
+  if (!isMonedaSolesData(compra) && compra?.costoTotal !== null && compra?.costoTotal !== undefined) {
+    return Math.max(
+      (toNumber(compra.costoTotal) - toNumber(compra?.importeIgv)) / getTipoCambioFactor(compra),
+      0
+    );
+  }
+
   return toNumber(compra?.totalGeneral ?? compra?.costoTotal) - toNumber(compra?.importeIgv);
+}
+
+export function getCompraSubtotalTributario(compra) {
+  return getCompraSubtotal(compra) * getTipoCambioFactor(compra);
 }
 
 export function getCompraIgv(compra) {
@@ -58,7 +107,7 @@ export function getCompraIgv(compra) {
 
   if (!compra?.aplicaIgv) return 0;
 
-  return (getCompraSubtotal(compra) * toNumber(compra?.porcentajeIgv ?? DEFAULT_IGV_PERCENTAGE)) / 100;
+  return (getCompraSubtotalTributario(compra) * toNumber(compra?.porcentajeIgv ?? DEFAULT_IGV_PERCENTAGE)) / 100;
 }
 
 export function getCompraImporteImpuestos(compra) {
@@ -67,7 +116,7 @@ export function getCompraImporteImpuestos(compra) {
   }
 
   if (Array.isArray(compra?.impuestos) && compra.impuestos.length > 0) {
-    const baseImpuestos = getCompraSubtotal(compra) + getCompraIgv(compra);
+    const baseImpuestos = getCompraSubtotalTributario(compra) + getCompraIgv(compra);
 
     return compra.impuestos.reduce((total, impuesto) => {
       if (isIgvImpuesto(impuesto)) return total;
@@ -84,7 +133,7 @@ export function getCompraImporteImpuestos(compra) {
 }
 
 export function getCompraTotalFinal(compra) {
-  return getCompraSubtotal(compra) + getCompraIgv(compra);
+  return getCompraSubtotal(compra);
 }
 
 export function calcularCompraPreview(form) {
@@ -99,8 +148,9 @@ export function calcularCompraPreview(form) {
   const igv = form?.aplicaIgv ? (subtotalTributario * porcentajeIgv) / 100 : 0;
 
   return {
-    subtotalPreview: subtotalTributario.toFixed(2),
+    subtotalPreview: subtotal.toFixed(2),
+    subtotalTributarioPreview: subtotalTributario.toFixed(2),
     igvPreview: igv.toFixed(2),
-    totalGeneralPreview: (subtotalTributario + igv).toFixed(2),
+    totalGeneralPreview: subtotal.toFixed(2),
   };
 }

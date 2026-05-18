@@ -37,9 +37,22 @@ function formatNumber(value) {
     return toNumber(value).toFixed(2);
 }
 
-function formatOptionalNumber(value) {
+function getCurrencyPrefix(item) {
+    const normalize = (value) => String(value || '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+    const codigo = normalize(item?.codigo || item?.codigoMoneda);
+    const nombre = normalize(item?.nombre || item?.moneda);
+    const simbolo = String(item?.simbolo || item?.simboloMoneda || '').trim();
+
+    if (codigo === 'PEN' || codigo === 'SOL' || nombre === 'SOLES' || nombre === 'SOL') return 'S/';
+    if (codigo === 'USD' || nombre.includes('DOLAR')) return 'USD';
+    return codigo || simbolo || item?.nombre || item?.moneda || '';
+}
+
+function formatCurrency(value, item) {
     if (value === null || value === undefined || value === '') return '-';
-    return formatNumber(value);
+    const prefix = getCurrencyPrefix(item);
+    const amount = formatNumber(value);
+    return prefix ? `${prefix} ${amount}` : amount;
 }
 
 function getEstadoChipStyles(estado) {
@@ -98,6 +111,7 @@ export default function ModalDetalleRecepcion({ open, onClose, recepcion = null 
 
     const estadoRecepcion = recepcion?.estado || '-';
     const estadoCompra = recepcion?.estadoCompra || '-';
+    const monedaLabel = getCurrencyPrefix(recepcion) || 'moneda';
 
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="lg">
@@ -142,6 +156,8 @@ export default function ModalDetalleRecepcion({ open, onClose, recepcion = null 
                             />
                             <InfoItem label="Guia de remision" value={recepcion?.guiaRemision || '-'} />
                             <InfoItem label="Cantidad jabas" value={formatNumber(recepcion?.cantidadJabas)} />
+                            <InfoItem label="Moneda compra" value={monedaLabel} />
+                            <InfoItem label="Total compra" value={formatCurrency(recepcion?.costoTotal, recepcion)} />
                             <InfoItem label="RUC proveedor" value={recepcion?.ruc || '-'} />
                             <InfoItem label="Proveedor" value={recepcion?.razonSocial || '-'} strong />
                             <InfoItem label="Estado recepción">
@@ -195,10 +211,10 @@ export default function ModalDetalleRecepcion({ open, onClose, recepcion = null 
                                             PESO RECIBIDO
                                         </TableCell>
                                         <TableCell sx={{ fontWeight: 700 }} align="right">
-                                            COSTO KILO
+                                            COSTO KILO ({monedaLabel})
                                         </TableCell>
                                         <TableCell sx={{ fontWeight: 700 }} align="right">
-                                            IMPORTE COMPRA
+                                            IMPORTE COMPRA ({monedaLabel})
                                         </TableCell>
                                         <TableCell sx={{ fontWeight: 700 }}>ESTADO DETALLE</TableCell>
                                     </TableRow>
@@ -225,9 +241,9 @@ export default function ModalDetalleRecepcion({ open, onClose, recepcion = null 
                                                     <TableCell>{detalle.medida || '-'}</TableCell>
                                                     <TableCell align="right">{formatNumber(detalle.pesoComprado)}</TableCell>
                                                     <TableCell align="right">{formatNumber(detalle.recibido)}</TableCell>
-                                                    <TableCell align="right">{formatOptionalNumber(detalle.costoKilo)}</TableCell>
+                                                    <TableCell align="right">{formatCurrency(detalle.costoKilo, recepcion)}</TableCell>
                                                     <TableCell align="right">
-                                                        {formatOptionalNumber(detalle.costoTotal ?? detalle.subtotal)}
+                                                        {formatCurrency(detalle.costoTotal ?? detalle.subtotal, recepcion)}
                                                     </TableCell>
                                                     <TableCell>
                                                         <Chip

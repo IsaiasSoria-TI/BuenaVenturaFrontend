@@ -25,6 +25,7 @@ const Icon = ({ name, size = 22, color = 'inherit' }) => (
   </span>
 );
 
+// Tarjetas resumen del dashboard. Por ahora usan guiones porque no consumen API.
 const KPI_CARDS = [
   { label: 'Ingresos del Mes', value: '—', icon: 'trending_up', color: '#1976d2', bg: '#e3f0fb' },
   { label: 'Por Cobrar', value: '—', icon: 'payments', color: '#f59e0b', bg: '#fef9ec' },
@@ -32,6 +33,7 @@ const KPI_CARDS = [
   { label: 'Margen Neto', value: '—', icon: 'donut_large', color: '#10b981', bg: '#ecfdf5' },
 ];
 
+// Accesos directos a los modulos mas usados desde la pantalla principal.
 const QUICK_MODULES = [
   { id: 'kardex', label: 'Kardex', icon: 'inventory', color: '#10b981', bg: '#ecfdf5', to: '/dashboard/inventarios/kardex' },
   { id: 'transferencia', label: 'Transferencia', icon: 'sync_alt', color: '#0891b2', bg: '#ecfeff', to: '/dashboard/inventarios/transferencia' },
@@ -43,6 +45,7 @@ const QUICK_MODULES = [
   { id: 'configuracion', label: 'Config.', icon: 'settings', color: '#475569', bg: '#f8fafc', to: '/dashboard/configuracion' },
 ];
 
+// Card reutilizable para secciones aun no conectadas con datos reales.
 function EmptyStateCard({ title, description }) {
   return (
     <Card
@@ -70,6 +73,7 @@ export default function DashboardHome() {
 
   return (
     <>
+      {/* Primera fila: indicadores principales del negocio. */}
       <Box
         sx={{
           display: 'grid',
@@ -139,6 +143,7 @@ export default function DashboardHome() {
         ))}
       </Box>
 
+      {/* Segunda fila: paneles informativos pendientes de integracion. */}
       <Box
         sx={{
           display: 'grid',
@@ -158,6 +163,7 @@ export default function DashboardHome() {
         />
       </Box>
 
+      {/* Tercera seccion: botones de acceso rapido a rutas frecuentes. */}
       <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e2e8f0' }}>
         <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
           <Typography sx={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a', mb: 2 }}>

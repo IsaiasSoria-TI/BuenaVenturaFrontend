@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import {
+    Alert,
     Box,
     Card,
     CardContent,
@@ -22,6 +23,10 @@ import {
     Tooltip,
     TextField,
     InputAdornment,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
 } from '@mui/material';
 
 import { recepcionService } from '../../../services/recepcionService';
@@ -76,6 +81,23 @@ function formatNumber(value) {
     return number.toFixed(2);
 }
 
+function getCurrencyPrefix(item) {
+    const normalize = (value) => String(value || '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+    const codigo = normalize(item?.codigo || item?.codigoMoneda);
+    const nombre = normalize(item?.nombre || item?.moneda);
+    const simbolo = String(item?.simbolo || item?.simboloMoneda || '').trim();
+
+    if (codigo === 'PEN' || codigo === 'SOL' || nombre === 'SOLES' || nombre === 'SOL') return 'S/';
+    if (codigo === 'USD' || nombre.includes('DOLAR')) return 'USD';
+    return codigo || simbolo || item?.nombre || item?.moneda || '';
+}
+
+function formatCurrency(value, item) {
+    const prefix = getCurrencyPrefix(item);
+    const amount = formatNumber(value);
+    return prefix ? `${prefix} ${amount}` : amount;
+}
+
 function getEstadoChipStyles(estado) {
     if (estado === 'Completo') {
         return {
@@ -126,6 +148,11 @@ export default function Recepciones() {
     const [serverError, setServerError] = React.useState('');
     const [detailDialogOpen, setDetailDialogOpen] = React.useState(false);
     const [selectedDetail, setSelectedDetail] = React.useState(null);
+    const [editDialogOpen, setEditDialogOpen] = React.useState(false);
+    const [selectedEdit, setSelectedEdit] = React.useState(null);
+    const [editForm, setEditForm] = React.useState({ guiaRemision: '', cantidadJabas: '' });
+    const [editSaving, setEditSaving] = React.useState(false);
+    const [successMessage, setSuccessMessage] = React.useState('');
 
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
@@ -195,6 +222,79 @@ export default function Recepciones() {
     const handleCloseDetailDialog = () => {
         setDetailDialogOpen(false);
         setSelectedDetail(null);
+    };
+
+    const handleOpenEditDialog = (recepcion) => {
+        setSelectedEdit(recepcion);
+        setEditForm({
+            guiaRemision: recepcion.guiaRemision || '',
+            cantidadJabas: recepcion.cantidadJabas ?? '',
+        });
+        setErrors({});
+        setServerError('');
+        setSuccessMessage('');
+        setEditDialogOpen(true);
+    };
+
+    const handleCloseEditDialog = () => {
+        if (editSaving) return;
+
+        setEditDialogOpen(false);
+        setSelectedEdit(null);
+        setErrors({});
+    };
+
+    const handleEditChange = (field) => (event) => {
+        setEditForm((prev) => ({
+            ...prev,
+            [field]: event.target.value,
+        }));
+
+        if (errors[field]) {
+            setErrors((prev) => ({
+                ...prev,
+                [field]: '',
+            }));
+        }
+    };
+
+    const handleSubmitEdit = async () => {
+        if (!selectedEdit?.idRecepciones) return;
+
+        const cantidadJabas = Number(editForm.cantidadJabas || 0);
+        if (!Number.isFinite(cantidadJabas) || cantidadJabas < 0) {
+            setErrors((prev) => ({
+                ...prev,
+                cantidadJabas: !Number.isFinite(cantidadJabas)
+                    ? 'Ingrese una cantidad valida'
+                    : 'No puede ser negativo',
+            }));
+            return;
+        }
+
+        try {
+            setEditSaving(true);
+            setServerError('');
+            setSuccessMessage('');
+
+            await recepcionService.actualizarDatos(selectedEdit.idRecepciones, {
+                guiaRemision: editForm.guiaRemision.trim() || null,
+                cantidadJabas,
+            });
+
+            setSuccessMessage('Datos de recepcion actualizados correctamente.');
+            handleCloseEditDialog();
+            await cargarRecepciones();
+        } catch (error) {
+            console.error('Error al actualizar datos de recepcion:', error);
+            const message =
+                error?.response?.data?.message ||
+                error?.response?.data ||
+                'No se pudieron actualizar los datos de recepcion.';
+            setServerError(typeof message === 'string' ? message : 'No se pudieron actualizar los datos de recepcion.');
+        } finally {
+            setEditSaving(false);
+        }
     };
 
     const cargarDetalleCompra = async (idCompras) => {
@@ -480,6 +580,18 @@ export default function Recepciones() {
                         sx={{ mb: 2 }}
                     />
 
+                    {successMessage ? (
+                        <Alert severity="success" sx={{ mb: 2 }}>
+                            {successMessage}
+                        </Alert>
+                    ) : null}
+
+                    {serverError ? (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            {serverError}
+                        </Alert>
+                    ) : null}
+
                     <TableContainer
                         component={Paper}
                         elevation={0}
@@ -500,6 +612,7 @@ export default function Recepciones() {
                                     <TableCell sx={{ fontWeight: 700 }}>RUC</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>PROVEEDOR</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>ARTÍCULOS</TableCell>
+                                    <TableCell sx={{ fontWeight: 700 }}>TOTAL COMPRA</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>PESO COMPRADO</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>RECIBIDO</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>ESTADO COMPRA</TableCell>
@@ -511,7 +624,7 @@ export default function Recepciones() {
                             <TableBody>
                                 {showLoading ? (
                                     <TableRow>
-                                        <TableCell colSpan={13} align="center" sx={{ py: 4 }}>
+                                        <TableCell colSpan={14} align="center" sx={{ py: 4 }}>
                                             <CircularProgress size={28} />
                                         </TableCell>
                                     </TableRow>
@@ -519,7 +632,7 @@ export default function Recepciones() {
 
                                 {showEmpty ? (
                                     <TableRow>
-                                        <TableCell colSpan={13} align="center" sx={{ py: 4, color: '#64748b' }}>
+                                        <TableCell colSpan={14} align="center" sx={{ py: 4, color: '#64748b' }}>
                                             No hay recepciones registradas.
                                         </TableCell>
                                     </TableRow>
@@ -527,7 +640,7 @@ export default function Recepciones() {
 
                                 {showNoResults ? (
                                     <TableRow>
-                                        <TableCell colSpan={13} align="center" sx={{ py: 4, color: '#64748b' }}>
+                                        <TableCell colSpan={14} align="center" sx={{ py: 4, color: '#64748b' }}>
                                             No se encontraron recepciones con ese criterio.
                                         </TableCell>
                                     </TableRow>
@@ -544,6 +657,7 @@ export default function Recepciones() {
                                             <TableCell>{recepcion.ruc}</TableCell>
                                             <TableCell>{recepcion.razonSocial}</TableCell>
                                             <TableCell>{getArticulosResumen(recepcion)}</TableCell>
+                                            <TableCell>{formatCurrency(recepcion.costoTotal, recepcion)}</TableCell>
                                             <TableCell>{formatNumber(recepcion.pesoComprado)}</TableCell>
                                             <TableCell>{formatNumber(recepcion.recibido)}</TableCell>
                                             <TableCell>
@@ -570,6 +684,11 @@ export default function Recepciones() {
                                                 <Tooltip title="Ver detalle">
                                                     <IconButton onClick={() => handleOpenDetailDialog(recepcion)}>
                                                         <Icon name="visibility" size={20} color="#0f766e" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                <Tooltip title="Editar guia y jabas">
+                                                    <IconButton onClick={() => handleOpenEditDialog(recepcion)}>
+                                                        <Icon name="edit" size={20} color="#1976d2" />
                                                     </IconButton>
                                                 </Tooltip>
                                             </TableCell>
@@ -622,6 +741,57 @@ export default function Recepciones() {
                 onClose={handleCloseDetailDialog}
                 recepcion={selectedDetail}
             />
+
+            <Dialog open={editDialogOpen} onClose={handleCloseEditDialog} fullWidth maxWidth="sm">
+                <DialogTitle sx={{ fontWeight: 700 }}>Editar datos de recepcion</DialogTitle>
+                <DialogContent dividers sx={{ pt: 2.5 }}>
+                    <Stack spacing={2}>
+                        {selectedEdit ? (
+                            <Typography sx={{ fontSize: '0.85rem', color: '#64748b' }}>
+                                {formatRecepcionCode(selectedEdit.idRecepciones)} - Compra {formatCompraCode(selectedEdit.idCompras)}
+                            </Typography>
+                        ) : null}
+
+                        <TextField
+                            fullWidth
+                            label="GUIA DE REMISION"
+                            value={editForm.guiaRemision}
+                            onChange={handleEditChange('guiaRemision')}
+                        />
+
+                        <TextField
+                            fullWidth
+                            type="number"
+                            label="CANTIDAD JABAS"
+                            value={editForm.cantidadJabas}
+                            onChange={handleEditChange('cantidadJabas')}
+                            error={!!errors.cantidadJabas}
+                            helperText={errors.cantidadJabas || ''}
+                            slotProps={{
+                                input: {
+                                    inputProps: {
+                                        min: 0,
+                                        step: '0.01',
+                                    },
+                                },
+                            }}
+                        />
+                    </Stack>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, py: 2 }}>
+                    <Button onClick={handleCloseEditDialog} disabled={editSaving} sx={{ textTransform: 'none' }}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleSubmitEdit}
+                        disabled={editSaving}
+                        sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
+                    >
+                        {editSaving ? 'Guardando...' : 'Actualizar'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }

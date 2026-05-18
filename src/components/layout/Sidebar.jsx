@@ -14,8 +14,11 @@ import {
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import logoErp from '../../assets/Logoerp.png';
 
+// Ancho del sidebar para mantener consistente el layout con Dashboard.jsx.
 const SIDEBAR_W = 256;
 
+// Estructura central de navegacion del menu lateral.
+// Cada item puede ser un enlace directo o un grupo con hijos colapsables.
 const NAV_SECTIONS = [
   {
     label: 'Principal',
@@ -66,6 +69,7 @@ const NAV_SECTIONS = [
   },
 ];
 
+// Renderiza iconos de Google Material Symbols usando el nombre del icono.
 const Icon = ({ name, size = 22, color = 'inherit' }) => (
   <Box
     component="span"
@@ -85,6 +89,8 @@ const Icon = ({ name, size = 22, color = 'inherit' }) => (
   </Box>
 );
 
+// Item simple de navegacion.
+// NavLink entrega isActive para pintar el estado activo segun la URL actual.
 function SidebarLinkItem({ item, onNavigate, nested = false }) {
   return (
     <ListItem
@@ -144,7 +150,9 @@ function SidebarLinkItem({ item, onNavigate, nested = false }) {
   );
 }
 
+// Item padre con submenu desplegable, usado por Inventarios y Compras.
 function SidebarCollapseItem({ item, open, onToggle, onNavigate, pathname }) {
+  // Marca el padre como activo si alguna ruta hija coincide con la URL actual.
   const hasActiveChild = item.children?.some((child) => pathname === child.to);
 
   return (
@@ -215,10 +223,12 @@ export default function Sidebar({ onNavigate }) {
   const location = useLocation();
   const pathname = location.pathname;
 
+  // Datos del usuario autenticado guardados al iniciar sesion.
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   const username = user.nombreCompleto || user.usuario || 'Usuario';
 
+  // Iniciales para el avatar cuando no hay foto de perfil.
   const initials = username
     .trim()
     .split(' ')
@@ -228,11 +238,13 @@ export default function Sidebar({ onNavigate }) {
     .slice(0, 2)
     .toUpperCase();
 
+  // Mantiene abiertos los grupos que corresponden a la ruta actual.
   const [openMenus, setOpenMenus] = React.useState({
     inventarios: pathname.startsWith('/dashboard/inventarios'),
     compras: pathname.startsWith('/dashboard/compras'),
   });
 
+  // Si el usuario navega por URL directa, abre automaticamente el grupo correcto.
   React.useEffect(() => {
     setOpenMenus((prev) => ({
       ...prev,
@@ -241,6 +253,7 @@ export default function Sidebar({ onNavigate }) {
     }));
   }, [pathname]);
 
+  // Abre o cierra manualmente un grupo del menu.
   const handleToggle = (key) => {
     setOpenMenus((prev) => ({
       ...prev,
@@ -248,6 +261,7 @@ export default function Sidebar({ onNavigate }) {
     }));
   };
 
+  // Cierra la sesion limpiando los datos locales y volviendo al login.
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
@@ -265,7 +279,7 @@ export default function Sidebar({ onNavigate }) {
         backgroundColor: '#0f172a',
       }}
     >
-      {/* 🔥 SOLO CAMBIO AQUÍ */}
+      {/* Cabecera con logo y nombre del ERP. */}
       <Box sx={{ px: 3, py: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
         <Box
           component="img"
@@ -285,6 +299,7 @@ export default function Sidebar({ onNavigate }) {
 
       <Divider sx={{ borderColor: '#1e293b' }} />
 
+      {/* Lista de secciones y opciones principales del sistema. */}
       <Box sx={{ flex: 1, overflowY: 'auto', py: 1.5 }}>
         {NAV_SECTIONS.map((section) => (
           <Box key={section.label} sx={{ mb: 0.5 }}>
@@ -323,6 +338,7 @@ export default function Sidebar({ onNavigate }) {
 
       <Divider sx={{ borderColor: '#1e293b' }} />
 
+      {/* Bloque inferior con usuario actual y boton de cierre de sesion. */}
       <Box sx={{ px: 3, py: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
         <Avatar sx={{ width: 34, height: 34, bgcolor: '#1d4ed8' }}>
           {initials || 'US'}

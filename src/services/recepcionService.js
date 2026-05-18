@@ -22,4 +22,9 @@ export const recepcionService = {
     const { data } = await api.post(BASE_URL, payload);
     return data;
   },
+
+  actualizarDatos: async (idRecepciones, payload) => {
+    const { data } = await api.put(`${BASE_URL}/${idRecepciones}/datos`, payload);
+    return data;
+  },
 };

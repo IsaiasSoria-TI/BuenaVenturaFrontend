@@ -24,7 +24,10 @@ import {
 import { formatCompraCode, formatDateTimePeru } from '../../../utils/formatters';
 import {
     DEFAULT_IGV_PERCENTAGE,
+    formatCompraCurrency,
     formatNumber,
+    formatSoles,
+    getCurrencyPrefix,
     getCompraIgv,
     getCompraImporteImpuestos,
     getCompraSubtotal,
@@ -40,6 +43,24 @@ function formatPercentage(value) {
 
 function formatBoolean(value) {
     return value ? 'Sí' : 'No';
+}
+
+function getImpuestoKey(impuesto, index) {
+    return impuesto?.idImpuesto ?? impuesto?.idCompraImpuesto ?? `${impuesto?.tipoImpuesto || 'impuesto'}-${index}`;
+}
+
+function getImpuestosReferenciales(impuestos) {
+    const vistos = new Set();
+
+    return impuestos.filter((impuesto, index) => {
+        if (!impuesto || !impuesto.tipoImpuesto) return false;
+
+        const key = getImpuestoKey(impuesto, index);
+        if (vistos.has(key)) return false;
+
+        vistos.add(key);
+        return true;
+    });
 }
 
 function getEstadoChipStyles(estado) {
@@ -104,7 +125,7 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
     );
 
     const impuestos = React.useMemo(
-        () => (Array.isArray(compra?.impuestos) ? compra.impuestos : []),
+        () => getImpuestosReferenciales(Array.isArray(compra?.impuestos) ? compra.impuestos : []),
         [compra]
     );
 
@@ -127,6 +148,7 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
     const moneda = compra?.codigoMoneda
         ? `${compra.codigoMoneda}${compra.simboloMoneda ? ` (${compra.simboloMoneda})` : ''}`
         : compra?.moneda || '-';
+    const monedaLabel = getCurrencyPrefix(compra) || 'moneda';
     const tipoCambio = compra?.tipoCambioAplicado ? formatNumber(compra.tipoCambioAplicado) : '-';
     const estado = compra?.flgActivo === false ? 'Inactivo' : compra?.estado || '-';
 
@@ -168,10 +190,10 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                             <InfoItem label="Moneda" value={moneda} />
                             <InfoItem label="Tipo de cambio" value={tipoCambio} />
                             <InfoItem label="Zona de producción" value={compra?.zonaProduccion || '-'} />
-                            <InfoItem label="Número de lotes" value={formatNumber(compra?.numeroLote)} />
+                            <InfoItem label="Numero de lote" value={formatNumber(compra?.numeroLote)} />
                             <InfoItem label="Aplica IGV" value={formatBoolean(aplicaIgv)} />
                             <InfoItem label="Porcentaje IGV" value={formatPercentage(porcentajeIgv)} />
-                            <InfoItem label="Importe IGV (S/)" value={formatNumber(importeIgv)} />
+                            <InfoItem label="Importe IGV (S/)" value={formatSoles(importeIgv)} />
                             <InfoItem label="Estado">
                                 <Chip
                                     label={estado}
@@ -209,10 +231,10 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                                             PESO
                                         </TableCell>
                                         <TableCell sx={{ fontWeight: 700 }} align="right">
-                                            COSTO KILO (S/)
+                                            COSTO KILO ({monedaLabel})
                                         </TableCell>
                                         <TableCell sx={{ fontWeight: 700 }} align="right">
-                                            SUBTOTAL (S/)
+                                            SUBTOTAL ({monedaLabel})
                                         </TableCell>
                                     </TableRow>
                                 </TableHead>
@@ -230,8 +252,8 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                                                 <TableCell>{detalle.descripcionArticulo || '-'}</TableCell>
                                                 <TableCell>{detalle.medida || '-'}</TableCell>
                                                 <TableCell align="right">{formatNumber(detalle.peso)}</TableCell>
-                                                <TableCell align="right">{formatNumber(detalle.costoKilo)}</TableCell>
-                                                <TableCell align="right">{formatNumber(getDetalleSubtotal(detalle))}</TableCell>
+                                                <TableCell align="right">{formatCompraCurrency(compra, detalle.costoKilo)}</TableCell>
+                                                <TableCell align="right">{formatCompraCurrency(compra, getDetalleSubtotal(detalle))}</TableCell>
                                             </TableRow>
                                         ))
                                     )}
@@ -244,10 +266,6 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                         <Typography sx={{ fontWeight: 700, color: '#0f172a', mb: 1 }}>
                             Retención / detracción referencial
                         </Typography>
-                        <Typography sx={{ fontSize: '0.85rem', color: '#64748b', mb: 1 }}>
-                            Importe informativo; no suma ni resta al total final.
-                        </Typography>
-
                         <TableContainer
                             component={Paper}
                             elevation={0}
@@ -288,7 +306,7 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                                                 <TableRow key={impuesto.idCompraImpuesto || `${impuesto.idImpuesto}-${index}`} hover>
                                                     <TableCell>{impuesto.tipoImpuesto || '-'}</TableCell>
                                                     <TableCell align="right">{formatPercentage(impuesto.porcentaje)}</TableCell>
-                                                    <TableCell align="right">{formatNumber(importe)}</TableCell>
+                                                    <TableCell align="right">{formatSoles(importe)}</TableCell>
                                                 </TableRow>
                                             );
                                         })
@@ -312,10 +330,10 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                             sx={{ p: 2, border: '1px solid #e2e8f0', borderRadius: 2 }}
                         >
                             <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                Subtotal (S/)
+                                Subtotal ({monedaLabel})
                             </Typography>
                             <Typography sx={{ mt: 0.5, fontWeight: 700, color: '#0f172a' }}>
-                                {formatNumber(subtotalArticulos)}
+                                {formatCompraCurrency(compra, subtotalArticulos)}
                             </Typography>
                         </Paper>
 
@@ -327,7 +345,7 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                                 IGV (S/)
                             </Typography>
                             <Typography sx={{ mt: 0.5, fontWeight: 700, color: '#0f172a' }}>
-                                {formatNumber(importeIgv)}
+                                {formatSoles(importeIgv)}
                             </Typography>
                         </Paper>
 
@@ -341,10 +359,10 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                             }}
                         >
                             <Typography sx={{ fontSize: '0.8rem', color: '#1d4ed8' }}>
-                                Total final (S/)
+                                Total final ({monedaLabel})
                             </Typography>
                             <Typography sx={{ mt: 0.5, fontWeight: 800, color: '#1e40af' }}>
-                                {formatNumber(totalGeneral)}
+                                {formatCompraCurrency(compra, totalGeneral)}
                             </Typography>
                         </Paper>
 
@@ -367,11 +385,8 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                             <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
                                 Importe referencial (S/)
                             </Typography>
-                            <Typography sx={{ fontSize: '0.72rem', color: '#64748b' }}>
-                                No suma ni resta al total final
-                            </Typography>
                             <Typography sx={{ mt: 0.5, fontWeight: 700, color: '#0f172a' }}>
-                                {formatNumber(totalImpuestos)}
+                                {formatSoles(totalImpuestos)}
                             </Typography>
                         </Paper>
                     </Box>

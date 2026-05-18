@@ -11,8 +11,10 @@ import Sidebar from '../../components/layout/Sidebar';
 import Topbar from '../../components/layout/Topbar';
 
 
+// Ancho unico usado por el drawer permanente y el drawer movil.
 const SIDEBAR_W = 256;
 
+// Tema local del dashboard: define paleta, fuente y radios para Material UI.
 const theme = createTheme({
   palette: {
     mode: 'light',
@@ -23,6 +25,8 @@ const theme = createTheme({
   shape: { borderRadius: 12 },
 });
 
+// Titulo alternativo heredado del layout.
+// Actualmente Topbar calcula su titulo desde la ruta, pero esta funcion queda como apoyo.
 function getTitle(pathname) {
   switch (pathname) {
     case '/dashboard/compras/proveedor':
@@ -34,7 +38,10 @@ function getTitle(pathname) {
 }
 
 export default function Dashboard() {
+  // Controla la apertura del menu lateral en pantallas pequenas.
   const [mobileOpen, setMobileOpen] = React.useState(false);
+
+  // Detecta si la pantalla esta por debajo del breakpoint md del tema.
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const location = useLocation();
 
@@ -50,6 +57,7 @@ export default function Dashboard() {
       />
 
       <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f0f4f9' }}>
+        {/* Sidebar fijo para escritorio. */}
         {!isMobile && (
           <Drawer
             variant="permanent"
@@ -68,6 +76,7 @@ export default function Dashboard() {
           </Drawer>
         )}
 
+        {/* Sidebar temporal para movil; se abre desde el boton hamburguesa del Topbar. */}
         {isMobile && (
           <Drawer
             variant="temporary"
@@ -86,6 +95,7 @@ export default function Dashboard() {
           </Drawer>
         )}
 
+        {/* Area principal: barra superior fija y contenido de la ruta hija. */}
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <Topbar
             isMobile={isMobile}
@@ -93,6 +103,7 @@ export default function Dashboard() {
             title={getTitle(location.pathname)}
           />
 
+          {/* Outlet renderiza la pagina hija definida en AppRouter. */}
           <Box sx={{ flex: 1, p: { xs: 2, md: 3.5 }, overflowY: 'auto' }}>
             <Outlet />
           </Box>

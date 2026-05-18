@@ -21,6 +21,8 @@ import {
     Typography,
 } from '@mui/material';
 
+import { formatCurrency, getCurrencyPrefix, isMonedaSolesData } from './compraCalculations';
+
 function Icon({ name, size = 20, color = 'inherit' }) {
     return (
         <Box
@@ -96,6 +98,7 @@ export default function ModalGestionarCompras({
     handleRemoveImpuesto,
     tipoCambioLoading,
     subtotalPreview,
+    subtotalTributarioPreview,
     igvPreview,
     totalGeneralPreview,
 }) {
@@ -103,6 +106,15 @@ export default function ModalGestionarCompras({
         () => impuestos.filter((item) => !isIgvImpuesto(item)),
         [impuestos]
     );
+    const monedaSeleccionada = React.useMemo(
+        () => monedas.find((moneda) => moneda.idMoneda === Number(form.idMoneda)) || null,
+        [form.idMoneda, monedas]
+    );
+    const monedaLabel = getCurrencyPrefix(monedaSeleccionada) || 'moneda';
+    const mostrarTipoCambio = Boolean(monedaSeleccionada && !isMonedaSolesData(monedaSeleccionada));
+    const tipoCambioTexto = tipoCambioLoading
+        ? 'Consultando...'
+        : form.tipoCambioAplicado || 'No disponible';
 
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="lg">
@@ -262,7 +274,7 @@ export default function ModalGestionarCompras({
                             <TextField
                                 fullWidth
                                 type="number"
-                                label="Número de lotes"
+                                label="Numero de lote"
                                 value={form.numeroLote}
                                 onChange={handleChange('numeroLote')}
                                 error={!!errors.numeroLote}
@@ -367,7 +379,7 @@ export default function ModalGestionarCompras({
                                             <TextField
                                                 fullWidth
                                                 type="number"
-                                                label="Costo kilo (S/)"
+                                                label={`Costo kilo (${monedaLabel})`}
                                                 value={detalle.costoKilo}
                                                 onChange={(event) =>
                                                     handleDetalleChange(index, 'costoKilo', event.target.value)
@@ -383,7 +395,7 @@ export default function ModalGestionarCompras({
 
                                             <TextField
                                                 fullWidth
-                                                label="Subtotal (S/)"
+                                                label={`Subtotal (${monedaLabel})`}
                                                 value={(
                                                     Number(detalle.peso || 0) * Number(detalle.costoKilo || 0)
                                                 ).toFixed(2)}
@@ -484,51 +496,54 @@ export default function ModalGestionarCompras({
 
                         <Divider />
 
-                        <Box
-                            sx={{
-                                display: 'grid',
-                                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
-                                gap: 2,
-                            }}
-                        >
-                            <TextField
-                                fullWidth
-                                label="Subtotal (S/)"
-                                value={subtotalPreview}
-                                slotProps={{
-                                    input: { readOnly: true },
+                        <Stack spacing={1}>
+                            <Box
+                                sx={{
+                                    display: 'grid',
+                                    gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
+                                    gap: 2,
                                 }}
-                            />
+                            >
+                                <TextField
+                                    fullWidth
+                                    label={`Subtotal (${monedaLabel})`}
+                                    value={subtotalPreview}
+                                    slotProps={{
+                                        input: { readOnly: true },
+                                    }}
+                                />
 
-                            <TextField
-                                fullWidth
-                                label="Tipo de cambio aplicado"
-                                value={tipoCambioLoading ? 'Consultando...' : form.tipoCambioAplicado || ''}
-                                error={!!errors.tipoCambioAplicado}
-                                helperText={errors.tipoCambioAplicado || 'Solo aplica para moneda distinta a soles'}
-                                slotProps={{
-                                    input: { readOnly: true },
-                                }}
-                            />
+                                <TextField
+                                    fullWidth
+                                    label="IGV (S/)"
+                                    value={form.aplicaIgv ? igvPreview : '0.00'}
+                                    slotProps={{
+                                        input: { readOnly: true },
+                                    }}
+                                />
 
-                            <TextField
-                                fullWidth
-                                label="IGV (S/)"
-                                value={form.aplicaIgv ? igvPreview : '0.00'}
-                                slotProps={{
-                                    input: { readOnly: true },
-                                }}
-                            />
+                                <TextField
+                                    fullWidth
+                                    label={`Total final (${monedaLabel})`}
+                                    value={totalGeneralPreview}
+                                    slotProps={{
+                                        input: { readOnly: true },
+                                    }}
+                                />
+                            </Box>
 
-                            <TextField
-                                fullWidth
-                                label="Total final (S/)"
-                                value={totalGeneralPreview}
-                                slotProps={{
-                                    input: { readOnly: true },
-                                }}
-                            />
-                        </Box>
+                            {mostrarTipoCambio ? (
+                                <Typography
+                                    sx={{
+                                        fontSize: '0.78rem',
+                                        color: errors.tipoCambioAplicado ? '#dc2626' : '#64748b',
+                                    }}
+                                >
+                                    Tipo de cambio aplicado: {tipoCambioTexto}
+                                    {errors.tipoCambioAplicado ? ` - ${errors.tipoCambioAplicado}` : ''}
+                                </Typography>
+                            ) : null}
+                        </Stack>
 
                         <Divider />
 
@@ -565,7 +580,7 @@ export default function ModalGestionarCompras({
                                         (item) => item.idImpuesto === Number(impuestoItem.idImpuesto)
                                     );
 
-                                    const baseImpuestos = Number(subtotalPreview) + Number(igvPreview);
+                                    const baseImpuestos = Number(subtotalTributarioPreview) + Number(igvPreview);
                                     const importe = impuestoSeleccionado
                                         ? (baseImpuestos * Number(impuestoSeleccionado.valor || 0)) / 100
                                         : 0;
@@ -614,8 +629,8 @@ export default function ModalGestionarCompras({
 
                                                 <TextField
                                                     fullWidth
-                                                    label="Importe referencial"
-                                                    value={importe.toFixed(2)}
+                                                    label="Importe referencial (S/)"
+                                                    value={formatCurrency(importe, { codigo: 'PEN' })}
                                                     slotProps={{
                                                         input: { readOnly: true },
                                                     }}
@@ -724,6 +739,7 @@ ModalGestionarCompras.propTypes = {
     handleRemoveImpuesto: PropTypes.func.isRequired,
     tipoCambioLoading: PropTypes.bool.isRequired,
     subtotalPreview: PropTypes.string.isRequired,
+    subtotalTributarioPreview: PropTypes.string.isRequired,
     igvPreview: PropTypes.string.isRequired,
     totalGeneralPreview: PropTypes.string.isRequired,
 };
