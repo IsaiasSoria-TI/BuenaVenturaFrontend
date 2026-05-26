@@ -2,6 +2,7 @@ import api from './api';
 
 const BASE_URL = '/api/compras';
 
+// Centraliza las llamadas HTTP del modulo de gestion de compras.
 export const compraService = {
   listar: async () => {
     const { data } = await api.get(BASE_URL);

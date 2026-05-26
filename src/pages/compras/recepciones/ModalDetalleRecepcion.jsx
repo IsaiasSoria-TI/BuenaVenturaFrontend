@@ -103,7 +103,9 @@ InfoItem.propTypes = {
     children: PropTypes.node,
 };
 
+// Modal de solo lectura para auditar lo recibido contra la compra original.
 export default function ModalDetalleRecepcion({ open, onClose, recepcion = null }) {
+    // Normaliza detalles para evitar errores si el backend responde sin arreglo.
     const detalles = React.useMemo(
         () => (Array.isArray(recepcion?.detalles) ? recepcion.detalles : []),
         [recepcion]

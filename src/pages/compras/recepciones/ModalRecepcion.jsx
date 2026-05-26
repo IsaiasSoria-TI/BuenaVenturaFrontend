@@ -125,6 +125,7 @@ function filterCompraOptions(options, state) {
         .slice(0, 20);
 }
 
+// Selector aislado para mantener junta la busqueda y presentacion de compras pendientes.
 function CompraSelector({
     comprasPendientes,
     selectedCompra,
@@ -220,6 +221,7 @@ ResumenCompra.propTypes = {
     detalleCompra: PropTypes.object.isRequired,
 };
 
+// Datos operativos de la recepcion que no dependen del detalle de articulos.
 function DatosRecepcion({ form, errors, onFieldChange }) {
     return (
         <Box
@@ -303,6 +305,7 @@ ResumenPesos.propTypes = {
     detalleCompra: PropTypes.object.isRequired,
 };
 
+// Fila editable de recepcion: controla el peso recibido por articulo comprado.
 const DetalleRecepcionItem = React.memo(function DetalleRecepcionItem({
     detalle,
     index,
@@ -432,6 +435,7 @@ DetallesRecepcion.propTypes = {
     onDetalleChange: PropTypes.func.isRequired,
 };
 
+// Muestra el impacto del registro antes de guardar la recepcion.
 function TotalesRecepcion({ totalRecepcionActual, pendienteLuegoRegistro }) {
     return (
         <Box
@@ -505,6 +509,7 @@ DetalleCompraSeleccionada.propTypes = {
     pendienteLuegoRegistro: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
 };
 
+// Modal presentacional para registrar recepciones de una compra seleccionada.
 export default function ModalRecepcion({
     open,
     onClose,

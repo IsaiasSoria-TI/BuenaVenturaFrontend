@@ -1,5 +1,6 @@
 export const DEFAULT_IGV_PERCENTAGE = 18;
 
+// Normaliza entradas de formularios y respuestas del backend antes de operar con montos.
 export function toNumber(value) {
   if (value === null || value === undefined || value === '') return 0;
 
@@ -21,6 +22,7 @@ export function isMonedaSolesData(moneda) {
   return codigo === 'PEN' || codigo === 'SOL' || nombre === 'SOLES' || nombre === 'SOL';
 }
 
+// Devuelve el prefijo monetario que se mostrara en tablas, modales y resumenes.
 export function getCurrencyPrefix(moneda) {
   const codigo = normalizeText(moneda?.codigo || moneda?.codigoMoneda);
   const nombre = normalizeText(moneda?.nombre || moneda?.moneda);
@@ -56,6 +58,7 @@ export function isIgvImpuesto(impuesto) {
   return tipo === 'IGV';
 }
 
+// Prioriza PEN para que las nuevas compras arranquen con moneda local.
 export function getDefaultMonedaId(monedas) {
   const monedaPen = monedas.find(
     (moneda) => String(moneda?.codigo || '').trim().toUpperCase() === 'PEN'
@@ -72,6 +75,7 @@ export function getDetalleSubtotal(detalle) {
   return toNumber(detalle?.peso) * toNumber(detalle?.costoKilo);
 }
 
+// Para PEN se usa factor 1; para moneda extranjera mantiene la relacion con soles.
 export function getTipoCambioFactor(compra) {
   const tipoCambio = toNumber(compra?.tipoCambioAplicado);
   return tipoCambio > 0 ? tipoCambio : 1;
@@ -86,37 +90,48 @@ export function getCompraSubtotal(compra) {
     return toNumber(compra.subtotal);
   }
 
-  if (!isMonedaSolesData(compra) && compra?.costoTotal !== null && compra?.costoTotal !== undefined) {
-    return Math.max(
-      (toNumber(compra.costoTotal) - toNumber(compra?.importeIgv)) / getTipoCambioFactor(compra),
-      0
-    );
+  if (compra?.costoTotal !== null && compra?.costoTotal !== undefined) {
+    return Math.max(toNumber(compra.costoTotal) - getCompraIgv(compra), 0);
   }
 
-  return toNumber(compra?.totalGeneral ?? compra?.costoTotal) - toNumber(compra?.importeIgv);
+  return Math.max(toNumber(compra?.totalGeneral) - getCompraIgv(compra), 0);
 }
 
+// Base tributaria expresada en soles, usada para IGV y otros impuestos referenciales.
 export function getCompraSubtotalTributario(compra) {
   return getCompraSubtotal(compra) * getTipoCambioFactor(compra);
 }
 
 export function getCompraIgv(compra) {
+  if (!compra?.aplicaIgv) return 0;
+
+  if (Array.isArray(compra?.detalles) && compra.detalles.length > 0) {
+    return (getCompraSubtotal(compra) * toNumber(compra?.porcentajeIgv ?? DEFAULT_IGV_PERCENTAGE)) / 100;
+  }
+
+  if (compra?.subtotal !== null && compra?.subtotal !== undefined) {
+    return (getCompraSubtotal(compra) * toNumber(compra?.porcentajeIgv ?? DEFAULT_IGV_PERCENTAGE)) / 100;
+  }
+
   if (compra?.importeIgv !== null && compra?.importeIgv !== undefined) {
     return toNumber(compra.importeIgv);
   }
 
-  if (!compra?.aplicaIgv) return 0;
-
-  return (getCompraSubtotalTributario(compra) * toNumber(compra?.porcentajeIgv ?? DEFAULT_IGV_PERCENTAGE)) / 100;
+  return 0;
 }
 
+export function getCompraIgvTributario(compra) {
+  return getCompraIgv(compra) * getTipoCambioFactor(compra);
+}
+
+// Retorna impuestos distintos al IGV, porque el IGV se administra en campos propios.
 export function getCompraImporteImpuestos(compra) {
   if (compra?.importeImpuesto !== null && compra?.importeImpuesto !== undefined) {
     return toNumber(compra.importeImpuesto);
   }
 
   if (Array.isArray(compra?.impuestos) && compra.impuestos.length > 0) {
-    const baseImpuestos = getCompraSubtotalTributario(compra) + getCompraIgv(compra);
+    const baseImpuestos = getCompraSubtotalTributario(compra) + getCompraIgvTributario(compra);
 
     return compra.impuestos.reduce((total, impuesto) => {
       if (isIgvImpuesto(impuesto)) return total;
@@ -136,13 +151,10 @@ export function getCompraTotalFinal(compra) {
   const subtotal = getCompraSubtotal(compra);
   const igv = getCompraIgv(compra);
 
-  if (isMonedaSolesData(compra)) {
-    return subtotal + igv;
-  }
-
-  return subtotal + igv / getTipoCambioFactor(compra);
+  return subtotal + igv;
 }
 
+// Calcula los totales en vivo del modal antes de enviar la compra al backend.
 export function calcularCompraPreview(form) {
   const subtotal = Array.isArray(form?.detalles)
     ? form.detalles.reduce((total, detalle) => {
@@ -151,14 +163,16 @@ export function calcularCompraPreview(form) {
     : 0;
   const subtotalTributario = subtotal * getTipoCambioFactor(form);
 
-  const porcentajeIgv = toNumber(form?.porcentajeIgv || DEFAULT_IGV_PERCENTAGE);
-  const igv = form?.aplicaIgv ? (subtotalTributario * porcentajeIgv) / 100 : 0;
-  const totalGeneral = subtotal + igv / getTipoCambioFactor(form);
+  const porcentajeIgv = toNumber(form?.porcentajeIgv ?? DEFAULT_IGV_PERCENTAGE);
+  const igv = form?.aplicaIgv ? (subtotal * porcentajeIgv) / 100 : 0;
+  const igvTributario = igv * getTipoCambioFactor(form);
+  const totalGeneral = subtotal + igv;
 
   return {
     subtotalPreview: subtotal.toFixed(2),
     subtotalTributarioPreview: subtotalTributario.toFixed(2),
     igvPreview: igv.toFixed(2),
+    igvTributarioPreview: igvTributario.toFixed(2),
     totalGeneralPreview: totalGeneral.toFixed(2),
   };
 }

@@ -14,6 +14,7 @@ import {
     TextField,
 } from '@mui/material';
 
+// Modal presentacional del proveedor; la pagina padre conserva validaciones y persistencia.
 export default function ModalProveedor({
     open,
     onClose,

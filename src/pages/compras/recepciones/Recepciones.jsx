@@ -72,6 +72,7 @@ const initialForm = {
     detalles: [],
 };
 
+// Mantiene el formato de importes consistente dentro del modulo de recepciones.
 function formatNumber(value) {
     if (value === null || value === undefined || value === '') return '0.00';
 
@@ -158,6 +159,7 @@ export default function Recepciones() {
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
     const [searchTerm, setSearchTerm] = React.useState('');
 
+    // Carga las recepciones ya registradas para el listado principal.
     const cargarRecepciones = React.useCallback(async () => {
         try {
             setLoading(true);
@@ -174,6 +176,7 @@ export default function Recepciones() {
         }
     }, []);
 
+    // Obtiene compras pendientes de recepcion para alimentar el selector del modal.
     const cargarComprasDisponibles = React.useCallback(async () => {
         try {
             setComprasLoading(true);
@@ -297,6 +300,7 @@ export default function Recepciones() {
         }
     };
 
+    // Trae el detalle pendiente de una compra para construir las filas de recepcion.
     const cargarDetalleCompra = async (idCompras) => {
         try {
             setDetalleLoading(true);
@@ -376,6 +380,7 @@ export default function Recepciones() {
         }
     };
 
+    // Valida que la recepcion no exceda el peso pendiente de la compra.
     const validate = () => {
         const newErrors = {};
 
@@ -421,6 +426,7 @@ export default function Recepciones() {
         return Object.keys(newErrors).length === 0;
     };
 
+    // Convierte el formulario al contrato de registro esperado por /api/recepciones.
     const buildPayload = () => ({
         idCompras: Number(form.idCompras),
         guiaRemision: form.guiaRemision.trim() || null,
@@ -433,6 +439,7 @@ export default function Recepciones() {
             })),
     });
 
+    // Suma los pesos digitados para mostrar el impacto antes de guardar.
     const totalRecepcionActual = React.useMemo(() => {
         return form.detalles.reduce((total, detalle) => {
             return total + Number(detalle.recibido || 0);
@@ -493,6 +500,7 @@ export default function Recepciones() {
         setPage(0);
     };
 
+    // Filtro local del listado para busquedas rapidas por compra, proveedor o guia.
     const recepcionesFiltradas = React.useMemo(() => {
         const criterio = searchTerm.trim().toLowerCase();
         if (!criterio) return recepciones;

@@ -29,8 +29,10 @@ import {
     formatSoles,
     getCurrencyPrefix,
     getCompraIgv,
+    getCompraIgvTributario,
     getCompraImporteImpuestos,
     getCompraSubtotal,
+    getCompraSubtotalTributario,
     getCompraTotalFinal,
     getDetalleSubtotal,
     toNumber,
@@ -52,6 +54,7 @@ function getImpuestoKey(impuesto, index) {
 function getImpuestosReferenciales(impuestos) {
     const vistos = new Set();
 
+    // Evita mostrar impuestos duplicados cuando backend envia relacion de cabecera y detalle.
     return impuestos.filter((impuesto, index) => {
         if (!impuesto || !impuesto.tipoImpuesto) return false;
 
@@ -119,6 +122,7 @@ InfoItem.propTypes = {
 };
 
 export default function ModalDetalleCompra({ open, onClose, compra = null }) {
+    // Normaliza colecciones para que el modal pueda abrir incluso si la respuesta viene incompleta.
     const detalles = React.useMemo(
         () => (Array.isArray(compra?.detalles) ? compra.detalles : []),
         [compra]
@@ -129,10 +133,13 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
         [compra]
     );
 
+    // Totales derivados desde la misma utilidad usada por la tabla de compras.
     const aplicaIgv = Boolean(compra?.aplicaIgv);
     const porcentajeIgv = compra?.porcentajeIgv ?? DEFAULT_IGV_PERCENTAGE;
     const subtotalArticulos = React.useMemo(() => getCompraSubtotal(compra), [compra]);
+    const subtotalTributario = React.useMemo(() => getCompraSubtotalTributario(compra), [compra]);
     const importeIgv = React.useMemo(() => getCompraIgv(compra), [compra]);
+    const importeIgvTributario = React.useMemo(() => getCompraIgvTributario(compra), [compra]);
     const totalImpuestos = React.useMemo(() => getCompraImporteImpuestos(compra), [compra]);
     const totalGeneral = React.useMemo(() => getCompraTotalFinal(compra), [compra]);
 
@@ -193,7 +200,7 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                             <InfoItem label="Numero de lote" value={formatNumber(compra?.numeroLote)} />
                             <InfoItem label="Aplica IGV" value={formatBoolean(aplicaIgv)} />
                             <InfoItem label="Porcentaje IGV" value={formatPercentage(porcentajeIgv)} />
-                            <InfoItem label="Importe IGV (S/)" value={formatSoles(importeIgv)} />
+                            <InfoItem label={`Importe IGV (${monedaLabel})`} value={formatCompraCurrency(compra, importeIgv)} />
                             <InfoItem label="Estado">
                                 <Chip
                                     label={estado}
@@ -300,7 +307,7 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                                             const importe =
                                                 impuesto.importe !== null && impuesto.importe !== undefined
                                                     ? toNumber(impuesto.importe)
-                                                    : ((subtotalArticulos + importeIgv) * toNumber(impuesto.porcentaje)) / 100;
+                                                    : ((subtotalTributario + importeIgvTributario) * toNumber(impuesto.porcentaje)) / 100;
 
                                             return (
                                                 <TableRow key={impuesto.idCompraImpuesto || `${impuesto.idImpuesto}-${index}`} hover>
@@ -342,10 +349,10 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                             sx={{ p: 2, border: '1px solid #e2e8f0', borderRadius: 2 }}
                         >
                             <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                IGV (S/)
+                                IGV ({monedaLabel})
                             </Typography>
                             <Typography sx={{ mt: 0.5, fontWeight: 700, color: '#0f172a' }}>
-                                {formatSoles(importeIgv)}
+                                {formatCompraCurrency(compra, importeIgv)}
                             </Typography>
                         </Paper>
 

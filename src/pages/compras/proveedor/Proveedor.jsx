@@ -76,6 +76,7 @@ const initialForm = {
   cuentaInterbancaria: '',
 };
 
+// Mensajes exactos del backend que se muestran junto al campo correspondiente.
 const DUPLICATE_BANK_ACCOUNT_MESSAGE =
   'La cuenta bancaria ya está registrada en otro proveedor';
 const DUPLICATE_INTERBANK_ACCOUNT_MESSAGE =
@@ -127,6 +128,7 @@ export default function Proveedor() {
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
   const [searchTerm, setSearchTerm] = React.useState('');
 
+  // Carga proveedores para la tabla principal.
   const cargarProveedores = React.useCallback(async () => {
     try {
       setLoading(true);
@@ -155,6 +157,7 @@ export default function Proveedor() {
     }
   }, []);
 
+  // Catalogo usado para clasificar al proveedor en el formulario.
   const cargarTiposProveedor = React.useCallback(async () => {
     try {
       const data = await tipoProveedorService.listar();
@@ -177,6 +180,7 @@ export default function Proveedor() {
     }
   }, []);
 
+  // Catalogo de bancos para datos de pago del proveedor.
   const cargarBancos = React.useCallback(async () => {
     try {
       const data = await bancoService.listar();
@@ -271,6 +275,7 @@ export default function Proveedor() {
     }
   };
 
+  // Valida reglas de negocio del formulario antes de enviar al backend.
   const validate = () => {
     const newErrors = {};
 
@@ -360,6 +365,7 @@ export default function Proveedor() {
     }
   };
 
+  // Limpia y transforma el formulario al contrato esperado por /api/proveedores.
   const buildPayload = () => ({
     idProveedor: form.idProveedor,
     ruc: form.ruc.trim(),
@@ -474,12 +480,14 @@ export default function Proveedor() {
     setPage(0);
   };
 
+  // Ordena proveedores activos primero para que el listado sea mas util en operacion.
   const proveedoresOrdenados = React.useMemo(() => {
     return [...proveedores].sort(
       (a, b) => Number(b.idProveedor) - Number(a.idProveedor)
     );
   }, [proveedores]);
 
+  // Busqueda local por datos comerciales y bancarios del proveedor.
   const proveedoresFiltrados = React.useMemo(() => {
     const criterio = searchTerm.trim().toLowerCase();
 

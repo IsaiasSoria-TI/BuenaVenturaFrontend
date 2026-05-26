@@ -92,11 +92,13 @@ const createDetalle = () => ({
   costoKilo: '',
 });
 
+// Estructura base de cada impuesto referencial que se puede asociar a la compra.
 const createImpuesto = () => ({
   tempId: Math.random().toString(36).substring(2) + Date.now(),
   idImpuesto: '',
 });
 
+// Estado inicial del formulario de alta/edicion de compras.
 const initialForm = {
   idCompras: null,
   idPago: '',
@@ -197,6 +199,7 @@ export default function GestionarCompras() {
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
   const [searchTerm, setSearchTerm] = React.useState('');
 
+  // Carga el listado principal de compras que alimenta la tabla.
   const cargarCompras = React.useCallback(async () => {
     try {
       setLoading(true);
@@ -221,6 +224,7 @@ export default function GestionarCompras() {
     }
   }, []);
 
+  // Carga catalogos necesarios para registrar compras: proveedor, articulo, impuesto, pago y moneda.
   const cargarCatalogos = React.useCallback(async () => {
     try {
       setCatalogLoading(true);
@@ -253,6 +257,7 @@ export default function GestionarCompras() {
     cargarCatalogos();
   }, [cargarCompras, cargarCatalogos]);
 
+  // Resuelve automaticamente el tipo de cambio cuando la compra usa moneda distinta a soles.
   React.useEffect(() => {
     if (!open) return undefined;
 
@@ -568,11 +573,19 @@ export default function GestionarCompras() {
     });
   };
 
-  const { subtotalPreview, subtotalTributarioPreview, igvPreview, totalGeneralPreview } = React.useMemo(
+  // Precalcula importes visibles en el modal sin esperar la respuesta del backend.
+  const {
+    subtotalPreview,
+    subtotalTributarioPreview,
+    igvPreview,
+    igvTributarioPreview,
+    totalGeneralPreview,
+  } = React.useMemo(
     () => calcularCompraPreview(form),
     [form]
   );
 
+  // Valida campos obligatorios y evita enviar detalles incompletos al backend.
   const validate = () => {
     const newErrors = {};
 
@@ -640,6 +653,7 @@ export default function GestionarCompras() {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Traduce el estado del formulario al contrato esperado por /api/compras.
   const buildPayload = () => ({
     idPago: Number(form.idPago),
     idMoneda: Number(form.idMoneda),
@@ -660,7 +674,7 @@ export default function GestionarCompras() {
         idImpuesto: Number(impuesto.idImpuesto),
       })),
     aplicaIgv: Boolean(form.aplicaIgv),
-    porcentajeIgv: Number(form.porcentajeIgv || DEFAULT_IGV_PERCENTAGE),
+    porcentajeIgv: Number(form.porcentajeIgv ?? DEFAULT_IGV_PERCENTAGE),
   });
 
   const handleSubmit = async () => {
@@ -758,6 +772,7 @@ export default function GestionarCompras() {
     setPage(0);
   };
 
+  // Aplica busqueda local sobre datos ya cargados para no consultar el backend por cada tecla.
   const comprasFiltradas = React.useMemo(() => {
     const criterio = searchTerm.trim().toLowerCase();
 
@@ -905,7 +920,7 @@ export default function GestionarCompras() {
                       <TableCell>{compra.ruc}</TableCell>
                       <TableCell>{compra.razonSocial}</TableCell>
                       <TableCell align="right">{formatCompraCurrency(compra, getCompraSubtotal(compra))}</TableCell>
-                      <TableCell align="right">{formatSoles(getCompraIgv(compra))}</TableCell>
+                      <TableCell align="right">{formatCompraCurrency(compra, getCompraIgv(compra))}</TableCell>
                       <TableCell align="right">{formatSoles(getCompraImporteImpuestos(compra))}</TableCell>
                       <TableCell align="right">{formatNumber(compra.peso)}</TableCell>
                       <TableCell align="right">{formatCompraCurrency(compra, getCompraTotalFinal(compra))}</TableCell>
@@ -990,6 +1005,7 @@ export default function GestionarCompras() {
         subtotalPreview={subtotalPreview}
         subtotalTributarioPreview={subtotalTributarioPreview}
         igvPreview={igvPreview}
+        igvTributarioPreview={igvTributarioPreview}
         totalGeneralPreview={totalGeneralPreview}
       />
 

@@ -2,6 +2,7 @@ import api from './api';
 
 const BASE_URL = '/api/recepciones';
 
+// Centraliza las llamadas HTTP usadas para crear y consultar recepciones de compras.
 export const recepcionService = {
   listar: async () => {
     const { data } = await api.get(BASE_URL);

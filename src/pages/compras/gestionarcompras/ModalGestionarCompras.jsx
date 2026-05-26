@@ -70,6 +70,7 @@ function formatPorcentaje(value) {
     });
 }
 
+// Modal presentacional: recibe estado y handlers desde GestionarCompras para no duplicar reglas.
 export default function ModalGestionarCompras({
     open,
     onClose,
@@ -100,8 +101,10 @@ export default function ModalGestionarCompras({
     subtotalPreview,
     subtotalTributarioPreview,
     igvPreview,
+    igvTributarioPreview,
     totalGeneralPreview,
 }) {
+    // El IGV se controla con campos propios; esta lista solo permite otros impuestos referenciales.
     const impuestosDisponibles = React.useMemo(
         () => impuestos.filter((item) => !isIgvImpuesto(item)),
         [impuestos]
@@ -175,6 +178,7 @@ export default function ModalGestionarCompras({
                             )}
                         />
 
+                        {/* Resumen rapido del proveedor elegido para reducir errores de seleccion. */}
                         {selectedProveedor ? (
                             <Box
                                 sx={{
@@ -316,6 +320,7 @@ export default function ModalGestionarCompras({
                                 </Button>
                             </Stack>
 
+                            {/* Cada detalle suma peso x costo por kilo al subtotal de la compra. */}
                             <Stack spacing={1.5}>
                                 {form.detalles.map((detalle, index) => (
                                     <Paper
@@ -483,7 +488,7 @@ export default function ModalGestionarCompras({
                                     {form.aplicaIgv ? (
                                         <TextField
                                             fullWidth
-                                            label="Importe IGV (S/)"
+                                            label={`Importe IGV (${monedaLabel})`}
                                             value={igvPreview}
                                             slotProps={{
                                                 input: { readOnly: true },
@@ -515,7 +520,7 @@ export default function ModalGestionarCompras({
 
                                 <TextField
                                     fullWidth
-                                    label="IGV (S/)"
+                                    label={`IGV (${monedaLabel})`}
                                     value={form.aplicaIgv ? igvPreview : '0.00'}
                                     slotProps={{
                                         input: { readOnly: true },
@@ -574,13 +579,14 @@ export default function ModalGestionarCompras({
                                 </Button>
                             </Stack>
 
+                            {/* Los impuestos aqui son referenciales; el IGV se calcula aparte. */}
                             <Stack spacing={1.25}>
                                 {form.impuestos.map((impuestoItem, index) => {
                                     const impuestoSeleccionado = impuestosDisponibles.find(
                                         (item) => item.idImpuesto === Number(impuestoItem.idImpuesto)
                                     );
 
-                                    const baseImpuestos = Number(subtotalTributarioPreview) + Number(igvPreview);
+                                    const baseImpuestos = Number(subtotalTributarioPreview) + Number(igvTributarioPreview);
                                     const importe = impuestoSeleccionado
                                         ? (baseImpuestos * Number(impuestoSeleccionado.valor || 0)) / 100
                                         : 0;
@@ -741,6 +747,7 @@ ModalGestionarCompras.propTypes = {
     subtotalPreview: PropTypes.string.isRequired,
     subtotalTributarioPreview: PropTypes.string.isRequired,
     igvPreview: PropTypes.string.isRequired,
+    igvTributarioPreview: PropTypes.string.isRequired,
     totalGeneralPreview: PropTypes.string.isRequired,
 };
 
