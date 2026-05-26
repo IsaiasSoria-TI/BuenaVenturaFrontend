@@ -133,7 +133,14 @@ export function getCompraImporteImpuestos(compra) {
 }
 
 export function getCompraTotalFinal(compra) {
-  return getCompraSubtotal(compra);
+  const subtotal = getCompraSubtotal(compra);
+  const igv = getCompraIgv(compra);
+
+  if (isMonedaSolesData(compra)) {
+    return subtotal + igv;
+  }
+
+  return subtotal + igv / getTipoCambioFactor(compra);
 }
 
 export function calcularCompraPreview(form) {
@@ -146,11 +153,12 @@ export function calcularCompraPreview(form) {
 
   const porcentajeIgv = toNumber(form?.porcentajeIgv || DEFAULT_IGV_PERCENTAGE);
   const igv = form?.aplicaIgv ? (subtotalTributario * porcentajeIgv) / 100 : 0;
+  const totalGeneral = subtotal + igv / getTipoCambioFactor(form);
 
   return {
     subtotalPreview: subtotal.toFixed(2),
     subtotalTributarioPreview: subtotalTributario.toFixed(2),
     igvPreview: igv.toFixed(2),
-    totalGeneralPreview: subtotal.toFixed(2),
+    totalGeneralPreview: totalGeneral.toFixed(2),
   };
 }
