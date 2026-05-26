@@ -653,6 +653,21 @@ export default function GestionarCompras() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const getImpuestosPayload = () => {
+    const impuestosSeleccionados = new Set();
+
+    return form.impuestos
+      .filter((impuesto) => impuesto.idImpuesto)
+      .map((impuesto) => Number(impuesto.idImpuesto))
+      .filter((idImpuesto) => {
+        if (impuestosSeleccionados.has(idImpuesto)) return false;
+
+        impuestosSeleccionados.add(idImpuesto);
+        return true;
+      })
+      .map((idImpuesto) => ({ idImpuesto }));
+  };
+
   // Traduce el estado del formulario al contrato esperado por /api/compras.
   const buildPayload = () => ({
     idPago: Number(form.idPago),
@@ -668,11 +683,7 @@ export default function GestionarCompras() {
       peso: Number(detalle.peso),
       costoKilo: Number(detalle.costoKilo),
     })),
-    impuestos: form.impuestos
-      .filter((impuesto) => impuesto.idImpuesto)
-      .map((impuesto) => ({
-        idImpuesto: Number(impuesto.idImpuesto),
-      })),
+    impuestos: getImpuestosPayload(),
     aplicaIgv: Boolean(form.aplicaIgv),
     porcentajeIgv: Number(form.porcentajeIgv ?? DEFAULT_IGV_PERCENTAGE),
   });

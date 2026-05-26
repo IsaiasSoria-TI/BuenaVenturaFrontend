@@ -48,7 +48,15 @@ function formatBoolean(value) {
 }
 
 function getImpuestoKey(impuesto, index) {
-    return impuesto?.idImpuesto ?? impuesto?.idCompraImpuesto ?? `${impuesto?.tipoImpuesto || 'impuesto'}-${index}`;
+    if (impuesto?.idImpuesto) return impuesto.idImpuesto;
+
+    const tipo = String(impuesto?.tipoImpuesto || 'impuesto')
+        .trim()
+        .replace(/[.\s]/g, '')
+        .toUpperCase();
+    const porcentaje = impuesto?.porcentaje ?? '';
+
+    return `${tipo}-${porcentaje || index}`;
 }
 
 function getImpuestosReferenciales(impuestos) {
