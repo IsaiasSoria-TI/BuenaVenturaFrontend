@@ -1,4 +1,3 @@
-import React from 'react';
 import PropTypes from 'prop-types';
 import {
     Button,
@@ -11,6 +10,12 @@ import {
     TextField,
 } from '@mui/material';
 
+function getSubmitLabel(saving, editing) {
+    if (saving) return 'Guardando...';
+    return editing ? 'Actualizar' : 'Registrar';
+}
+
+// Modal presentacional de categorias; la pantalla padre controla validacion y guardado.
 export default function ModalCategoria({
     open,
     onClose,
@@ -23,11 +28,7 @@ export default function ModalCategoria({
     handleSubmit,
 }) {
     const titulo = editing ? 'Editar categoría' : 'Nueva categoría';
-    const textoBoton = saving
-        ? 'Guardando...'
-        : editing
-            ? 'Actualizar'
-            : 'Registrar';
+    const textoBoton = getSubmitLabel(saving, editing);
 
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
@@ -66,7 +67,7 @@ export default function ModalCategoria({
                             ))}
                     </TextField>
 
-                    {editing ? (
+                    {editing && (
                         <TextField
                             select
                             fullWidth
@@ -77,7 +78,7 @@ export default function ModalCategoria({
                             <MenuItem value="Activo">Activo</MenuItem>
                             <MenuItem value="Inactivo">Inactivo</MenuItem>
                         </TextField>
-                    ) : null}
+                    )}
                 </Stack>
             </DialogContent>
 

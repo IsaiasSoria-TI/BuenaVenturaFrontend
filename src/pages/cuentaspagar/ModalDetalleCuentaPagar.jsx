@@ -84,6 +84,7 @@ function getEstadoChipStyles(estado) {
   };
 }
 
+// Bloque reutilizable para mostrar pares etiqueta/valor en el detalle.
 function InfoItem({ label, value, strong = false, children = null }) {
   return (
     <Box>
@@ -108,6 +109,7 @@ function getDetalleArticulo(detalle) {
   return detalle.articulo || detalle.descripcionArticulo || detalle.descripcion || '-';
 }
 
+// Estos getters toleran diferentes nombres porque el backend puede cambiar el DTO del detalle.
 function getDetalleMedida(detalle) {
   return detalle.medida || detalle.unidad || '-';
 }
@@ -121,6 +123,7 @@ function getDetalleImporte(detalle) {
 }
 
 export default function ModalDetalleCuentaPagar({ open, onClose, cuenta = null }) {
+  // Normaliza el detalle para evitar errores si la cuenta llega sin arreglo de lineas.
   const detallesDisponibles = Array.isArray(cuenta?.detalles);
   const detalles = detallesDisponibles ? cuenta.detalles : [];
   const estado = cuenta?.estado || '-';

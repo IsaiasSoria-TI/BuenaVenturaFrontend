@@ -34,6 +34,7 @@ import {
   formatRecepcionCode,
 } from '../../utils/formatters';
 
+// Valores iniciales del formulario cuando se abre el modal para registrar una cuenta.
 const initialForm = {
   tipoFactura: 'UNICA',
   numeroFactura: '',
@@ -98,6 +99,7 @@ function getEstadoChipStyles(estado) {
   };
 }
 
+// Tabla interna de recepciones seleccionables para armar una cuenta por pagar.
 function RecepcionesTable({
   recepciones,
   selectedRecepciones,
@@ -247,7 +249,6 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas }) {
       const data = await cuentaPagarService.listarComprasValidas();
       setComprasValidas(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Error al listar compras válidas:', error);
 
       const message =
         error?.response?.data?.message ||
@@ -328,7 +329,6 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas }) {
         moneda: data.codigoMoneda || prev.moneda,
       }));
     } catch (error) {
-      console.error('Error al cargar detalle de compra:', error);
 
       const message =
         error?.response?.data?.message ||
@@ -489,7 +489,6 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas }) {
         onSaved();
       }, 500);
     } catch (error) {
-      console.error('Error al registrar cuenta por pagar:', error);
 
       const message =
         error?.response?.data?.message ||
@@ -518,8 +517,8 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas }) {
 
       <DialogContent dividers sx={{ pt: 2.5 }}>
         <Stack spacing={2}>
-          {serverError ? <Alert severity="error">{serverError}</Alert> : null}
-          {serverSuccess ? <Alert severity="success">{serverSuccess}</Alert> : null}
+          {serverError && <Alert severity="error">{serverError}</Alert>}
+          {serverSuccess && <Alert severity="success">{serverSuccess}</Alert>}
 
           {comprasLoading ? (
             <Box sx={{ py: 4, display: 'flex', justifyContent: 'center' }}>

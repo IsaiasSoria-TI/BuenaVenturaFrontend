@@ -56,6 +56,7 @@ Icon.propTypes = {
     color: PropTypes.string,
 };
 
+// Estado inicial usado por el formulario de cuenta contable.
 const initialForm = {
     idCuentaContable: null,
     codigo: '',
@@ -96,6 +97,7 @@ export default function CuentasContablesSection() {
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
 
+    // Carga el catalogo de cuentas contables que se muestra en la tabla.
     const cargarCuentas = React.useCallback(async () => {
         try {
             setLoading(true);
@@ -103,8 +105,7 @@ export default function CuentasContablesSection() {
             const data = await cuentaContableService.listar();
             setCuentas(Array.isArray(data) ? data : []);
             setPage(0);
-        } catch (error) {
-            console.error(error);
+        } catch {
             setServerError('No se pudo listar las cuentas contables.');
         } finally {
             setLoading(false);
@@ -189,8 +190,7 @@ export default function CuentasContablesSection() {
 
             handleClose();
             await cargarCuentas();
-        } catch (error) {
-            console.error(error);
+        } catch {
             setServerError('Error al guardar');
         } finally {
             setSaving(false);
@@ -212,8 +212,7 @@ export default function CuentasContablesSection() {
             setSuccessMessage('Inactivado correctamente');
             setDeleteDialogOpen(false);
             await cargarCuentas();
-        } catch (error) {
-            console.error(error);
+        } catch {
             setServerError('Error al eliminar');
         }
     };
@@ -222,6 +221,43 @@ export default function CuentasContablesSection() {
         const start = page * rowsPerPage;
         return cuentas.slice(start, start + rowsPerPage);
     }, [cuentas, page, rowsPerPage]);
+
+    const renderTableRows = () => {
+        if (loading) {
+            return (
+                <TableRow>
+                    <TableCell colSpan={4} align="center">
+                        <CircularProgress />
+                    </TableCell>
+                </TableRow>
+            );
+        }
+
+        return cuentasPaginadas.map((cuenta) => (
+            <TableRow key={cuenta.idCuentaContable}>
+                <TableCell>{cuenta.codigo}</TableCell>
+                <TableCell>{cuenta.descripcion}</TableCell>
+                <TableCell>
+                    <Chip
+                        label={cuenta.estado}
+                        size="small"
+                        sx={getEstadoChipStyles(cuenta.estado)}
+                    />
+                </TableCell>
+                <TableCell align="center" sx={{ width: 112 }}>
+                    <IconButton onClick={() => handleOpenEdit(cuenta)} sx={{ width: 36, height: 36 }}>
+                        <Icon name="edit" size={20} color="#1976d2" />
+                    </IconButton>
+                    <IconButton
+                        onClick={() => handleOpenDeleteDialog(cuenta)}
+                        sx={{ width: 36, height: 36 }}
+                    >
+                        <Icon name="delete" size={20} color="#ef4444" />
+                    </IconButton>
+                </TableCell>
+            </TableRow>
+        ));
+    };
 
     return (
         <Box>
@@ -264,48 +300,18 @@ export default function CuentasContablesSection() {
                                     <TableCell>Código</TableCell>
                                     <TableCell>Descripción</TableCell>
                                     <TableCell>Estado</TableCell>
-                                    <TableCell align="center">Acciones</TableCell>
+                                    <TableCell align="center" sx={{ width: 112 }}>Acciones</TableCell>
                                 </TableRow>
                             </TableHead>
 
-                            <TableBody>
-                                {loading ? (
-                                    <TableRow>
-                                        <TableCell colSpan={4} align="center">
-                                            <CircularProgress />
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    cuentasPaginadas.map((c) => (
-                                        <TableRow key={c.idCuentaContable}>
-                                            <TableCell>{c.codigo}</TableCell>
-                                            <TableCell>{c.descripcion}</TableCell>
-                                            <TableCell>
-                                                <Chip
-                                                    label={c.estado}
-                                                    size="small"
-                                                    sx={getEstadoChipStyles(c.estado)}
-                                                />
-                                            </TableCell>
-                                            <TableCell align="center">
-                                                <IconButton onClick={() => handleOpenEdit(c)}>
-                                                    <Icon name="edit" size={20} color="#1976d2" />
-                                                </IconButton>
-                                                <IconButton onClick={() => handleOpenDeleteDialog(c)}>
-                                                    <Icon name="delete" size={20} color="#ef4444" />
-                                                </IconButton>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
+                            <TableBody>{renderTableRows()}</TableBody>
                         </Table>
 
                         <TablePagination
                             component="div"
                             count={cuentas.length}
                             page={page}
-                            onPageChange={(e, p) => setPage(p)}
+                            onPageChange={(_event, newPage) => setPage(newPage)}
                             rowsPerPage={rowsPerPage}
                             onRowsPerPageChange={(e) => {
                                 setRowsPerPage(parseInt(e.target.value, 10));

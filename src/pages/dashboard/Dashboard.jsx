@@ -23,6 +23,27 @@ const theme = createTheme({
   },
   typography: { fontFamily: '"DM Sans", sans-serif' },
   shape: { borderRadius: 12 },
+  components: {
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          '&:has(input[readonly])': {
+            backgroundColor: '#f1f5f9',
+          },
+          '&:has(textarea[readonly])': {
+            backgroundColor: '#f1f5f9',
+          },
+          '& input[readonly], & textarea[readonly]': {
+            color: '#475569',
+            cursor: 'not-allowed',
+          },
+          '&:has(input[readonly]) fieldset, &:has(textarea[readonly]) fieldset': {
+            borderColor: '#cbd5e1',
+          },
+        },
+      },
+    },
+  },
 });
 
 // Titulo alternativo heredado del layout.

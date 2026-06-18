@@ -27,6 +27,7 @@ import {
 import { impuestoService } from '../../../../services/impuestoService';
 import ModalImpuesto from './ModalImpuesto';
 
+// Estado inicial del formulario para crear o editar impuestos.
 const initialForm = {
     idImpuesto: null,
     tipoImpuesto: '',
@@ -70,6 +71,7 @@ function formatPorcentaje(value) {
     });
 }
 
+// Acepta coma o punto decimal y limita el valor a dos decimales.
 function parseValorDecimal(value) {
     const normalizado = String(value).trim().replace(',', '.');
 
@@ -78,7 +80,11 @@ function parseValorDecimal(value) {
     }
 
     const numero = Number(normalizado);
-    return Number.isFinite(numero) ? numero : null;
+    if (!Number.isFinite(numero)) {
+        return null;
+    }
+
+    return numero;
 }
 
 export default function ImpuestosSection() {
@@ -96,6 +102,7 @@ export default function ImpuestosSection() {
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
 
+    // Lista todos los impuestos para que tambien puedan reactivarse los inactivos.
     const cargarImpuestos = React.useCallback(async () => {
         try {
             setLoading(true);
@@ -103,8 +110,7 @@ export default function ImpuestosSection() {
             const data = await impuestoService.listarTodos();
             setImpuestos(Array.isArray(data) ? data : []);
             setPage(0);
-        } catch (error) {
-            console.error(error);
+        } catch {
             setServerError('Error al cargar impuestos');
         } finally {
             setLoading(false);
@@ -188,7 +194,6 @@ export default function ImpuestosSection() {
             setOpen(false);
             await cargarImpuestos();
         } catch (error) {
-            console.error(error);
             const message = error?.response?.data?.message || error?.response?.data || 'Error al guardar impuesto';
             setServerError(typeof message === 'string' ? message : 'Error al guardar impuesto');
         } finally {
@@ -206,8 +211,7 @@ export default function ImpuestosSection() {
             setDeleteDialog(false);
             setSelectedDelete(null);
             await cargarImpuestos();
-        } catch (error) {
-            console.error(error);
+        } catch {
             setServerError('Error al eliminar');
         }
     };
@@ -239,8 +243,8 @@ export default function ImpuestosSection() {
                         </Button>
                     </Stack>
 
-                    {serverError ? <Alert severity="error" sx={{ mb: 2 }}>{serverError}</Alert> : null}
-                    {success ? <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert> : null}
+                    {serverError && <Alert severity="error" sx={{ mb: 2 }}>{serverError}</Alert>}
+                    {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
                     <TableContainer component={Paper}>
                         <Table>
@@ -249,7 +253,7 @@ export default function ImpuestosSection() {
                                     <TableCell>Tipo impuesto</TableCell>
                                     <TableCell>Valor</TableCell>
                                     <TableCell>Estado</TableCell>
-                                    <TableCell align="center">Acciones</TableCell>
+                                    <TableCell align="center" sx={{ width: 112 }}>Acciones</TableCell>
                                 </TableRow>
                             </TableHead>
 
@@ -278,14 +282,17 @@ export default function ImpuestosSection() {
                                                     sx={getEstadoChipStyles(impuesto.flgActivo)}
                                                 />
                                             </TableCell>
-                                            <TableCell align="center">
-                                                <IconButton onClick={() => handleOpenEdit(impuesto)}>
+                                            <TableCell align="center" sx={{ width: 112 }}>
+                                                <IconButton onClick={() => handleOpenEdit(impuesto)} sx={{ width: 36, height: 36 }}>
                                                     <Icon name="edit" size={20} color="#1976d2" />
                                                 </IconButton>
-                                                <IconButton onClick={() => {
-                                                    setSelectedDelete(impuesto);
-                                                    setDeleteDialog(true);
-                                                }}>
+                                                <IconButton
+                                                    onClick={() => {
+                                                        setSelectedDelete(impuesto);
+                                                        setDeleteDialog(true);
+                                                    }}
+                                                    sx={{ width: 36, height: 36 }}
+                                                >
                                                     <Icon name="delete" size={20} color="#ef4444" />
                                                 </IconButton>
                                             </TableCell>

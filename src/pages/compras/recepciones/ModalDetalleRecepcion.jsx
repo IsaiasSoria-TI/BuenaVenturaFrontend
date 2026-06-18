@@ -22,7 +22,7 @@ import {
 
 import {
     formatCompraCode,
-    formatDateTimePeru,
+    formatDateWithCurrentTimePeru,
     formatRecepcionCode,
 } from '../../../utils/formatters';
 
@@ -150,7 +150,7 @@ export default function ModalDetalleRecepcion({ open, onClose, recepcion = null 
                                 value={formatRecepcionCode(recepcion?.idRecepciones)}
                                 strong
                             />
-                            <InfoItem label="Fecha recepción" value={formatDateTimePeru(recepcion?.fechaRecepcion)} />
+                            <InfoItem label="Fecha recepción" value={formatDateWithCurrentTimePeru(recepcion?.fechaRecepcion)} />
                             <InfoItem
                                 label="Código compra"
                                 value={formatCompraCode(recepcion?.idCompras)}

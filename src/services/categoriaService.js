@@ -2,6 +2,7 @@ import api from './api';
 
 const BASE_URL = '/api/categorias';
 
+// Centraliza el CRUD de categorias de inventario.
 export const categoriaService = {
     listar: async () => {
         const { data } = await api.get(BASE_URL);

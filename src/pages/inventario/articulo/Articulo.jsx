@@ -59,6 +59,7 @@ Icon.propTypes = {
   color: PropTypes.string,
 };
 
+// Estado base del modal de articulo, usado al crear y para limpiar el formulario.
 const initialForm = {
   idArticulo: null,
   descripcion: '',
@@ -77,6 +78,7 @@ function formatNumber(value) {
   return number.toFixed(2);
 }
 
+// Convierte el estado textual del articulo en colores consistentes para el Chip.
 function getEstadoChipStyles(estado) {
   if (estado === 'Activo') {
     return {
@@ -115,6 +117,7 @@ export default function Articulo() {
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
   const [searchTerm, setSearchTerm] = React.useState('');
 
+  // Carga los articulos mostrados en la tabla principal.
   const cargarArticulos = React.useCallback(async () => {
     try {
       setLoading(true);
@@ -124,9 +127,6 @@ export default function Articulo() {
       setArticulos(Array.isArray(data) ? data : []);
       setPage(0);
     } catch (error) {
-      console.error('Error al listar artículos:', error);
-      console.error('status:', error?.response?.status);
-      console.error('data:', error?.response?.data);
 
       const message =
         error?.response?.data?.message ||
@@ -148,16 +148,15 @@ export default function Articulo() {
       setCatalogLoading(true);
       const data = await categoriaService.listar();
       setCategorias(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error('Error al listar categorías:', error);
-      console.error('status:', error?.response?.status);
-      console.error('data:', error?.response?.data);
+    } catch {
+      // Si falla el catalogo, el formulario mantiene categorias vacias.
     } finally {
       setCatalogLoading(false);
     }
   }, []);
 
   React.useEffect(() => {
+    // Al entrar a la pantalla se cargan articulos y categorias para el formulario.
     cargarArticulos();
     cargarCategorias();
   }, [cargarArticulos, cargarCategorias]);
@@ -267,9 +266,6 @@ export default function Articulo() {
       handleClose();
       await cargarArticulos();
     } catch (error) {
-      console.error('Error al guardar artículo:', error);
-      console.error('status:', error?.response?.status);
-      console.error('data:', error?.response?.data);
 
       const message =
         error?.response?.data?.message ||
@@ -305,9 +301,6 @@ export default function Articulo() {
       handleCloseDeleteDialog();
       await cargarArticulos();
     } catch (error) {
-      console.error('Error al eliminar artículo:', error);
-      console.error('status:', error?.response?.status);
-      console.error('data:', error?.response?.data);
 
       const message =
         error?.response?.data?.message ||
@@ -322,7 +315,7 @@ export default function Articulo() {
     }
   };
 
-  const handleChangePage = (event, newPage) => {
+  const handleChangePage = (_event, newPage) => {
     setPage(newPage);
   };
 
@@ -365,6 +358,65 @@ export default function Articulo() {
     const fin = inicio + rowsPerPage;
     return articulosFiltrados.slice(inicio, fin);
   }, [articulosFiltrados, page, rowsPerPage]);
+
+  const renderTableRows = () => {
+    if (loading || catalogLoading) {
+      return (
+        <TableRow>
+          <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+            <CircularProgress size={28} />
+          </TableCell>
+        </TableRow>
+      );
+    }
+
+    if (articulos.length === 0) {
+      return (
+        <TableRow>
+          <TableCell colSpan={6} align="center" sx={{ py: 4, color: '#64748b' }}>
+            No hay artÃ­culos registrados.
+          </TableCell>
+        </TableRow>
+      );
+    }
+
+    if (articulosFiltrados.length === 0) {
+      return (
+        <TableRow>
+          <TableCell colSpan={6} align="center" sx={{ py: 4, color: '#64748b' }}>
+            No se encontraron artÃ­culos con ese criterio.
+          </TableCell>
+        </TableRow>
+      );
+    }
+
+    return articulosPaginados.map((articulo) => (
+      <TableRow key={articulo.idArticulo} hover>
+        <TableCell>{articulo.descripcion}</TableCell>
+        <TableCell>{articulo.medida}</TableCell>
+        <TableCell>{formatNumber(articulo.stock)}</TableCell>
+        <TableCell>{articulo.descripcionCategoria || '-'}</TableCell>
+        <TableCell>
+          <Chip
+            label={articulo.estado || '-'}
+            size="small"
+            sx={{
+              fontWeight: 700,
+              ...getEstadoChipStyles(articulo.estado),
+            }}
+          />
+        </TableCell>
+        <TableCell align="center">
+          <IconButton onClick={() => handleOpenEdit(articulo)}>
+            <Icon name="edit" size={20} color="#1976d2" />
+          </IconButton>
+          <IconButton onClick={() => handleOpenDeleteDialog(articulo)}>
+            <Icon name="delete" size={20} color="#ef4444" />
+          </IconButton>
+        </TableCell>
+      </TableRow>
+    ));
+  };
 
   return (
     <Box>
@@ -420,17 +472,17 @@ export default function Articulo() {
             sx={{ mb: 2 }}
           />
 
-          {successMessage ? (
+          {successMessage && (
             <Alert severity="success" sx={{ mb: 2 }}>
               {successMessage}
             </Alert>
-          ) : null}
+          )}
 
-          {serverError ? (
+          {serverError && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {serverError}
             </Alert>
-          ) : null}
+          )}
 
           <TableContainer
             component={Paper}
@@ -453,57 +505,10 @@ export default function Articulo() {
                 </TableRow>
               </TableHead>
 
-              <TableBody>
-                {loading || catalogLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
-                      <CircularProgress size={28} />
-                    </TableCell>
-                  </TableRow>
-                ) : articulos.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 4, color: '#64748b' }}>
-                      No hay artículos registrados.
-                    </TableCell>
-                  </TableRow>
-                ) : articulosFiltrados.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 4, color: '#64748b' }}>
-                      No se encontraron artículos con ese criterio.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  articulosPaginados.map((articulo) => (
-                    <TableRow key={articulo.idArticulo} hover>
-                      <TableCell>{articulo.descripcion}</TableCell>
-                      <TableCell>{articulo.medida}</TableCell>
-                      <TableCell>{formatNumber(articulo.stock)}</TableCell>
-                      <TableCell>{articulo.descripcionCategoria || '-'}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={articulo.estado || '-'}
-                          size="small"
-                          sx={{
-                            fontWeight: 700,
-                            ...getEstadoChipStyles(articulo.estado),
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell align="center">
-                        <IconButton onClick={() => handleOpenEdit(articulo)}>
-                          <Icon name="edit" size={20} color="#1976d2" />
-                        </IconButton>
-                        <IconButton onClick={() => handleOpenDeleteDialog(articulo)}>
-                          <Icon name="delete" size={20} color="#ef4444" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
+              <TableBody>{renderTableRows()}</TableBody>
             </Table>
 
-            {!loading && !catalogLoading && articulosFiltrados.length > 0 ? (
+            {!loading && !catalogLoading && articulosFiltrados.length > 0 && (
               <TablePagination
                 component="div"
                 count={articulosFiltrados.length}
@@ -514,7 +519,7 @@ export default function Articulo() {
                 rowsPerPageOptions={[5, 10, 20]}
                 labelRowsPerPage="Filas por página:"
               />
-            ) : null}
+            )}
           </TableContainer>
         </CardContent>
       </Card>
@@ -537,11 +542,11 @@ export default function Articulo() {
           <Typography sx={{ color: '#475569' }}>
             ¿Seguro que deseas inactivar este artículo?
           </Typography>
-          {selectedDelete ? (
+          {selectedDelete && (
             <Typography sx={{ mt: 1, fontWeight: 700, color: '#0f172a' }}>
               Artículo: {selectedDelete.descripcion}
             </Typography>
-          ) : null}
+          )}
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}>
           <Button onClick={handleCloseDeleteDialog} sx={{ textTransform: 'none' }}>

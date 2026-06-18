@@ -2,6 +2,7 @@ import api from './api';
 
 const BASE_URL = '/api/tipos-proveedor';
 
+// Centraliza el CRUD de tipos de proveedor y las listas usadas por formularios.
 export const tipoProveedorService = {
     listar: async () => {
         const { data } = await api.get(BASE_URL);

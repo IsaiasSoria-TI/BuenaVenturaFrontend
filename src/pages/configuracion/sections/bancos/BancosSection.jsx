@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import {
     Alert,
     Box,
@@ -27,6 +28,7 @@ import {
 import { bancoService } from '../../../../services/bancoService';
 import ModalBanco from './ModalBanco';
 
+// Estado inicial para crear o editar bancos del catalogo.
 const initialForm = {
     idBanco: null,
     nombre: '',
@@ -53,6 +55,12 @@ function Icon({ name, size = 20, color = 'inherit' }) {
     );
 }
 
+Icon.propTypes = {
+    name: PropTypes.string.isRequired,
+    size: PropTypes.number,
+    color: PropTypes.string,
+};
+
 function getEstadoChipStyles(flgActivo) {
     return flgActivo
         ? { backgroundColor: '#dcfce7', color: '#16a34a' }
@@ -74,6 +82,7 @@ export default function BancosSection() {
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
 
+    // Trae bancos activos e inactivos para poder administrarlos desde configuracion.
     const cargarBancos = React.useCallback(async () => {
         try {
             setLoading(true);
@@ -81,8 +90,7 @@ export default function BancosSection() {
             const data = await bancoService.listarTodos();
             setBancos(Array.isArray(data) ? data : []);
             setPage(0);
-        } catch (error) {
-            console.error(error);
+        } catch {
             setServerError('Error al cargar bancos');
         } finally {
             setLoading(false);
@@ -127,6 +135,7 @@ export default function BancosSection() {
     };
 
     const handleSubmit = async () => {
+        // Validacion minima antes de enviar el payload al backend.
         if (!form.nombre.trim()) {
             setErrors({ nombre: 'Campo obligatorio' });
             return;
@@ -152,7 +161,6 @@ export default function BancosSection() {
             setOpen(false);
             await cargarBancos();
         } catch (error) {
-            console.error(error);
             const message = error?.response?.data?.message || error?.response?.data || 'Error al guardar banco';
             setServerError(typeof message === 'string' ? message : 'Error al guardar banco');
         } finally {
@@ -170,8 +178,7 @@ export default function BancosSection() {
             setDeleteDialog(false);
             setSelectedDelete(null);
             await cargarBancos();
-        } catch (error) {
-            console.error(error);
+        } catch {
             setServerError('Error al eliminar');
         }
     };
@@ -180,6 +187,55 @@ export default function BancosSection() {
         const start = page * rowsPerPage;
         return bancos.slice(start, start + rowsPerPage);
     }, [bancos, page, rowsPerPage]);
+
+    const renderTableRows = () => {
+        if (loading) {
+            return (
+                <TableRow>
+                    <TableCell colSpan={3} align="center">
+                        <CircularProgress />
+                    </TableCell>
+                </TableRow>
+            );
+        }
+
+        if (bancos.length === 0) {
+            return (
+                <TableRow>
+                    <TableCell colSpan={3} align="center">
+                        Sin registros
+                    </TableCell>
+                </TableRow>
+            );
+        }
+
+        return bancosPaginados.map((banco) => (
+            <TableRow key={banco.idBanco}>
+                <TableCell>{banco.nombre}</TableCell>
+                <TableCell>
+                    <Chip
+                        label={banco.flgActivo ? 'Activo' : 'Inactivo'}
+                        size="small"
+                        sx={getEstadoChipStyles(banco.flgActivo)}
+                    />
+                </TableCell>
+                <TableCell align="center" sx={{ width: 112 }}>
+                    <IconButton onClick={() => handleOpenEdit(banco)} sx={{ width: 36, height: 36 }}>
+                        <Icon name="edit" size={20} color="#1976d2" />
+                    </IconButton>
+                    <IconButton
+                        onClick={() => {
+                            setSelectedDelete(banco);
+                            setDeleteDialog(true);
+                        }}
+                        sx={{ width: 36, height: 36 }}
+                    >
+                        <Icon name="delete" size={20} color="#ef4444" />
+                    </IconButton>
+                </TableCell>
+            </TableRow>
+        ));
+    };
 
     return (
         <Box>
@@ -207,8 +263,8 @@ export default function BancosSection() {
                         </Button>
                     </Stack>
 
-                    {serverError ? <Alert severity="error" sx={{ mb: 2 }}>{serverError}</Alert> : null}
-                    {success ? <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert> : null}
+                    {serverError && <Alert severity="error" sx={{ mb: 2 }}>{serverError}</Alert>}
+                    {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
                     <TableContainer component={Paper}>
                         <Table>
@@ -216,52 +272,16 @@ export default function BancosSection() {
                                 <TableRow>
                                     <TableCell>Nombre</TableCell>
                                     <TableCell>Estado</TableCell>
-                                    <TableCell align="center">Acciones</TableCell>
+                                    <TableCell align="center" sx={{ width: 112 }}>Acciones</TableCell>
                                 </TableRow>
                             </TableHead>
 
                             <TableBody>
-                                {loading ? (
-                                    <TableRow>
-                                        <TableCell colSpan={3} align="center">
-                                            <CircularProgress />
-                                        </TableCell>
-                                    </TableRow>
-                                ) : bancos.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={3} align="center">
-                                            Sin registros
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    bancosPaginados.map((banco) => (
-                                        <TableRow key={banco.idBanco}>
-                                            <TableCell>{banco.nombre}</TableCell>
-                                            <TableCell>
-                                                <Chip
-                                                    label={banco.flgActivo ? 'Activo' : 'Inactivo'}
-                                                    size="small"
-                                                    sx={getEstadoChipStyles(banco.flgActivo)}
-                                                />
-                                            </TableCell>
-                                            <TableCell align="center">
-                                                <IconButton onClick={() => handleOpenEdit(banco)}>
-                                                    <Icon name="edit" size={20} color="#1976d2" />
-                                                </IconButton>
-                                                <IconButton onClick={() => {
-                                                    setSelectedDelete(banco);
-                                                    setDeleteDialog(true);
-                                                }}>
-                                                    <Icon name="delete" size={20} color="#ef4444" />
-                                                </IconButton>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                )}
+                                {renderTableRows()}
                             </TableBody>
                         </Table>
 
-                        {!loading && bancos.length > 0 ? (
+                        {!loading && bancos.length > 0 && (
                             <TablePagination
                                 component="div"
                                 count={bancos.length}
@@ -274,7 +294,7 @@ export default function BancosSection() {
                                 }}
                                 rowsPerPageOptions={[5, 10, 20]}
                             />
-                        ) : null}
+                        )}
                     </TableContainer>
                 </CardContent>
             </Card>
@@ -294,11 +314,11 @@ export default function BancosSection() {
                 <DialogTitle>Inactivar banco</DialogTitle>
                 <DialogContent>
                     ¿Seguro que deseas inactivar este banco?
-                    {selectedDelete ? (
+                    {selectedDelete && (
                         <Typography sx={{ mt: 1, fontWeight: 700 }}>
                             {selectedDelete.nombre}
                         </Typography>
-                    ) : null}
+                    )}
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setDeleteDialog(false)}>Cancelar</Button>

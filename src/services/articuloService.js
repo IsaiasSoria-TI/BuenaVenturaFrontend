@@ -2,6 +2,7 @@ import api from './api';
 
 const BASE_URL = '/api/articulos';
 
+// Centraliza el CRUD de articulos para que las pantallas no construyan URLs manualmente.
 export const articuloService = {
   listar: async () => {
     const { data } = await api.get(BASE_URL);

@@ -3,6 +3,7 @@ import { Alert, Box, CircularProgress, Typography } from '@mui/material';
 import PerfilForm from './PerfilForm';
 import { configuracionService } from '../../../../services/configuracionService';
 
+// Estado base del perfil antes de cargar los datos del backend.
 const initialForm = {
     nombres: '',
     apellidoPaterno: '',
@@ -12,6 +13,7 @@ const initialForm = {
     correo: '',
 };
 
+// Sincroniza localStorage para que Topbar muestre el nombre actualizado sin reloguear.
 function actualizarUsuarioLocal(data) {
     const usuarioActual = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -33,6 +35,7 @@ export default function PerfilSection() {
     const [serverError, setServerError] = React.useState('');
     const [successMessage, setSuccessMessage] = React.useState('');
 
+    // Carga los datos del usuario autenticado para llenar el formulario.
     const cargarPerfil = React.useCallback(async () => {
         try {
             setLoading(true);
@@ -49,7 +52,6 @@ export default function PerfilSection() {
                 correo: data.correo || '',
             });
         } catch (error) {
-            console.error('Error al cargar perfil:', error);
 
             const message =
                 error?.response?.data?.message ||
@@ -93,6 +95,7 @@ export default function PerfilSection() {
     };
 
     const validate = () => {
+        // Validaciones de cliente: evitan requests con campos obligatorios incompletos.
         const newErrors = {};
 
         if (!form.nombres.trim()) {
@@ -101,10 +104,6 @@ export default function PerfilSection() {
 
         if (!form.apellidoPaterno.trim()) {
             newErrors.apellidoPaterno = 'El apellido paterno es obligatorio';
-        }
-
-        if (!form.apellidoMaterno.trim()) {
-            newErrors.apellidoMaterno = 'El apellido materno es obligatorio';
         }
 
         if (!form.usuario.trim()) {
@@ -127,6 +126,7 @@ export default function PerfilSection() {
             setServerError('');
             setSuccessMessage('');
 
+            // El backend espera datos limpios, por eso se aplica trim antes de enviar.
             const payload = {
                 nombres: form.nombres.trim(),
                 apellidoPaterno: form.apellidoPaterno.trim(),
@@ -150,7 +150,6 @@ export default function PerfilSection() {
             actualizarUsuarioLocal(data);
             setSuccessMessage('Perfil actualizado correctamente.');
         } catch (error) {
-            console.error('Error al actualizar perfil:', error);
 
             const message =
                 error?.response?.data?.message ||

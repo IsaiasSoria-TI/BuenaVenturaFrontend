@@ -2,6 +2,7 @@ import api from './api';
 
 const BASE_URL = '/api/tipos-cambio';
 
+// Centraliza tipos de cambio; buscarAplicable devuelve el tipo usado para una fecha de compra.
 export const tipoCambioService = {
   listar: async () => {
     const { data } = await api.get(BASE_URL);

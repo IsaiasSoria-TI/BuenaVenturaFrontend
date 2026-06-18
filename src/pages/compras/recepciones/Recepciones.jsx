@@ -34,7 +34,7 @@ import ModalDetalleRecepcion from './ModalDetalleRecepcion';
 import ModalRecepcion from './ModalRecepcion';
 import {
     formatCompraCode,
-    formatDateTimePeru,
+    formatDateWithCurrentTimePeru,
     formatRecepcionCode,
 } from '../../../utils/formatters';
 
@@ -167,10 +167,8 @@ export default function Recepciones() {
             const data = await recepcionService.listar();
             setRecepciones(Array.isArray(data) ? data : []);
             setPage(0);
-        } catch (error) {
-            console.error('Error al listar recepciones:', error);
-            console.error('status:', error?.response?.status);
-            console.error('data:', error?.response?.data);
+        } catch {
+            // La tabla conserva su estado actual si falla la recarga.
         } finally {
             setLoading(false);
         }
@@ -183,10 +181,8 @@ export default function Recepciones() {
 
             const data = await recepcionService.listarComprasPendientes();
             setComprasDisponibles(Array.isArray(data) ? data : []);
-        } catch (error) {
-            console.error('Error al listar compras disponibles:', error);
-            console.error('status:', error?.response?.status);
-            console.error('data:', error?.response?.data);
+        } catch {
+            // El selector de compras queda vacio si el catalogo no responde.
         } finally {
             setComprasLoading(false);
         }
@@ -289,7 +285,6 @@ export default function Recepciones() {
             handleCloseEditDialog();
             await cargarRecepciones();
         } catch (error) {
-            console.error('Error al actualizar datos de recepcion:', error);
             const message =
                 error?.response?.data?.message ||
                 error?.response?.data ||
@@ -312,7 +307,11 @@ export default function Recepciones() {
             const detallesForm = Array.isArray(data.detalles)
                 ? data.detalles.map((detalle) => ({
                     idCompraDetalle: detalle.idCompraDetalle,
+                    idArticulo: detalle.idArticulo,
+                    idCategoria: detalle.idCategoria,
                     articulo: detalle.articulo || '',
+                    descripcionCategoria: detalle.descripcionCategoria || '',
+                    tipoEnvase: detalle.tipoEnvase || detalle.descripcionCategoria || '',
                     medida: detalle.medida || '',
                     pesoComprado: detalle.pesoComprado ?? 0,
                     totalRecibido: detalle.totalRecibido ?? 0,
@@ -327,9 +326,6 @@ export default function Recepciones() {
                 detalles: detallesForm,
             }));
         } catch (error) {
-            console.error('Error al cargar detalle de compra:', error);
-            console.error('status:', error?.response?.status);
-            console.error('data:', error?.response?.data);
 
             setDetalleCompra(null);
             setForm((prev) => ({
@@ -467,9 +463,6 @@ export default function Recepciones() {
             handleClose();
             await Promise.all([cargarRecepciones(), cargarComprasDisponibles()]);
         } catch (error) {
-            console.error('Error al registrar recepción:', error);
-            console.error('status:', error?.response?.status);
-            console.error('data:', error?.response?.data);
 
             const message =
                 error?.response?.data?.message ||
@@ -658,7 +651,7 @@ export default function Recepciones() {
                                     ? recepcionesPaginadas.map((recepcion) => (
                                         <TableRow key={recepcion.idRecepciones} hover>
                                             <TableCell>{formatRecepcionCode(recepcion.idRecepciones)}</TableCell>
-                                            <TableCell>{formatDateTimePeru(recepcion.fechaRecepcion)}</TableCell>
+                                            <TableCell>{formatDateWithCurrentTimePeru(recepcion.fechaRecepcion)}</TableCell>
                                             <TableCell>{formatCompraCode(recepcion.idCompras)}</TableCell>
                                             <TableCell>{recepcion.guiaRemision || '-'}</TableCell>
                                             <TableCell>{formatNumber(recepcion.cantidadJabas)}</TableCell>
@@ -769,18 +762,16 @@ export default function Recepciones() {
 
                         <TextField
                             fullWidth
-                            type="number"
+                            type="text"
                             label="CANTIDAD JABAS"
                             value={editForm.cantidadJabas}
                             onChange={handleEditChange('cantidadJabas')}
                             error={!!errors.cantidadJabas}
                             helperText={errors.cantidadJabas || ''}
                             slotProps={{
-                                input: {
-                                    inputProps: {
-                                        min: 0,
-                                        step: '0.01',
-                                    },
+                                htmlInput: {
+                                    inputMode: 'decimal',
+                                    pattern: '[0-9]*[.]?[0-9]*',
                                 },
                             }}
                         />

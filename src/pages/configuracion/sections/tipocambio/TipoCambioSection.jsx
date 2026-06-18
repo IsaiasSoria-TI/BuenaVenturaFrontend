@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import {
     Alert,
     Box,
@@ -27,6 +28,7 @@ import {
 import { tipoCambioService } from '../../../../services/tipoCambioService';
 import ModalTipoCambio from './ModalTipoCambio';
 
+// Estado inicial para registrar el valor de cambio de una fecha.
 const initialForm = {
     idTipoCambio: null,
     fecha: '',
@@ -54,6 +56,12 @@ function Icon({ name, size = 20, color = 'inherit' }) {
     );
 }
 
+Icon.propTypes = {
+    name: PropTypes.string.isRequired,
+    size: PropTypes.number,
+    color: PropTypes.string,
+};
+
 function getEstadoChipStyles(flgActivo) {
     return flgActivo
         ? { backgroundColor: '#dcfce7', color: '#16a34a' }
@@ -77,6 +85,7 @@ function formatDate(value) {
     return `${day}/${month}/${year}`;
 }
 
+// Convierte el texto del input a numero valido con hasta cuatro decimales.
 function parseValorDecimal(value) {
     const normalizado = String(value).trim().replace(',', '.');
 
@@ -85,7 +94,11 @@ function parseValorDecimal(value) {
     }
 
     const numero = Number(normalizado);
-    return Number.isFinite(numero) && numero > 0 ? numero : null;
+    if (!Number.isFinite(numero) || numero <= 0) {
+        return null;
+    }
+
+    return numero;
 }
 
 export default function TipoCambioSection() {
@@ -103,6 +116,7 @@ export default function TipoCambioSection() {
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
 
+    // Carga tipos de cambio activos e inactivos para administracion completa.
     const cargarTiposCambio = React.useCallback(async () => {
         try {
             setLoading(true);
@@ -110,8 +124,7 @@ export default function TipoCambioSection() {
             const data = await tipoCambioService.listarTodos();
             setTiposCambio(Array.isArray(data) ? data : []);
             setPage(0);
-        } catch (error) {
-            console.error(error);
+        } catch {
             setServerError('Error al cargar tipos de cambio');
         } finally {
             setLoading(false);
@@ -195,7 +208,6 @@ export default function TipoCambioSection() {
             setOpen(false);
             await cargarTiposCambio();
         } catch (error) {
-            console.error(error);
             const message = error?.response?.data?.message || error?.response?.data || 'Error al guardar tipo de cambio';
             setServerError(typeof message === 'string' ? message : 'Error al guardar tipo de cambio');
         } finally {
@@ -213,8 +225,7 @@ export default function TipoCambioSection() {
             setDeleteDialog(false);
             setSelectedDelete(null);
             await cargarTiposCambio();
-        } catch (error) {
-            console.error(error);
+        } catch {
             setServerError('Error al inactivar tipo de cambio');
         }
     };
@@ -223,6 +234,56 @@ export default function TipoCambioSection() {
         const start = page * rowsPerPage;
         return tiposCambio.slice(start, start + rowsPerPage);
     }, [tiposCambio, page, rowsPerPage]);
+
+    const renderTableRows = () => {
+        if (loading) {
+            return (
+                <TableRow>
+                    <TableCell colSpan={4} align="center">
+                        <CircularProgress />
+                    </TableCell>
+                </TableRow>
+            );
+        }
+
+        if (tiposCambio.length === 0) {
+            return (
+                <TableRow>
+                    <TableCell colSpan={4} align="center">
+                        Sin registros
+                    </TableCell>
+                </TableRow>
+            );
+        }
+
+        return tiposCambioPaginados.map((tipoCambio) => (
+            <TableRow key={tipoCambio.idTipoCambio}>
+                <TableCell>{formatDate(tipoCambio.fecha)}</TableCell>
+                <TableCell align="right">{formatDecimal(tipoCambio.valor)}</TableCell>
+                <TableCell>
+                    <Chip
+                        label={tipoCambio.flgActivo ? 'Activo' : 'Inactivo'}
+                        size="small"
+                        sx={getEstadoChipStyles(tipoCambio.flgActivo)}
+                    />
+                </TableCell>
+                <TableCell align="center" sx={{ width: 112 }}>
+                    <IconButton onClick={() => handleOpenEdit(tipoCambio)} sx={{ width: 36, height: 36 }}>
+                        <Icon name="edit" size={20} color="#1976d2" />
+                    </IconButton>
+                    <IconButton
+                        onClick={() => {
+                            setSelectedDelete(tipoCambio);
+                            setDeleteDialog(true);
+                        }}
+                        sx={{ width: 36, height: 36 }}
+                    >
+                        <Icon name="delete" size={20} color="#ef4444" />
+                    </IconButton>
+                </TableCell>
+            </TableRow>
+        ));
+    };
 
     return (
         <Box>
@@ -246,8 +307,8 @@ export default function TipoCambioSection() {
                         </Button>
                     </Stack>
 
-                    {serverError ? <Alert severity="error" sx={{ mb: 2 }}>{serverError}</Alert> : null}
-                    {success ? <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert> : null}
+                    {serverError && <Alert severity="error" sx={{ mb: 2 }}>{serverError}</Alert>}
+                    {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
                     <TableContainer component={Paper}>
                         <Table>
@@ -256,53 +317,16 @@ export default function TipoCambioSection() {
                                     <TableCell>Fecha</TableCell>
                                     <TableCell align="right">Valor</TableCell>
                                     <TableCell>Estado</TableCell>
-                                    <TableCell align="center">Acciones</TableCell>
+                                    <TableCell align="center" sx={{ width: 112 }}>Acciones</TableCell>
                                 </TableRow>
                             </TableHead>
 
                             <TableBody>
-                                {loading ? (
-                                    <TableRow>
-                                        <TableCell colSpan={4} align="center">
-                                            <CircularProgress />
-                                        </TableCell>
-                                    </TableRow>
-                                ) : tiposCambio.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={4} align="center">
-                                            Sin registros
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    tiposCambioPaginados.map((tipoCambio) => (
-                                        <TableRow key={tipoCambio.idTipoCambio}>
-                                            <TableCell>{formatDate(tipoCambio.fecha)}</TableCell>
-                                            <TableCell align="right">{formatDecimal(tipoCambio.valor)}</TableCell>
-                                            <TableCell>
-                                                <Chip
-                                                    label={tipoCambio.flgActivo ? 'Activo' : 'Inactivo'}
-                                                    size="small"
-                                                    sx={getEstadoChipStyles(tipoCambio.flgActivo)}
-                                                />
-                                            </TableCell>
-                                            <TableCell align="center">
-                                                <IconButton onClick={() => handleOpenEdit(tipoCambio)}>
-                                                    <Icon name="edit" size={20} color="#1976d2" />
-                                                </IconButton>
-                                                <IconButton onClick={() => {
-                                                    setSelectedDelete(tipoCambio);
-                                                    setDeleteDialog(true);
-                                                }}>
-                                                    <Icon name="delete" size={20} color="#ef4444" />
-                                                </IconButton>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                )}
+                                {renderTableRows()}
                             </TableBody>
                         </Table>
 
-                        {!loading && tiposCambio.length > 0 ? (
+                        {!loading && tiposCambio.length > 0 && (
                             <TablePagination
                                 component="div"
                                 count={tiposCambio.length}
@@ -315,7 +339,7 @@ export default function TipoCambioSection() {
                                 }}
                                 rowsPerPageOptions={[5, 10, 20]}
                             />
-                        ) : null}
+                        )}
                     </TableContainer>
                 </CardContent>
             </Card>
@@ -335,11 +359,11 @@ export default function TipoCambioSection() {
                 <DialogTitle>Inactivar tipo de cambio</DialogTitle>
                 <DialogContent>
                     Seguro que deseas inactivar este tipo de cambio?
-                    {selectedDelete ? (
+                    {selectedDelete && (
                         <Typography sx={{ mt: 1, fontWeight: 700 }}>
                             {formatDate(selectedDelete.fecha)} - {formatDecimal(selectedDelete.valor)}
                         </Typography>
-                    ) : null}
+                    )}
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setDeleteDialog(false)}>Cancelar</Button>

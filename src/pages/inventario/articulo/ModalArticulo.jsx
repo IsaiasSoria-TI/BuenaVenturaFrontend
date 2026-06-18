@@ -1,4 +1,3 @@
-import React from 'react';
 import PropTypes from 'prop-types';
 import {
     Box,
@@ -11,10 +10,16 @@ import {
     TextField,
 } from '@mui/material';
 
+// Opciones fijas de unidad de medida permitidas para los articulos.
 const MEDIDAS = [
     { value: 'kg', label: 'Kilogramos (kg)' },
     { value: 'tn', label: 'Toneladas (tn)' },
 ];
+
+function getSubmitLabel(saving, editing) {
+    if (saving) return 'Guardando...';
+    return editing ? 'Actualizar' : 'Registrar';
+}
 
 export default function ModalArticulo({
     open,
@@ -27,6 +32,7 @@ export default function ModalArticulo({
     onSubmit,
     categorias,
 }) {
+    // Textos auxiliares: muestran errores si existen o ayuda por defecto.
     const helperDescripcion = errors.descripcion || '';
     const helperMedida = errors.medida || 'Seleccione la unidad';
     const helperStock =
@@ -34,11 +40,7 @@ export default function ModalArticulo({
     const helperCategoria = errors.idCategoria || 'Seleccione una categoría';
 
     const titulo = editing ? 'Editar artículo' : 'Nuevo artículo';
-    const textoBoton = saving
-        ? 'Guardando...'
-        : editing
-            ? 'Actualizar'
-            : 'Registrar';
+    const textoBoton = getSubmitLabel(saving, editing);
 
     const mostrarEstado = editing;
 
@@ -92,7 +94,7 @@ export default function ModalArticulo({
                         onChange={onChange('stock')}
                         error={!!errors.stock}
                         helperText={helperStock}
-                        inputProps={{ min: 0, step: '0.01' }}
+                        slotProps={{ htmlInput: { min: 0, step: '0.01' } }}
                     />
 
                     <TextField
@@ -118,7 +120,7 @@ export default function ModalArticulo({
                     </TextField>
                 </Box>
 
-                {mostrarEstado ? (
+                {mostrarEstado && (
                     <Box sx={{ mt: 2 }}>
                         <TextField
                             select
@@ -131,7 +133,7 @@ export default function ModalArticulo({
                             <MenuItem value="Inactivo">Inactivo</MenuItem>
                         </TextField>
                     </Box>
-                ) : null}
+                )}
             </DialogContent>
 
             <DialogActions sx={{ px: 3, py: 2 }}>

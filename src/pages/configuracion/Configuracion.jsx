@@ -13,8 +13,10 @@ import ImpuestosSection from './sections/impuestos/ImpuestosSection';
 import TipoCambioSection from './sections/tipocambio/TipoCambioSection';
 
 export default function Configuracion() {
+    // Guarda que opcion del menu lateral esta activa dentro de Configuracion.
     const [seccionActiva, setSeccionActiva] = React.useState('perfil');
 
+    // Mapea cada clave del menu con el componente que debe renderizarse.
     const renderContenido = () => {
         switch (seccionActiva) {
             case 'perfil':

@@ -1,5 +1,6 @@
 import { Box, Card, CardContent, Typography } from '@mui/material';
 
+// Pantalla placeholder: conserva la ruta activa mientras se implementa el Kardex real.
 export default function Kardex() {
   return (
     <Box>

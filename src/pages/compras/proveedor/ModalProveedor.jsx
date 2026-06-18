@@ -37,8 +37,8 @@ export default function ModalProveedor({
 
             <DialogContent dividers sx={{ pt: 2.5 }}>
                 <Stack spacing={2}>
-                    {serverError ? <Alert severity="error">{serverError}</Alert> : null}
-                    {serverSuccess ? <Alert severity="success">{serverSuccess}</Alert> : null}
+                    {serverError && <Alert severity="error">{serverError}</Alert>}
+                    {serverSuccess && <Alert severity="success">{serverSuccess}</Alert>}
 
                     <Box
                         sx={{

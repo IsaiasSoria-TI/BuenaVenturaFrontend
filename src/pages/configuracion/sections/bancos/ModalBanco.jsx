@@ -1,4 +1,3 @@
-import React from 'react';
 import {
     Button,
     Dialog,
@@ -9,7 +8,14 @@ import {
     Stack,
     TextField,
 } from '@mui/material';
+import PropTypes from 'prop-types';
 
+function getSubmitLabel(saving, editing) {
+    if (saving) return 'Guardando...';
+    return editing ? 'Actualizar' : 'Registrar';
+}
+
+// Modal simple de catalogo: recibe valores y callbacks desde BancosSection.
 export default function ModalBanco({
     open,
     onClose,
@@ -20,11 +26,12 @@ export default function ModalBanco({
     handleChange,
     handleSubmit,
 }) {
+    const title = editing ? 'Editar banco' : 'Nuevo banco';
+    const submitLabel = getSubmitLabel(saving, editing);
+
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-            <DialogTitle sx={{ fontWeight: 700 }}>
-                {editing ? 'Editar banco' : 'Nuevo banco'}
-            </DialogTitle>
+            <DialogTitle sx={{ fontWeight: 700 }}>{title}</DialogTitle>
 
             <DialogContent dividers>
                 <Stack spacing={2}>
@@ -60,9 +67,26 @@ export default function ModalBanco({
                     onClick={handleSubmit}
                     disabled={saving}
                 >
-                    {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Registrar'}
+                    {submitLabel}
                 </Button>
             </DialogActions>
         </Dialog>
     );
 }
+
+ModalBanco.propTypes = {
+    open: PropTypes.bool.isRequired,
+    onClose: PropTypes.func.isRequired,
+    editing: PropTypes.bool.isRequired,
+    form: PropTypes.shape({
+        idBanco: PropTypes.oneOfType([PropTypes.number, PropTypes.oneOf([null])]),
+        nombre: PropTypes.string.isRequired,
+        flgActivo: PropTypes.string.isRequired,
+    }).isRequired,
+    errors: PropTypes.shape({
+        nombre: PropTypes.string,
+    }).isRequired,
+    saving: PropTypes.bool.isRequired,
+    handleChange: PropTypes.func.isRequired,
+    handleSubmit: PropTypes.func.isRequired,
+};

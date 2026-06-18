@@ -89,6 +89,7 @@ function getEstadoChipStyles(estado) {
   };
 }
 
+// Busca PEN como moneda por defecto porque la operacion local suele registrarse en soles.
 function getDefaultMonedaCodigo(monedas) {
   const monedaPen = monedas.find((moneda) => moneda.codigo === 'PEN');
   return monedaPen?.codigo || monedas[0]?.codigo || '';
@@ -123,6 +124,7 @@ export default function CuentasPagar() {
   const [selectedDelete, setSelectedDelete] = React.useState(null);
   const [deleteSaving, setDeleteSaving] = React.useState(false);
 
+  // Carga el listado principal que alimenta la tabla de cuentas por pagar.
   const cargarCuentas = React.useCallback(async () => {
     try {
       setLoading(true);
@@ -132,7 +134,6 @@ export default function CuentasPagar() {
       setCuentas(Array.isArray(data) ? data : []);
       setPage(0);
     } catch (error) {
-      console.error('Error al listar cuentas por pagar:', error);
 
       const message =
         error?.response?.data?.message ||
@@ -153,13 +154,13 @@ export default function CuentasPagar() {
     try {
       const data = await monedaService.listar();
       setMonedas(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error('Error al cargar monedas:', error);
+    } catch {
       setServerError('No se pudieron cargar las monedas.');
     }
   }, []);
 
   React.useEffect(() => {
+    // Al montar la pantalla se cargan datos de negocio y catalogos necesarios.
     cargarCuentas();
     cargarMonedas();
   }, [cargarCuentas, cargarMonedas]);
@@ -244,7 +245,6 @@ export default function CuentasPagar() {
       setSelectedEdit(null);
       await cargarCuentas();
     } catch (error) {
-      console.error('Error al actualizar cuenta por pagar:', error);
 
       const message =
         error?.response?.data?.message ||
@@ -289,7 +289,6 @@ export default function CuentasPagar() {
       setSelectedDelete(null);
       await cargarCuentas();
     } catch (error) {
-      console.error('Error al anular cuenta por pagar:', error);
 
       const message =
         error?.response?.data?.message ||

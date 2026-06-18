@@ -2,6 +2,7 @@ import api from './api';
 
 const BASE_URL = '/api/cuentas-pagar';
 
+// Encapsula las llamadas del flujo de cuentas por pagar y compras validas.
 export const cuentaPagarService = {
   listar: async () => {
     const { data } = await api.get(BASE_URL);

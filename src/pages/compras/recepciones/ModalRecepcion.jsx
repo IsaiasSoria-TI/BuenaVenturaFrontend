@@ -47,6 +47,26 @@ function formatCurrency(value, item) {
     return prefix ? `${prefix} ${amount}` : amount;
 }
 
+function getDetalleEnvase(detalle) {
+    return (
+        detalle?.tipoEnvase ||
+        detalle?.envase ||
+        detalle?.descripcionCategoria ||
+        detalle?.categoria ||
+        detalle?.tipoCategoria ||
+        ''
+    );
+}
+
+function getTiposEnvase(detalles) {
+    return [...new Set(
+        detalles
+            .map(getDetalleEnvase)
+            .map((value) => String(value || '').trim())
+            .filter(Boolean)
+    )];
+}
+
 function getEstadoChipStyles(estado) {
     if (estado === 'Completo') {
         return {
@@ -221,13 +241,13 @@ ResumenCompra.propTypes = {
     detalleCompra: PropTypes.object.isRequired,
 };
 
-// Datos operativos de la recepcion que no dependen del detalle de articulos.
+// Datos operativos generales de la recepcion.
 function DatosRecepcion({ form, errors, onFieldChange }) {
     return (
         <Box
             sx={{
                 display: 'grid',
-                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                gridTemplateColumns: '1fr',
                 gap: 2,
             }}
         >
@@ -237,24 +257,6 @@ function DatosRecepcion({ form, errors, onFieldChange }) {
                 value={form.guiaRemision}
                 onChange={onFieldChange('guiaRemision')}
             />
-
-            <TextField
-                fullWidth
-                type="number"
-                label="CANTIDAD JABAS"
-                value={form.cantidadJabas}
-                onChange={onFieldChange('cantidadJabas')}
-                error={!!errors.cantidadJabas}
-                helperText={errors.cantidadJabas || ''}
-                slotProps={{
-                    input: {
-                        inputProps: {
-                            min: 0,
-                            step: '0.01',
-                        },
-                    },
-                }}
-            />
         </Box>
     );
 }
@@ -262,6 +264,65 @@ function DatosRecepcion({ form, errors, onFieldChange }) {
 DatosRecepcion.propTypes = {
     form: PropTypes.shape({
         guiaRemision: PropTypes.string,
+        cantidadJabas: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    }).isRequired,
+    errors: PropTypes.objectOf(PropTypes.string).isRequired,
+    onFieldChange: PropTypes.func.isRequired,
+};
+
+function JabasSection({ detalles, form, errors, onFieldChange }) {
+    const tiposEnvase = getTiposEnvase(detalles);
+    const envaseValue = tiposEnvase.length ? tiposEnvase.join(', ') : 'Sin tipo de envase asociado';
+
+    return (
+        <Box>
+            <Divider sx={{ mb: 2 }} />
+
+            <Typography sx={{ fontWeight: 700, color: '#0f172a', mb: 0.5 }}>
+                Jabas
+            </Typography>
+            <Typography sx={{ color: '#64748b', fontSize: '0.85rem', mb: 1.5 }}>
+                El tipo de envase se obtiene automaticamente de las categorias de los articulos seleccionados.
+            </Typography>
+
+            <Box
+                sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', md: '1.4fr 0.8fr' },
+                    gap: 2,
+                    alignItems: 'start',
+                }}
+            >
+                <TextField
+                    fullWidth
+                    label={tiposEnvase.length > 1 ? 'Tipos de envase' : 'Tipo de envase'}
+                    value={envaseValue}
+                    slotProps={{ input: { readOnly: true } }}
+                />
+
+                <TextField
+                    fullWidth
+                    type="text"
+                    label="CANTIDAD JABAS"
+                    value={form.cantidadJabas}
+                    onChange={onFieldChange('cantidadJabas')}
+                    error={!!errors.cantidadJabas}
+                    helperText={errors.cantidadJabas || ''}
+                    slotProps={{
+                        htmlInput: {
+                            inputMode: 'decimal',
+                            pattern: '[0-9]*[.]?[0-9]*',
+                        },
+                    }}
+                />
+            </Box>
+        </Box>
+    );
+}
+
+JabasSection.propTypes = {
+    detalles: PropTypes.arrayOf(PropTypes.object).isRequired,
+    form: PropTypes.shape({
         cantidadJabas: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     }).isRequired,
     errors: PropTypes.objectOf(PropTypes.string).isRequired,
@@ -374,12 +435,10 @@ const DetalleRecepcionItem = React.memo(function DetalleRecepcionItem({
                     helperText={error || ''}
                     disabled={estaCompleto}
                     slotProps={{
-                        input: {
-                            inputProps: {
-                                min: 0,
-                                max: pendiente,
-                                step: '0.01',
-                            },
+                        htmlInput: {
+                            min: 0,
+                            max: pendiente,
+                            step: '0.01',
                         },
                     }}
                 />
@@ -390,7 +449,11 @@ const DetalleRecepcionItem = React.memo(function DetalleRecepcionItem({
 
 DetalleRecepcionItem.propTypes = {
     detalle: PropTypes.shape({
+        idArticulo: PropTypes.number,
+        idCategoria: PropTypes.number,
         articulo: PropTypes.string,
+        descripcionCategoria: PropTypes.string,
+        tipoEnvase: PropTypes.string,
         medida: PropTypes.string,
         pesoComprado: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
         pesoPendiente: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
@@ -481,6 +544,12 @@ function DetalleCompraSeleccionada({
             <ResumenCompra detalleCompra={detalleCompra} />
             <Divider />
             <DatosRecepcion form={form} errors={errors} onFieldChange={onFieldChange} />
+            <JabasSection
+                detalles={form.detalles}
+                form={form}
+                errors={errors}
+                onFieldChange={onFieldChange}
+            />
             <ResumenPesos detalleCompra={detalleCompra} />
             <DetallesRecepcion
                 detalles={form.detalles}
@@ -579,7 +648,7 @@ export default function ModalRecepcion({
 
             <DialogContent dividers sx={{ pt: 2.5 }}>
                 <Stack spacing={2}>
-                    {serverError ? <Alert severity="error">{serverError}</Alert> : null}
+                    {serverError && <Alert severity="error">{serverError}</Alert>}
 
                     {mostrarCargaCompras ? (
                         <Box sx={{ py: 4, display: 'flex', justifyContent: 'center' }}>
@@ -679,7 +748,11 @@ ModalRecepcion.propTypes = {
         detalles: PropTypes.arrayOf(
             PropTypes.shape({
                 idCompraDetalle: PropTypes.number,
+                idArticulo: PropTypes.number,
+                idCategoria: PropTypes.number,
                 articulo: PropTypes.string,
+                descripcionCategoria: PropTypes.string,
+                tipoEnvase: PropTypes.string,
                 medida: PropTypes.string,
                 pesoComprado: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
                 totalRecibido: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),

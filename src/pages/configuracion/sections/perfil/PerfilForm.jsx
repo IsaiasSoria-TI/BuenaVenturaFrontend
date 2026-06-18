@@ -1,4 +1,3 @@
-import React from 'react';
 import PropTypes from 'prop-types';
 import {
     Box,
@@ -10,6 +9,7 @@ import {
     Typography,
 } from '@mui/material';
 
+// Formulario presentacional: recibe estado, errores y acciones desde PerfilSection.
 export default function PerfilForm({
     form,
     errors,
@@ -129,7 +129,7 @@ PerfilForm.propTypes = {
     form: PropTypes.shape({
         nombres: PropTypes.string.isRequired,
         apellidoPaterno: PropTypes.string.isRequired,
-        apellidoMaterno: PropTypes.string.isRequired,
+        apellidoMaterno: PropTypes.string,
         usuario: PropTypes.string.isRequired,
         telefono: PropTypes.string.isRequired,
         correo: PropTypes.string.isRequired,

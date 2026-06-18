@@ -1,5 +1,6 @@
 import { Box, Card, CardContent, Typography } from '@mui/material';
 
+// Pantalla placeholder: conserva la ruta activa mientras se implementan transferencias.
 export default function Transferencia() {
   return (
     <Box>

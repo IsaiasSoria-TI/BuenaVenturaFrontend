@@ -1,4 +1,3 @@
-import React from 'react';
 import PropTypes from 'prop-types';
 import {
     Button,
@@ -11,6 +10,12 @@ import {
     TextField,
 } from '@mui/material';
 
+function getSubmitLabel(saving, editing) {
+    if (saving) return 'Guardando...';
+    return editing ? 'Actualizar' : 'Registrar';
+}
+
+// Modal presentacional de cuentas contables; no llama servicios directamente.
 export default function ModalCuentaContable({
     open,
     onClose,
@@ -22,11 +27,7 @@ export default function ModalCuentaContable({
     handleSubmit,
 }) {
     const titulo = editing ? 'Editar cuenta contable' : 'Nueva cuenta contable';
-    const textoBoton = saving
-        ? 'Guardando...'
-        : editing
-            ? 'Actualizar'
-            : 'Registrar';
+    const textoBoton = getSubmitLabel(saving, editing);
 
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
@@ -52,7 +53,7 @@ export default function ModalCuentaContable({
                         helperText={errors.descripcion || ''}
                     />
 
-                    {editing ? (
+                    {editing && (
                         <TextField
                             select
                             fullWidth
@@ -63,7 +64,7 @@ export default function ModalCuentaContable({
                             <MenuItem value="Activo">Activo</MenuItem>
                             <MenuItem value="Inactivo">Inactivo</MenuItem>
                         </TextField>
-                    ) : null}
+                    )}
                 </Stack>
             </DialogContent>
 

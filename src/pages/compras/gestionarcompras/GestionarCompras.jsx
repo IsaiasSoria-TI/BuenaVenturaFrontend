@@ -209,9 +209,6 @@ export default function GestionarCompras() {
       setCompras(Array.isArray(data) ? data : []);
       setPage(0);
     } catch (error) {
-      console.error('Error al listar compras:', error);
-      console.error('status:', error?.response?.status);
-      console.error('data:', error?.response?.data);
 
       const message =
         error?.response?.data?.message ||
@@ -242,10 +239,7 @@ export default function GestionarCompras() {
       setImpuestos(Array.isArray(impuestosData) ? impuestosData.filter((item) => !isIgvImpuesto(item)) : []);
       setPagos(Array.isArray(pagosData) ? pagosData : []);
       setMonedas(Array.isArray(monedasData) ? monedasData : []);
-    } catch (error) {
-      console.error('Error al cargar catálogos:', error);
-      console.error('status:', error?.response?.status);
-      console.error('data:', error?.response?.data);
+    } catch {
       setServerError('No se pudieron cargar los catálogos.');
     } finally {
       setCatalogLoading(false);
@@ -709,9 +703,6 @@ export default function GestionarCompras() {
       handleClose();
       await cargarCompras();
     } catch (error) {
-      console.error('Error al guardar compra:', error);
-      console.error('status:', error?.response?.status);
-      console.error('data:', error?.response?.data);
 
       const message =
         error?.response?.data?.message ||
@@ -756,9 +747,6 @@ export default function GestionarCompras() {
       handleCloseDeleteDialog();
       await cargarCompras();
     } catch (error) {
-      console.error('Error al inactivar compra:', error);
-      console.error('status:', error?.response?.status);
-      console.error('data:', error?.response?.data);
 
       const message =
         error?.response?.data?.message ||

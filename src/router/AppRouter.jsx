@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 
 import Login from '../pages/auth/Login';
 import Proveedor from '../pages/compras/proveedor/Proveedor';
@@ -14,11 +15,39 @@ import Kardex from '../pages/inventario/kardex/Kardex';
 import Transferencia from '../pages/inventario/transferencia/Transferencia';
 import CuentasPagar from '../pages/cuentaspagar/CuentasPagar';
 
-// Protege las rutas internas del sistema.
-// Si no existe un token guardado en localStorage, redirige al login.
-const PrivateRoute = ({ children }) => {
+const clearSession = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('username');
+  localStorage.removeItem('user');
+};
+
+const hasValidToken = () => {
   const token = localStorage.getItem('token');
-  return token ? children : <Navigate to="/login" replace />;
+
+  if (!token) {
+    return false;
+  }
+
+  try {
+    const decoded = jwtDecode(token);
+    const expiresAt = decoded.exp ? decoded.exp * 1000 : 0;
+
+    if (!expiresAt || expiresAt <= Date.now()) {
+      clearSession();
+      return false;
+    }
+
+    return true;
+  } catch {
+    clearSession();
+    return false;
+  }
+};
+
+// Protege las rutas internas del sistema.
+// Si no existe un token valido en localStorage, redirige al login.
+const PrivateRoute = ({ children }) => {
+  return hasValidToken() ? children : <Navigate to="/login" replace />;
 };
 
 function AppRouter() {

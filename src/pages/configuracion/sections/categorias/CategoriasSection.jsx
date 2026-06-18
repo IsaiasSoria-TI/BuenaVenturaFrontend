@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import {
     Alert,
     Box,
@@ -28,6 +29,7 @@ import { categoriaService } from '../../../../services/categoriaService';
 import { cuentaContableService } from '../../../../services/cuentaContableService';
 import ModalCategoria from './ModalCategoria';
 
+// Icono simple basado en Material Symbols para acciones de la tabla.
 const Icon = ({ name, size = 20, color = 'inherit' }) => (
     <Box
         component="span"
@@ -47,6 +49,13 @@ const Icon = ({ name, size = 20, color = 'inherit' }) => (
     </Box>
 );
 
+Icon.propTypes = {
+    name: PropTypes.string.isRequired,
+    size: PropTypes.number,
+    color: PropTypes.string,
+};
+
+// Estado base de la categoria; se reutiliza al abrir el modal en modo creacion.
 const initialForm = {
     idCategoria: null,
     descripcion: '',
@@ -90,6 +99,7 @@ export default function CategoriasSection() {
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
 
+    // Carga las categorias que se listan en la tabla principal.
     const cargarCategorias = React.useCallback(async () => {
         try {
             setLoading(true);
@@ -99,7 +109,6 @@ export default function CategoriasSection() {
             setCategorias(Array.isArray(data) ? data : []);
             setPage(0);
         } catch (error) {
-            console.error('Error al listar categorías:', error);
 
             const message =
                 error?.response?.data?.message ||
@@ -117,12 +126,13 @@ export default function CategoriasSection() {
     }, []);
 
     const cargarCatalogos = React.useCallback(async () => {
+        // Las cuentas contables alimentan el selector del modal de categoria.
         try {
             setCatalogLoading(true);
             const data = await cuentaContableService.listar();
             setCuentasContables(Array.isArray(data) ? data : []);
-        } catch (error) {
-            console.error('Error al listar cuentas contables:', error);
+        } catch {
+            // Si falla este catalogo, el formulario conserva el selector vacio.
         } finally {
             setCatalogLoading(false);
         }
@@ -226,7 +236,6 @@ export default function CategoriasSection() {
             handleClose();
             await cargarCategorias();
         } catch (error) {
-            console.error('Error al guardar categoría:', error);
 
             const message =
                 error?.response?.data?.message ||
@@ -262,7 +271,6 @@ export default function CategoriasSection() {
             handleCloseDeleteDialog();
             await cargarCategorias();
         } catch (error) {
-            console.error('Error al eliminar categoría:', error);
 
             const message =
                 error?.response?.data?.message ||
@@ -277,7 +285,7 @@ export default function CategoriasSection() {
         }
     };
 
-    const handleChangePage = (event, newPage) => {
+    const handleChangePage = (_event, newPage) => {
         setPage(newPage);
     };
 
@@ -291,6 +299,57 @@ export default function CategoriasSection() {
         const fin = inicio + rowsPerPage;
         return categorias.slice(inicio, fin);
     }, [categorias, page, rowsPerPage]);
+
+    const renderTableRows = () => {
+        if (loading || catalogLoading) {
+            return (
+                <TableRow>
+                    <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                        <CircularProgress size={28} />
+                    </TableCell>
+                </TableRow>
+            );
+        }
+
+        if (categorias.length === 0) {
+            return (
+                <TableRow>
+                    <TableCell colSpan={4} align="center" sx={{ py: 4, color: '#64748b' }}>
+                        No hay categorÃ­as registradas.
+                    </TableCell>
+                </TableRow>
+            );
+        }
+
+        return categoriasPaginadas.map((categoria) => (
+            <TableRow key={categoria.idCategoria} hover>
+                <TableCell>{categoria.descripcion}</TableCell>
+                <TableCell>{categoria.codigoCuentaContable}</TableCell>
+                <TableCell>
+                    <Chip
+                        label={categoria.estado || '-'}
+                        size="small"
+                        sx={{
+                            fontWeight: 700,
+                            ...getEstadoChipStyles(categoria.estado),
+                        }}
+                    />
+                </TableCell>
+                <TableCell align="center" sx={{ width: 112 }}>
+                    <IconButton onClick={() => handleOpenEdit(categoria)} sx={{ width: 36, height: 36 }}>
+                        <Icon name="edit" size={20} color="#1976d2" />
+                    </IconButton>
+
+                    <IconButton
+                        onClick={() => handleOpenDeleteDialog(categoria)}
+                        sx={{ width: 36, height: 36 }}
+                    >
+                        <Icon name="delete" size={20} color="#ef4444" />
+                    </IconButton>
+                </TableCell>
+            </TableRow>
+        ));
+    };
 
     return (
         <Box>
@@ -342,17 +401,17 @@ export default function CategoriasSection() {
                         </Stack>
                     </Stack>
 
-                    {successMessage ? (
+                    {successMessage && (
                         <Alert severity="success" sx={{ mb: 2 }}>
                             {successMessage}
                         </Alert>
-                    ) : null}
+                    )}
 
-                    {serverError ? (
+                    {serverError && (
                         <Alert severity="error" sx={{ mb: 2 }}>
                             {serverError}
                         </Alert>
-                    ) : null}
+                    )}
 
                     <TableContainer
                         component={Paper}
@@ -369,56 +428,16 @@ export default function CategoriasSection() {
                                     <TableCell sx={{ fontWeight: 700 }}>DESCRIPCIÓN</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>CUENTA CONTABLE</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>ESTADO</TableCell>
-                                    <TableCell sx={{ fontWeight: 700, textAlign: 'center' }}>
+                                    <TableCell sx={{ width: 112, fontWeight: 700, textAlign: 'center' }}>
                                         ACCIONES
                                     </TableCell>
                                 </TableRow>
                             </TableHead>
 
-                            <TableBody>
-                                {loading || catalogLoading ? (
-                                    <TableRow>
-                                        <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
-                                            <CircularProgress size={28} />
-                                        </TableCell>
-                                    </TableRow>
-                                ) : categorias.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={4} align="center" sx={{ py: 4, color: '#64748b' }}>
-                                            No hay categorías registradas.
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    categoriasPaginadas.map((categoria) => (
-                                        <TableRow key={categoria.idCategoria} hover>
-                                            <TableCell>{categoria.descripcion}</TableCell>
-                                            <TableCell>{categoria.codigoCuentaContable}</TableCell>
-                                            <TableCell>
-                                                <Chip
-                                                    label={categoria.estado || '-'}
-                                                    size="small"
-                                                    sx={{
-                                                        fontWeight: 700,
-                                                        ...getEstadoChipStyles(categoria.estado),
-                                                    }}
-                                                />
-                                            </TableCell>
-                                            <TableCell align="center">
-                                                <IconButton onClick={() => handleOpenEdit(categoria)}>
-                                                    <Icon name="edit" size={20} color="#1976d2" />
-                                                </IconButton>
-
-                                                <IconButton onClick={() => handleOpenDeleteDialog(categoria)}>
-                                                    <Icon name="delete" size={20} color="#ef4444" />
-                                                </IconButton>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
+                            <TableBody>{renderTableRows()}</TableBody>
                         </Table>
 
-                        {!loading && !catalogLoading && categorias.length > 0 ? (
+                        {!loading && !catalogLoading && categorias.length > 0 && (
                             <TablePagination
                                 component="div"
                                 count={categorias.length}
@@ -429,7 +448,7 @@ export default function CategoriasSection() {
                                 rowsPerPageOptions={[5, 10, 20]}
                                 labelRowsPerPage="Filas por página:"
                             />
-                        ) : null}
+                        )}
                     </TableContainer>
                 </CardContent>
             </Card>
@@ -453,11 +472,11 @@ export default function CategoriasSection() {
                         ¿Seguro que deseas inactivar esta categoría?
                     </Typography>
 
-                    {selectedDelete ? (
+                    {selectedDelete && (
                         <Typography sx={{ mt: 1, fontWeight: 700, color: '#0f172a' }}>
                             Categoría: {selectedDelete.descripcion}
                         </Typography>
-                    ) : null}
+                    )}
                 </DialogContent>
 
                 <DialogActions sx={{ px: 3, py: 2 }}>

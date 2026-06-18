@@ -138,9 +138,6 @@ export default function Proveedor() {
       setProveedores(Array.isArray(data) ? data : []);
       setPage(0);
     } catch (error) {
-      console.error('Error al listar proveedores:', error);
-      console.error('status:', error?.response?.status);
-      console.error('data:', error?.response?.data);
 
       const message =
         error?.response?.data?.message ||
@@ -163,9 +160,6 @@ export default function Proveedor() {
       const data = await tipoProveedorService.listar();
       setTiposProveedor(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Error al listar tipos de proveedor:', error);
-      console.error('status:', error?.response?.status);
-      console.error('data:', error?.response?.data);
 
       const message =
         error?.response?.data?.message ||
@@ -186,9 +180,6 @@ export default function Proveedor() {
       const data = await bancoService.listar();
       setBancos(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Error al listar bancos:', error);
-      console.error('status:', error?.response?.status);
-      console.error('data:', error?.response?.data);
 
       const message =
         error?.response?.data?.message ||
@@ -403,9 +394,6 @@ export default function Proveedor() {
       await cargarProveedores();
       handleClose();
     } catch (error) {
-      console.error('Error al guardar proveedor:', error);
-      console.error('status:', error?.response?.status);
-      console.error('data:', error?.response?.data);
 
       const message =
         error?.response?.data?.message ||
@@ -449,9 +437,6 @@ export default function Proveedor() {
       await cargarProveedores();
       setServerSuccess('Proveedor inactivado correctamente.');
     } catch (error) {
-      console.error('Error al inactivar proveedor:', error);
-      console.error('status:', error?.response?.status);
-      console.error('data:', error?.response?.data);
 
       const message =
         error?.response?.data?.message ||

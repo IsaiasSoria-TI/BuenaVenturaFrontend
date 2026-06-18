@@ -1,4 +1,3 @@
-import React from 'react';
 import PropTypes from 'prop-types';
 import {
     Button,
@@ -11,6 +10,7 @@ import {
     TextField,
 } from '@mui/material';
 
+// Modal presentacional de tipos de proveedor; no llama servicios directamente.
 export default function ModalTipoProveedor({
     open,
     onClose,

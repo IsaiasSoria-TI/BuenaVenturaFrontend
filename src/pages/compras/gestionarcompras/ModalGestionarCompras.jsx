@@ -277,16 +277,14 @@ export default function ModalGestionarCompras({
 
                             <TextField
                                 fullWidth
-                                type="number"
+                                type="text"
                                 label="Numero de lote"
                                 value={form.numeroLote}
                                 onChange={handleChange('numeroLote')}
                                 error={!!errors.numeroLote}
                                 helperText={errors.numeroLote}
                                 slotProps={{
-                                    input: {
-                                        inputProps: { min: 0, step: '0.01' },
-                                    },
+                                    htmlInput: { inputMode: 'decimal', pattern: '[0-9]*[.]?[0-9]*' },
                                 }}
                             />
                         </Box>
@@ -375,9 +373,7 @@ export default function ModalGestionarCompras({
                                                 error={!!errors[`detalle_${index}_peso`]}
                                                 helperText={errors[`detalle_${index}_peso`]}
                                                 slotProps={{
-                                                    input: {
-                                                        inputProps: { min: 0.01, step: '0.01' },
-                                                    },
+                                                    htmlInput: { min: 0.01, step: '0.01' },
                                                 }}
                                             />
 
@@ -392,9 +388,7 @@ export default function ModalGestionarCompras({
                                                 error={!!errors[`detalle_${index}_costoKilo`]}
                                                 helperText={errors[`detalle_${index}_costoKilo`]}
                                                 slotProps={{
-                                                    input: {
-                                                        inputProps: { min: 0.01, step: '0.01' },
-                                                    },
+                                                    htmlInput: { min: 0.01, step: '0.01' },
                                                 }}
                                             />
 
@@ -479,9 +473,7 @@ export default function ModalGestionarCompras({
                                         error={!!errors.porcentajeIgv}
                                         helperText={errors.porcentajeIgv}
                                         slotProps={{
-                                            input: {
-                                                inputProps: { min: 0, step: '0.01' },
-                                            },
+                                            htmlInput: { min: 0, step: '0.01' },
                                         }}
                                     />
 

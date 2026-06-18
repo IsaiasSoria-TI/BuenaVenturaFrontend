@@ -2,6 +2,7 @@ import api from './api';
 
 const BASE_URL = '/api/bancos';
 
+// Centraliza el CRUD de bancos usados por proveedores y configuracion.
 export const bancoService = {
     listar: async () => {
         const { data } = await api.get(BASE_URL);

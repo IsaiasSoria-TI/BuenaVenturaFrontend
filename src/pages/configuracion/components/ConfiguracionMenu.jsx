@@ -1,7 +1,7 @@
-import React from 'react';
 import PropTypes from 'prop-types';
 import { Box, Button, Stack, Typography } from '@mui/material';
 
+// Opciones visibles del menu de configuracion; cada key se usa en Configuracion.jsx.
 const MENU_OPTIONS = [
     {
         key: 'perfil',
@@ -71,6 +71,7 @@ export default function ConfiguracionMenu({ seccionActiva, onChangeSeccion }) {
 
             <Stack spacing={1}>
                 {MENU_OPTIONS.map((option) => {
+                    // El estado activo cambia estilos y evita que el usuario pierda contexto.
                     const active = seccionActiva === option.key;
 
                     return (

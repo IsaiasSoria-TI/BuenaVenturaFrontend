@@ -1,4 +1,3 @@
-import React from 'react';
 import {
     Button,
     Dialog,
@@ -10,6 +9,7 @@ import {
     TextField,
 } from '@mui/material';
 
+// Modal presentacional de impuestos; ImpuestosSection controla validacion y guardado.
 export default function ModalImpuesto({
     open,
     onClose,
@@ -46,9 +46,7 @@ export default function ModalImpuesto({
                         error={!!errors.valor}
                         helperText={errors.valor}
                         slotProps={{
-                            input: {
-                                inputProps: { min: 0, step: '0.01', inputMode: 'decimal' },
-                            },
+                            htmlInput: { min: 0, step: '0.01', inputMode: 'decimal' },
                         }}
                     />
 

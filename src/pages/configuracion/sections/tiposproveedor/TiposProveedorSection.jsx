@@ -55,6 +55,7 @@ Icon.propTypes = {
     color: PropTypes.string,
 };
 
+// Estado base del formulario de tipos de proveedor.
 const initialForm = {
     idTipoProveedor: null,
     nombre: '',
@@ -95,6 +96,7 @@ export default function TiposProveedorSection() {
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
 
+    // Carga todos los tipos para listar, editar o inactivar registros existentes.
     const cargarTiposProveedor = React.useCallback(async () => {
         try {
             setLoading(true);
@@ -102,8 +104,7 @@ export default function TiposProveedorSection() {
             const data = await tipoProveedorService.listarTodos();
             setTiposProveedor(Array.isArray(data) ? data : []);
             setPage(0);
-        } catch (error) {
-            console.error(error);
+        } catch {
             setServerError('No se pudo listar los tipos de proveedor.');
         } finally {
             setLoading(false);
@@ -179,8 +180,7 @@ export default function TiposProveedorSection() {
 
             handleClose();
             await cargarTiposProveedor();
-        } catch (error) {
-            console.error(error);
+        } catch {
             setServerError('Error al guardar');
         } finally {
             setSaving(false);
@@ -200,8 +200,7 @@ export default function TiposProveedorSection() {
             setSuccessMessage('Inactivado correctamente');
             setDeleteDialogOpen(false);
             await cargarTiposProveedor();
-        } catch (error) {
-            console.error(error);
+        } catch {
             setServerError('Error al eliminar');
         }
     };
@@ -251,7 +250,7 @@ export default function TiposProveedorSection() {
                                 <TableRow>
                                     <TableCell>Nombre</TableCell>
                                     <TableCell>Estado</TableCell>
-                                    <TableCell align="center">Acciones</TableCell>
+                                    <TableCell align="center" sx={{ width: 112 }}>Acciones</TableCell>
                                 </TableRow>
                             </TableHead>
 
@@ -273,11 +272,14 @@ export default function TiposProveedorSection() {
                                                     sx={getEstadoChipStyles(tipoProveedor.flgActivo)}
                                                 />
                                             </TableCell>
-                                            <TableCell align="center">
-                                                <IconButton onClick={() => handleOpenEdit(tipoProveedor)}>
+                                            <TableCell align="center" sx={{ width: 112 }}>
+                                                <IconButton onClick={() => handleOpenEdit(tipoProveedor)} sx={{ width: 36, height: 36 }}>
                                                     <Icon name="edit" size={20} color="#1976d2" />
                                                 </IconButton>
-                                                <IconButton onClick={() => handleOpenDeleteDialog(tipoProveedor)}>
+                                                <IconButton
+                                                    onClick={() => handleOpenDeleteDialog(tipoProveedor)}
+                                                    sx={{ width: 36, height: 36 }}
+                                                >
                                                     <Icon name="delete" size={20} color="#ef4444" />
                                                 </IconButton>
                                             </TableCell>
