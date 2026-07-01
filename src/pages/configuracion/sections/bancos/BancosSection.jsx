@@ -27,6 +27,7 @@ import {
 
 import { bancoService } from '../../../../services/bancoService';
 import ModalBanco from './ModalBanco';
+import { useAutoClearMessage } from '../../../../utils/useAutoClearMessage';
 
 // Estado inicial para crear o editar bancos del catalogo.
 const initialForm = {
@@ -79,6 +80,7 @@ export default function BancosSection() {
     const [selectedDelete, setSelectedDelete] = React.useState(null);
     const [serverError, setServerError] = React.useState('');
     const [success, setSuccess] = React.useState('');
+    useAutoClearMessage(success, setSuccess);
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
 

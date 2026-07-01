@@ -26,6 +26,7 @@ import {
 
 import { impuestoService } from '../../../../services/impuestoService';
 import ModalImpuesto from './ModalImpuesto';
+import { useAutoClearMessage } from '../../../../utils/useAutoClearMessage';
 
 // Estado inicial del formulario para crear o editar impuestos.
 const initialForm = {
@@ -99,6 +100,7 @@ export default function ImpuestosSection() {
     const [selectedDelete, setSelectedDelete] = React.useState(null);
     const [serverError, setServerError] = React.useState('');
     const [success, setSuccess] = React.useState('');
+    useAutoClearMessage(success, setSuccess);
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
 

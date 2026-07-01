@@ -32,6 +32,7 @@ import { proveedorService } from '../../../services/proveedorService';
 import { tipoProveedorService } from '../../../services/tipoProveedorService';
 import { bancoService } from '../../../services/bancoService';
 import ModalProveedor from './ModalProveedor';
+import { useAutoClearMessage } from '../../../utils/useAutoClearMessage';
 
 function Icon({ name, size = 20, color = 'inherit' }) {
   return (
@@ -123,6 +124,8 @@ export default function Proveedor() {
 
   const [serverError, setServerError] = React.useState('');
   const [serverSuccess, setServerSuccess] = React.useState('');
+
+  useAutoClearMessage(serverSuccess, setServerSuccess);
 
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);

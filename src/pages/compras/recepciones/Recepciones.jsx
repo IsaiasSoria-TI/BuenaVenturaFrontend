@@ -27,6 +27,7 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
+    MenuItem,
 } from '@mui/material';
 
 import { recepcionService } from '../../../services/recepcionService';
@@ -37,6 +38,7 @@ import {
     formatDateWithCurrentTimePeru,
     formatRecepcionCode,
 } from '../../../utils/formatters';
+import { useAutoClearMessage } from '../../../utils/useAutoClearMessage';
 
 function Icon({ name, size = 20, color = 'inherit' }) {
     return (
@@ -141,12 +143,17 @@ function getArticulosResumen(recepcion) {
     return recepcion.articulo || '-';
 }
 
+function splitTiposEnvase(value) {
+    return String(value || '')
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+}
+
 function getTiposEnvase(detalles) {
     return [...new Set(
         detalles
-            .map((detalle) => detalle.tipoEnvase || detalle.descripcionCategoria || '')
-            .map((value) => String(value || '').trim())
-            .filter(Boolean)
+            .flatMap((detalle) => splitTiposEnvase(detalle.tipoEnvase || detalle.envase || ''))
     )];
 }
 
@@ -174,9 +181,21 @@ export default function Recepciones() {
     const [editSaving, setEditSaving] = React.useState(false);
     const [successMessage, setSuccessMessage] = React.useState('');
 
+    useAutoClearMessage(successMessage, setSuccessMessage);
+
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
     const [searchTerm, setSearchTerm] = React.useState('');
+
+    const editTiposEnvase = React.useMemo(() => {
+        if (!selectedEdit) return [];
+
+        const detalles = Array.isArray(selectedEdit.detalles) ? selectedEdit.detalles : [];
+        return [...new Set([
+            ...splitTiposEnvase(selectedEdit.tipoEnvase),
+            ...getTiposEnvase(detalles),
+        ])];
+    }, [selectedEdit]);
 
     // Carga las recepciones ya registradas para el listado principal.
     const cargarRecepciones = React.useCallback(async () => {
@@ -246,7 +265,7 @@ export default function Recepciones() {
         setSelectedEdit(recepcion);
         setEditForm({
             guiaRemision: recepcion.guiaRemision || '',
-            tipoEnvase: recepcion.tipoEnvase || '',
+            tipoEnvase: splitTiposEnvase(recepcion.tipoEnvase)[0] || '',
             cantidadEnvase: recepcion.cantidadEnvase ?? '',
         });
         setErrors({});
@@ -281,6 +300,15 @@ export default function Recepciones() {
         if (!selectedEdit?.idRecepciones) return;
 
         const cantidadEnvase = Number(editForm.cantidadEnvase || 0);
+        const tipoEnvase = editForm.tipoEnvase.trim();
+        if (!tipoEnvase) {
+            setErrors((prev) => ({
+                ...prev,
+                tipoEnvase: 'Seleccione el tipo de envase',
+            }));
+            return;
+        }
+
         if (!Number.isFinite(cantidadEnvase) || !Number.isInteger(cantidadEnvase) || cantidadEnvase < 0) {
             setErrors((prev) => ({
                 ...prev,
@@ -300,6 +328,7 @@ export default function Recepciones() {
 
             await recepcionService.actualizarDatos(selectedEdit.idRecepciones, {
                 guiaRemision: editForm.guiaRemision.trim() || null,
+                tipoEnvase,
                 cantidadEnvase,
             });
 
@@ -333,7 +362,7 @@ export default function Recepciones() {
                     idCategoria: detalle.idCategoria,
                     articulo: detalle.articulo || '',
                     descripcionCategoria: detalle.descripcionCategoria || '',
-                    tipoEnvase: detalle.tipoEnvase || detalle.descripcionCategoria || '',
+                    tipoEnvase: detalle.tipoEnvase || '',
                     medida: detalle.medida || '',
                     pesoComprado: detalle.pesoComprado ?? 0,
                     totalRecibido: detalle.totalRecibido ?? 0,
@@ -346,7 +375,7 @@ export default function Recepciones() {
             setForm((prev) => ({
                 ...prev,
                 idCompras,
-                tipoEnvase: tiposEnvase.join(', '),
+                tipoEnvase: tiposEnvase[0] || '',
                 detalles: detallesForm,
             }));
         } catch (error) {
@@ -354,6 +383,7 @@ export default function Recepciones() {
             setDetalleCompra(null);
             setForm((prev) => ({
                 ...prev,
+                tipoEnvase: '',
                 detalles: [],
             }));
 
@@ -412,6 +442,10 @@ export default function Recepciones() {
             newErrors.detalles = 'La compra no tiene detalles disponibles';
         }
 
+        if (!form.tipoEnvase.trim()) {
+            newErrors.tipoEnvase = 'Seleccione el tipo de envase';
+        }
+
         const cantidadEnvase = Number(form.cantidadEnvase || 0);
         if (!Number.isFinite(cantidadEnvase)) {
             newErrors.cantidadEnvase = 'Ingrese una cantidad valida';
@@ -452,6 +486,7 @@ export default function Recepciones() {
     const buildPayload = () => ({
         idCompras: Number(form.idCompras),
         guiaRemision: form.guiaRemision.trim() || null,
+        tipoEnvase: form.tipoEnvase.trim(),
         cantidadEnvase: Number(form.cantidadEnvase || 0),
         detalles: form.detalles
             .filter((detalle) => Number(detalle.recibido || 0) > 0)
@@ -790,17 +825,23 @@ export default function Recepciones() {
                         />
 
                         <TextField
+                            select
                             fullWidth
                             label="TIPO DE ENVASE"
                             value={editForm.tipoEnvase}
-                            helperText="Tomado del maestro de articulos"
-                            slotProps={{ input: { readOnly: true } }}
-                            sx={{
-                                '& .MuiInputBase-root': {
-                                    backgroundColor: '#f8fafc',
-                                },
-                            }}
-                        />
+                            onChange={handleEditChange('tipoEnvase')}
+                            error={!!errors.tipoEnvase}
+                            helperText={errors.tipoEnvase || 'Tomado del maestro de articulos'}
+                        >
+                            <MenuItem value="">
+                                <em>Seleccione</em>
+                            </MenuItem>
+                            {editTiposEnvase.map((tipoEnvase) => (
+                                <MenuItem key={tipoEnvase} value={tipoEnvase}>
+                                    {tipoEnvase}
+                                </MenuItem>
+                            ))}
+                        </TextField>
 
                         <TextField
                             fullWidth

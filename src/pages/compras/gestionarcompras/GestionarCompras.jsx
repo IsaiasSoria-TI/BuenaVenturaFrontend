@@ -36,6 +36,7 @@ import { impuestoService } from '../../../services/impuestoService';
 import { pagoService } from '../../../services/pagoService';
 import { monedaService } from '../../../services/monedaService';
 import { tipoCambioService } from '../../../services/tipoCambioService';
+import { useAutoClearMessage } from '../../../utils/useAutoClearMessage';
 
 import ModalDetalleCompra from './ModalDetalleCompra';
 import ModalGestionarCompras from './ModalGestionarCompras';
@@ -189,6 +190,8 @@ export default function GestionarCompras() {
 
   const [serverError, setServerError] = React.useState('');
   const [successMessage, setSuccessMessage] = React.useState('');
+
+  useAutoClearMessage(successMessage, setSuccessMessage);
 
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [selectedDelete, setSelectedDelete] = React.useState(null);

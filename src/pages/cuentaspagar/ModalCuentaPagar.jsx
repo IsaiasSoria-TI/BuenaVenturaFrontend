@@ -33,6 +33,7 @@ import {
   formatDateTimePeru,
   formatRecepcionCode,
 } from '../../utils/formatters';
+import { useAutoClearMessage } from '../../utils/useAutoClearMessage';
 
 // Valores iniciales del formulario cuando se abre el modal para registrar una cuenta.
 const initialForm = {
@@ -240,6 +241,8 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas, manu
   const [errors, setErrors] = React.useState({});
   const [serverError, setServerError] = React.useState('');
   const [serverSuccess, setServerSuccess] = React.useState('');
+
+  useAutoClearMessage(serverSuccess, setServerSuccess);
 
   const cargarComprasValidas = React.useCallback(async () => {
     try {

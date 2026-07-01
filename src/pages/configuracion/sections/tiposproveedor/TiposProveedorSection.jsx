@@ -28,6 +28,7 @@ import {
 
 import { tipoProveedorService } from '../../../../services/tipoProveedorService';
 import ModalTipoProveedor from './ModalTipoProveedor';
+import { useAutoClearMessage } from '../../../../utils/useAutoClearMessage';
 
 function Icon({ name, size = 20, color = 'inherit' }) {
     return (
@@ -89,6 +90,8 @@ export default function TiposProveedorSection() {
 
     const [serverError, setServerError] = React.useState('');
     const [successMessage, setSuccessMessage] = React.useState('');
+
+    useAutoClearMessage(successMessage, setSuccessMessage);
 
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [selectedDelete, setSelectedDelete] = React.useState(null);

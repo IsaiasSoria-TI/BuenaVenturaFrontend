@@ -27,6 +27,7 @@ import {
 
 import { tipoCambioService } from '../../../../services/tipoCambioService';
 import ModalTipoCambio from './ModalTipoCambio';
+import { useAutoClearMessage } from '../../../../utils/useAutoClearMessage';
 
 // Estado inicial para registrar el valor de cambio de una fecha.
 const initialForm = {
@@ -113,6 +114,7 @@ export default function TipoCambioSection() {
     const [selectedDelete, setSelectedDelete] = React.useState(null);
     const [serverError, setServerError] = React.useState('');
     const [success, setSuccess] = React.useState('');
+    useAutoClearMessage(success, setSuccess);
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
 

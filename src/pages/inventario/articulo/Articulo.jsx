@@ -31,6 +31,7 @@ import {
 import { articuloService } from '../../../services/articuloService';
 import { categoriaService } from '../../../services/categoriaService';
 import ModalArticulo from './ModalArticulo';
+import { useAutoClearMessage } from '../../../utils/useAutoClearMessage';
 
 function Icon({ name, size = 20, color = 'inherit' }) {
   return (
@@ -110,6 +111,8 @@ export default function Articulo() {
 
   const [serverError, setServerError] = React.useState('');
   const [successMessage, setSuccessMessage] = React.useState('');
+
+  useAutoClearMessage(successMessage, setSuccessMessage);
 
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [selectedDelete, setSelectedDelete] = React.useState(null);

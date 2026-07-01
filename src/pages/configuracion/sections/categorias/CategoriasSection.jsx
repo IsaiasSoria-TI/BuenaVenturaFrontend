@@ -28,6 +28,7 @@ import {
 import { categoriaService } from '../../../../services/categoriaService';
 import { cuentaContableService } from '../../../../services/cuentaContableService';
 import ModalCategoria from './ModalCategoria';
+import { useAutoClearMessage } from '../../../../utils/useAutoClearMessage';
 
 // Icono simple basado en Material Symbols para acciones de la tabla.
 const Icon = ({ name, size = 20, color = 'inherit' }) => (
@@ -92,6 +93,8 @@ export default function CategoriasSection() {
     const [errors, setErrors] = React.useState({});
     const [serverError, setServerError] = React.useState('');
     const [successMessage, setSuccessMessage] = React.useState('');
+
+    useAutoClearMessage(successMessage, setSuccessMessage);
 
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [selectedDelete, setSelectedDelete] = React.useState(null);

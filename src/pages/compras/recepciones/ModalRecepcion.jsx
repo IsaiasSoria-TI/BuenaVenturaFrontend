@@ -13,6 +13,7 @@ import {
     DialogContent,
     DialogTitle,
     Divider,
+    MenuItem,
     Paper,
     Stack,
     TextField,
@@ -51,9 +52,6 @@ function getDetalleEnvase(detalle) {
     return (
         detalle?.tipoEnvase ||
         detalle?.envase ||
-        detalle?.descripcionCategoria ||
-        detalle?.categoria ||
-        detalle?.tipoCategoria ||
         ''
     );
 }
@@ -62,6 +60,7 @@ function getTiposEnvase(detalles) {
     return [...new Set(
         detalles
             .map(getDetalleEnvase)
+            .flatMap((value) => String(value || '').split(','))
             .map((value) => String(value || '').trim())
             .filter(Boolean)
     )];
@@ -272,7 +271,6 @@ DatosRecepcion.propTypes = {
 
 function EnvaseSection({ detalles, form, errors, onFieldChange }) {
     const tiposEnvase = getTiposEnvase(detalles);
-    const envasePlaceholder = tiposEnvase.length ? tiposEnvase.join(', ') : 'Ej. Jaba, Caja, Bandeja';
 
     return (
         <Box>
@@ -294,17 +292,23 @@ function EnvaseSection({ detalles, form, errors, onFieldChange }) {
                 }}
             >
                 <TextField
+                    select
                     fullWidth
                     label="TIPO DE ENVASE"
-                    value={form.tipoEnvase || envasePlaceholder}
-                    helperText="Tomado del maestro de articulos"
-                    slotProps={{ input: { readOnly: true } }}
-                    sx={{
-                        '& .MuiInputBase-root': {
-                            backgroundColor: '#f8fafc',
-                        },
-                    }}
-                />
+                    value={form.tipoEnvase}
+                    onChange={onFieldChange('tipoEnvase')}
+                    error={!!errors.tipoEnvase}
+                    helperText={errors.tipoEnvase || 'Tomado del maestro de articulos'}
+                >
+                    <MenuItem value="">
+                        <em>Seleccione</em>
+                    </MenuItem>
+                    {tiposEnvase.map((tipoEnvase) => (
+                        <MenuItem key={tipoEnvase} value={tipoEnvase}>
+                            {tipoEnvase}
+                        </MenuItem>
+                    ))}
+                </TextField>
 
                 <TextField
                     fullWidth
@@ -625,6 +629,7 @@ export default function ModalRecepcion({
         setForm((prev) => ({
             ...prev,
             idCompras: newValue ? newValue.idCompras : null,
+            tipoEnvase: '',
             detalles: [],
         }));
 

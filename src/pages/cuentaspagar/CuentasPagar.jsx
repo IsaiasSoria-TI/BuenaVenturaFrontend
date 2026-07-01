@@ -40,6 +40,7 @@ import {
   formatDateTimePeru,
   formatRecepcionCode,
 } from '../../utils/formatters';
+import { useAutoClearMessage } from '../../utils/useAutoClearMessage';
 
 function Icon({ name, size = 20, color = 'inherit' }) {
   return (
@@ -136,6 +137,8 @@ export default function CuentasPagar() {
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [selectedDelete, setSelectedDelete] = React.useState(null);
   const [deleteSaving, setDeleteSaving] = React.useState(false);
+
+  useAutoClearMessage(serverSuccess, setServerSuccess);
 
   // Carga el listado principal que alimenta la tabla de cuentas por pagar.
   const cargarCuentas = React.useCallback(async () => {

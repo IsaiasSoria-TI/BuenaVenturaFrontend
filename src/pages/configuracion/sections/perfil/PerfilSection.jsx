@@ -2,6 +2,7 @@ import React from 'react';
 import { Alert, Box, CircularProgress, Typography } from '@mui/material';
 import PerfilForm from './PerfilForm';
 import { configuracionService } from '../../../../services/configuracionService';
+import { useAutoClearMessage } from '../../../../utils/useAutoClearMessage';
 
 // Estado base del perfil antes de cargar los datos del backend.
 const initialForm = {
@@ -34,6 +35,8 @@ export default function PerfilSection() {
     const [saving, setSaving] = React.useState(false);
     const [serverError, setServerError] = React.useState('');
     const [successMessage, setSuccessMessage] = React.useState('');
+
+    useAutoClearMessage(successMessage, setSuccessMessage);
 
     // Carga los datos del usuario autenticado para llenar el formulario.
     const cargarPerfil = React.useCallback(async () => {
