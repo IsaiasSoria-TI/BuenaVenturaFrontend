@@ -24,6 +24,13 @@ const theme = createTheme({
   typography: { fontFamily: '"DM Sans", sans-serif' },
   shape: { borderRadius: 12 },
   components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: '8px',
+        },
+      },
+    },
     MuiOutlinedInput: {
       styleOverrides: {
         root: {

@@ -13,61 +13,10 @@ import {
 } from '@mui/material';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import logoErp from '../../assets/Logoerp.png';
+import { NAV_SECTIONS, itemMatchesPath } from '../../navigation/navSections';
 
 // Ancho del sidebar para mantener consistente el layout con Dashboard.jsx.
 const SIDEBAR_W = 256;
-
-// Estructura central de navegacion del menu lateral.
-// Cada item puede ser un enlace directo o un grupo con hijos colapsables.
-const NAV_SECTIONS = [
-  {
-    label: 'Principal',
-    items: [{ to: '/dashboard', label: 'Dashboard', icon: 'dashboard' }],
-  },
-  {
-    label: 'Finanzas',
-    items: [
-      { to: '/dashboard/cobrar', label: 'Cuentas por Cobrar', icon: 'payments' },
-      { to: '/dashboard/pagar', label: 'Cuentas por Pagar', icon: 'receipt_long' },
-      { to: '/dashboard/costos', label: 'Costos', icon: 'monitoring' },
-      { to: '/dashboard/sunat', label: 'SUNAT', icon: 'account_balance' },
-    ],
-  },
-  {
-    label: 'Operaciones',
-    items: [
-      {
-        label: 'Inventarios',
-        icon: 'inventory_2',
-        children: [
-          { to: '/dashboard/inventarios/kardex', label: 'Kardex' },
-          { to: '/dashboard/inventarios/transferencia', label: 'Transferencia' },
-          { to: '/dashboard/inventarios/articulos', label: 'Artículos' },
-        ],
-      },
-      {
-        label: 'Compras',
-        icon: 'shopping_cart',
-        children: [
-          { to: '/dashboard/compras/gestionar', label: 'Gestionar Compra' },
-          { to: '/dashboard/compras/recepciones', label: 'Recepciones' },
-          { to: '/dashboard/compras/proveedor', label: 'Proveedor' },
-        ],
-      },
-    ],
-  },
-  {
-    label: 'Análisis',
-    items: [{ to: '/dashboard/reportes', label: 'Reportes', icon: 'bar_chart' }],
-  },
-  {
-    label: 'Sistema',
-    items: [
-      { to: '/dashboard/integraciones', label: 'Integraciones', icon: 'hub' },
-      { to: '/dashboard/configuracion', label: 'Configuración', icon: 'settings' },
-    ],
-  },
-];
 
 // Renderiza iconos de Google Material Symbols usando el nombre del icono.
 const Icon = ({ name, size = 22, color = 'inherit' }) => (
@@ -90,8 +39,9 @@ const Icon = ({ name, size = 22, color = 'inherit' }) => (
 );
 
 // Item simple de navegacion.
-// NavLink entrega isActive para pintar el estado activo segun la URL actual.
-function SidebarLinkItem({ item, onNavigate, nested = false }) {
+function SidebarLinkItem({ item, onNavigate, depth = 0 }) {
+  const nested = depth > 0;
+
   return (
     <ListItem
       disablePadding
@@ -113,7 +63,7 @@ function SidebarLinkItem({ item, onNavigate, nested = false }) {
               borderRadius: 2,
               px: 1.5,
               py: nested ? 0.7 : 1,
-              pl: nested ? 5.5 : 1.5,
+              pl: nested ? 3.5 + depth * 1.25 : 1.5,
               backgroundColor: isActive ? 'rgba(25,118,210,0.18)' : 'transparent',
               '&:hover': {
                 backgroundColor: isActive
@@ -123,7 +73,7 @@ function SidebarLinkItem({ item, onNavigate, nested = false }) {
               transition: 'background-color 0.15s ease',
             }}
           >
-            {!nested && (
+            {!nested && item.icon ? (
               <ListItemIcon sx={{ minWidth: 34 }}>
                 <Icon
                   name={item.icon}
@@ -131,7 +81,7 @@ function SidebarLinkItem({ item, onNavigate, nested = false }) {
                   color={isActive ? '#93c5fd' : '#e2e8f0'}
                 />
               </ListItemIcon>
-            )}
+            ) : null}
 
             <Typography
               sx={{
@@ -150,21 +100,23 @@ function SidebarLinkItem({ item, onNavigate, nested = false }) {
   );
 }
 
-// Item padre con submenu desplegable, usado por Inventarios y Compras.
-function SidebarCollapseItem({ item, open, onToggle, onNavigate, pathname }) {
-  // Marca el padre como activo si alguna ruta hija coincide con la URL actual.
-  const hasActiveChild = item.children?.some((child) => pathname === child.to);
+// Item padre con submenu desplegable. Soporta cualquier profundidad de hijos.
+function SidebarCollapseItem({ item, openMenus, onToggle, onNavigate, pathname, depth = 0 }) {
+  const key = item.key || item.label.toLowerCase();
+  const nested = depth > 0;
+  const hasActiveChild = itemMatchesPath(item, pathname);
 
   return (
     <>
-      <ListItem disablePadding sx={{ px: 1.5, mb: 0.25 }}>
+      <ListItem disablePadding sx={{ px: nested ? 1 : 1.5, mb: 0.25 }}>
         <ListItemButton
-          onClick={onToggle}
+          onClick={() => onToggle(key)}
           sx={{
-            minHeight: 42,
+            minHeight: nested ? 38 : 42,
             borderRadius: 2,
             px: 1.5,
-            py: 1,
+            py: nested ? 0.7 : 1,
+            pl: nested ? 3.5 + depth * 1.25 : 1.5,
             backgroundColor: hasActiveChild ? 'rgba(25,118,210,0.14)' : 'transparent',
             '&:hover': {
               backgroundColor: hasActiveChild
@@ -174,18 +126,20 @@ function SidebarCollapseItem({ item, open, onToggle, onNavigate, pathname }) {
             transition: 'background-color 0.15s ease',
           }}
         >
-          <ListItemIcon sx={{ minWidth: 34 }}>
-            <Icon
-              name={item.icon}
-              size={19}
-              color={hasActiveChild ? '#93c5fd' : '#e2e8f0'}
-            />
-          </ListItemIcon>
+          {!nested && item.icon ? (
+            <ListItemIcon sx={{ minWidth: 34 }}>
+              <Icon
+                name={item.icon}
+                size={19}
+                color={hasActiveChild ? '#93c5fd' : '#e2e8f0'}
+              />
+            </ListItemIcon>
+          ) : null}
 
           <Typography
             sx={{
               flex: 1,
-              fontSize: '0.84rem',
+              fontSize: nested ? '0.8rem' : '0.84rem',
               fontWeight: hasActiveChild ? 700 : 600,
               color: '#ffffff',
               whiteSpace: 'nowrap',
@@ -195,27 +149,47 @@ function SidebarCollapseItem({ item, open, onToggle, onNavigate, pathname }) {
           </Typography>
 
           <Icon
-            name={open ? 'expand_less' : 'expand_more'}
+            name={openMenus[key] ? 'expand_less' : 'expand_more'}
             size={18}
             color={hasActiveChild ? '#93c5fd' : '#cbd5e1'}
           />
         </ListItemButton>
       </ListItem>
 
-      <Collapse in={open} timeout="auto" unmountOnExit>
+      <Collapse in={openMenus[key]} timeout="auto" unmountOnExit>
         <List dense disablePadding sx={{ pb: 0.25 }}>
           {item.children.map((child) => (
-            <SidebarLinkItem
-              key={child.to}
+            <SidebarNavItem
+              key={child.key || child.to || child.label}
               item={child}
-              nested
+              openMenus={openMenus}
+              onToggle={onToggle}
               onNavigate={onNavigate}
+              pathname={pathname}
+              depth={depth + 1}
             />
           ))}
         </List>
       </Collapse>
     </>
   );
+}
+
+function SidebarNavItem({ item, openMenus, onToggle, onNavigate, pathname, depth = 0 }) {
+  if (item.children) {
+    return (
+      <SidebarCollapseItem
+        item={item}
+        openMenus={openMenus}
+        onToggle={onToggle}
+        onNavigate={onNavigate}
+        pathname={pathname}
+        depth={depth}
+      />
+    );
+  }
+
+  return <SidebarLinkItem item={item} depth={depth} onNavigate={onNavigate} />;
 }
 
 export default function Sidebar({ onNavigate }) {
@@ -226,7 +200,7 @@ export default function Sidebar({ onNavigate }) {
   // Datos del usuario autenticado guardados al iniciar sesion.
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-  const username = user.nombreCompleto || user.usuario || 'Usuario';
+  const username = user.usuario || localStorage.getItem('username') || user.nombreCompleto || 'Usuario';
 
   // Iniciales para el avatar cuando no hay foto de perfil.
   const initials = username
@@ -241,6 +215,7 @@ export default function Sidebar({ onNavigate }) {
   // Mantiene abiertos los grupos que corresponden a la ruta actual.
   const [openMenus, setOpenMenus] = React.useState({
     inventarios: pathname.startsWith('/dashboard/inventarios'),
+    kardex: pathname.startsWith('/dashboard/inventarios/kardex'),
     compras: pathname.startsWith('/dashboard/compras'),
   });
 
@@ -249,6 +224,7 @@ export default function Sidebar({ onNavigate }) {
     setOpenMenus((prev) => ({
       ...prev,
       inventarios: pathname.startsWith('/dashboard/inventarios') || prev.inventarios,
+      kardex: pathname.startsWith('/dashboard/inventarios/kardex') || prev.kardex,
       compras: pathname.startsWith('/dashboard/compras') || prev.compras,
     }));
   }, [pathname]);
@@ -308,29 +284,16 @@ export default function Sidebar({ onNavigate }) {
             </Typography>
 
             <List dense disablePadding>
-              {section.items.map((item) => {
-                if (item.children) {
-                  const key = item.label.toLowerCase();
-                  return (
-                    <SidebarCollapseItem
-                      key={item.label}
-                      item={item}
-                      open={openMenus[key]}
-                      onToggle={() => handleToggle(key)}
-                      onNavigate={onNavigate}
-                      pathname={pathname}
-                    />
-                  );
-                }
-
-                return (
-                  <SidebarLinkItem
-                    key={item.to}
-                    item={item}
-                    onNavigate={onNavigate}
-                  />
-                );
-              })}
+              {section.items.map((item) => (
+                <SidebarNavItem
+                  key={item.key || item.to || item.label}
+                  item={item}
+                  openMenus={openMenus}
+                  onToggle={handleToggle}
+                  onNavigate={onNavigate}
+                  pathname={pathname}
+                />
+              ))}
             </List>
           </Box>
         ))}

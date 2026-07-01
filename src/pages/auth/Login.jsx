@@ -1,59 +1,79 @@
 import * as React from 'react';
+import { useNavigate } from 'react-router-dom';
 import logoImg from '../../assets/BUENAVENTURA SAC.png';
 import { login } from '../../services/authService';
 import {
+    Alert,
     Box,
     Card,
     CardContent,
     Typography,
     TextField,
     Button,
-    FormControlLabel,
-    Checkbox,
+    IconButton,
+    InputAdornment,
 } from '@mui/material';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
 export default function LoginPage() {
-    // Guarda los valores que el usuario escribe en el formulario.
+    const navigate = useNavigate();
     const [form, setForm] = React.useState({
         usuario: '',
         contrasena: '',
-        remember: false,
     });
-
-    // Muestra un mensaje cuando el inicio de sesion falla.
     const [errorMessage, setErrorMessage] = React.useState('');
+    const [loading, setLoading] = React.useState(false);
+    const [showPassword, setShowPassword] = React.useState(false);
 
-    // Actualiza el estado del formulario cada vez que cambia un campo.
     const handleChange = (event) => {
-        const { name, value, checked, type } = event.target;
+        const { name, value } = event.target;
 
         setForm((prev) => ({
             ...prev,
-            [name]: type === 'checkbox' ? checked : value,
+            [name]: value,
         }));
     };
 
-    // Envia las credenciales al backend y redirige al dashboard si son correctas.
+    const handleTogglePassword = () => {
+        setShowPassword((prev) => !prev);
+    };
+
     const handleSubmit = async (event) => {
         event.preventDefault();
         setErrorMessage('');
 
+        const usuario = form.usuario.trim();
+        const contrasena = form.contrasena.trim();
+
+        if (!usuario || !contrasena) {
+            setErrorMessage('Ingresa usuario y contrasena');
+            return;
+        }
+
         try {
-            const response = await login(form.usuario, form.contrasena);
+            setLoading(true);
+            const response = await login(usuario, contrasena);
             const { token, ...user } = response;
 
             localStorage.setItem('token', token);
             localStorage.setItem('username', user.nombreCompleto || user.usuario);
             localStorage.setItem('user', JSON.stringify(user));
 
-            window.location.href = '/dashboard';
-        } catch {
+            navigate('/dashboard', { replace: true });
+        } catch (error) {
+            if (!error.response) {
+                setErrorMessage('No se pudo conectar con el backend');
+                return;
+            }
+
             setErrorMessage('Usuario o contrasena incorrectos');
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        // Contenedor principal que centra la tarjeta del login en la pantalla.
         <Box
             sx={{
                 minHeight: '100vh',
@@ -91,7 +111,6 @@ export default function LoginPage() {
                             mb: 3,
                         }}
                     >
-                        {/* Logo de la empresa mostrado encima del formulario. */}
                         <Box
                             component="img"
                             src={logoImg}
@@ -106,7 +125,6 @@ export default function LoginPage() {
                         />
                     </Box>
 
-                    {/* Titulo principal del login. */}
                     <Typography
                         variant="h4"
                         sx={{
@@ -121,7 +139,6 @@ export default function LoginPage() {
                         Acceso al sistema
                     </Typography>
 
-                    {/* Texto de ayuda para indicar que se deben ingresar credenciales. */}
                     <Typography
                         sx={{
                             textAlign: 'center',
@@ -133,9 +150,7 @@ export default function LoginPage() {
                         Ingresa tus credenciales para continuar
                     </Typography>
 
-                    {/* Formulario que captura usuario y contrasena. */}
                     <Box component="form" onSubmit={handleSubmit}>
-                        {/* Campo para ingresar el usuario. */}
                         <TextField
                             fullWidth
                             label="Usuario"
@@ -145,6 +160,7 @@ export default function LoginPage() {
                             variant="outlined"
                             margin="normal"
                             autoComplete="username"
+                            disabled={loading}
                             sx={{
                                 mb: 1.5,
                                 '& .MuiInputLabel-outlined': {
@@ -164,17 +180,34 @@ export default function LoginPage() {
                             }}
                         />
 
-                        {/* Campo para ingresar la contrasena. */}
                         <TextField
                             fullWidth
                             label="Contrasena"
                             name="contrasena"
-                            type="password"
+                            type={showPassword ? 'text' : 'password'}
                             value={form.contrasena}
                             onChange={handleChange}
                             variant="outlined"
                             margin="normal"
                             autoComplete="current-password"
+                            disabled={loading}
+                            slotProps={{
+                                input: {
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <IconButton
+                                                aria-label={showPassword ? 'Ocultar contrasena' : 'Mostrar contrasena'}
+                                                onClick={handleTogglePassword}
+                                                onMouseDown={(event) => event.preventDefault()}
+                                                edge="end"
+                                                sx={{ color: '#64748b' }}
+                                            >
+                                                {showPassword ? <VisibilityOff /> : <Visibility />}
+                                            </IconButton>
+                                        </InputAdornment>
+                                    ),
+                                },
+                            }}
                             sx={{
                                 mb: 1,
                                 '& .MuiInputLabel-outlined': {
@@ -194,68 +227,21 @@ export default function LoginPage() {
                             }}
                         />
 
-                        {/* Mensaje que aparece cuando las credenciales son incorrectas. */}
                         {errorMessage && (
-                            <Typography
-                                sx={{
-                                    mb: 1.5,
-                                    color: '#b91c1c',
-                                    fontSize: '0.88rem',
-                                    fontWeight: 600,
-                                }}
-                            >
+                            <Alert severity="error" sx={{ mb: 2 }}>
                                 {errorMessage}
-                            </Typography>
+                            </Alert>
                         )}
 
-                        {/* Opcion visual para recordar sesion. */}
-                        <Box
-                            sx={{
-                                mt: 0,
-                                mb: 2.75,
-                                display: 'flex',
-                                alignItems: 'center',
-                            }}
-                        >
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        name="remember"
-                                        checked={form.remember}
-                                        onChange={handleChange}
-                                        sx={{
-                                            p: 0.75,
-                                            mr: 0.5,
-                                            color: '#64748b',
-                                            '&.Mui-checked': {
-                                                color: '#2563eb',
-                                            },
-                                        }}
-                                    />
-                                }
-                                label={
-                                    <Typography
-                                        sx={{
-                                            fontSize: '0.92rem',
-                                            color: '#334155',
-                                        }}
-                                    >
-                                        Recordar sesion
-                                    </Typography>
-                                }
-                                sx={{ m: 0 }}
-                            />
-                        </Box>
-
-                        {/* Boton que envia el formulario de inicio de sesion. */}
                         <Button
                             type="submit"
                             fullWidth
                             variant="contained"
                             disableElevation
+                            disabled={loading}
                             sx={{
                                 py: 1.35,
-                                borderRadius: 1.5,
+                                borderRadius: '8px',
                                 textTransform: 'none',
                                 fontSize: '1rem',
                                 fontWeight: 700,
@@ -267,7 +253,7 @@ export default function LoginPage() {
                                 },
                             }}
                         >
-                            Iniciar sesion
+                            {loading ? 'Ingresando...' : 'Iniciar sesion'}
                         </Button>
                     </Box>
                 </CardContent>

@@ -106,7 +106,7 @@ export default function PerfilForm({
                     sx={{
                         textTransform: 'none',
                         fontWeight: 700,
-                        borderRadius: 2,
+                        borderRadius: '8px',
                         boxShadow: 'none',
                         minWidth: 160,
                     }}

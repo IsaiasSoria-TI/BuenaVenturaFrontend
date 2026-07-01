@@ -100,11 +100,24 @@ function formatMonedaOption(moneda) {
   return `${moneda.codigo} - ${moneda.nombre}${simbolo}`;
 }
 
+function isCuentaManual(cuenta) {
+  return Boolean(cuenta?.manual) || (!cuenta?.idCompras && !cuenta?.idRecepciones);
+}
+
+function displayCompraCode(idCompras) {
+  return idCompras ? formatCompraCode(idCompras) : '-';
+}
+
+function displayRecepcionCode(idRecepciones) {
+  return idRecepciones ? formatRecepcionCode(idRecepciones) : '-';
+}
+
 export default function CuentasPagar() {
   const [cuentas, setCuentas] = React.useState([]);
   const [monedas, setMonedas] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [open, setOpen] = React.useState(false);
+  const [manualMode, setManualMode] = React.useState(false);
   const [serverError, setServerError] = React.useState('');
   const [serverSuccess, setServerSuccess] = React.useState('');
   const [detailDialogOpen, setDetailDialogOpen] = React.useState(false);
@@ -168,6 +181,14 @@ export default function CuentasPagar() {
   const handleOpenCreate = () => {
     setServerError('');
     setServerSuccess('');
+    setManualMode(false);
+    setOpen(true);
+  };
+
+  const handleOpenManualCreate = () => {
+    setServerError('');
+    setServerSuccess('');
+    setManualMode(true);
     setOpen(true);
   };
 
@@ -227,17 +248,20 @@ export default function CuentasPagar() {
       setServerSuccess('');
 
       await cuentaPagarService.actualizar(selectedEdit.idCuentaPagar, {
+        manual: isCuentaManual(selectedEdit),
         tipoFactura: 'UNICA',
         numeroFactura: editForm.numeroFactura.trim(),
         moneda: editForm.moneda,
         codigoDetRet: editForm.codigoDetRet.trim(),
-        detalles: [
-          {
-            idCompras: selectedEdit.idCompras,
-            idRecepciones: selectedEdit.idRecepciones,
-            numeroFactura: null,
-          },
-        ],
+        detalles: isCuentaManual(selectedEdit)
+          ? []
+          : [
+              {
+                idCompras: selectedEdit.idCompras,
+                idRecepciones: selectedEdit.idRecepciones,
+                numeroFactura: null,
+              },
+            ],
       });
 
       setServerSuccess('Cuenta por pagar actualizada correctamente.');
@@ -326,8 +350,9 @@ export default function CuentasPagar() {
     return cuentas.filter((cuenta) => {
       const valoresBusqueda = [
         formatCuentaPagarCode(cuenta.idCuentaPagar),
-        formatCompraCode(cuenta.idCompras),
-        formatRecepcionCode(cuenta.idRecepciones),
+        displayCompraCode(cuenta.idCompras),
+        displayRecepcionCode(cuenta.idRecepciones),
+        isCuentaManual(cuenta) ? 'Factura manual' : '',
         cuenta.proveedor,
         cuenta.ruc,
         cuenta.articulo,
@@ -384,30 +409,31 @@ export default function CuentasPagar() {
 
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
               <Button
-                variant="outlined"
-                onClick={cargarCuentas}
-                startIcon={<Icon name="refresh" size={18} />}
-                sx={{
-                  textTransform: 'none',
-                  fontWeight: 700,
-                  borderRadius: 2,
-                }}
-              >
-                Actualizar
-              </Button>
-
-              <Button
                 variant="contained"
                 onClick={handleOpenCreate}
                 startIcon={<Icon name="add" size={18} color="#fff" />}
                 sx={{
                   textTransform: 'none',
                   fontWeight: 700,
-                  borderRadius: 2,
+                  borderRadius: '8px',
                   boxShadow: 'none',
                 }}
               >
                 Añadir cuenta por pagar
+              </Button>
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={handleOpenManualCreate}
+                startIcon={<Icon name="receipt_long" size={18} color="#fff" />}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  borderRadius: '8px',
+                  boxShadow: 'none',
+                }}
+              >
+                Factura manual
               </Button>
             </Stack>
           </Stack>
@@ -498,8 +524,8 @@ export default function CuentasPagar() {
                   ? cuentasPaginadas.map((cuenta) => (
                     <TableRow key={cuenta.idCuentaPagar} hover>
                       <TableCell>{formatCuentaPagarCode(cuenta.idCuentaPagar)}</TableCell>
-                      <TableCell>{formatCompraCode(cuenta.idCompras)}</TableCell>
-                      <TableCell>{formatRecepcionCode(cuenta.idRecepciones)}</TableCell>
+                      <TableCell>{displayCompraCode(cuenta.idCompras)}</TableCell>
+                      <TableCell>{displayRecepcionCode(cuenta.idRecepciones)}</TableCell>
                       <TableCell>{cuenta.proveedor || '-'}</TableCell>
                       <TableCell>{cuenta.ruc || '-'}</TableCell>
                       <TableCell>{cuenta.articulo || 'Varios artículos'}</TableCell>
@@ -561,6 +587,7 @@ export default function CuentasPagar() {
         onClose={handleCloseCreate}
         onSaved={handleSaved}
         monedas={monedas}
+        manual={manualMode}
       />
 
       <ModalDetalleCuentaPagar
@@ -575,7 +602,7 @@ export default function CuentasPagar() {
           <Stack spacing={2}>
             {selectedEdit ? (
               <Typography sx={{ fontSize: '0.85rem', color: '#64748b' }}>
-                {formatCuentaPagarCode(selectedEdit.idCuentaPagar)} - {formatCompraCode(selectedEdit.idCompras)}
+                {formatCuentaPagarCode(selectedEdit.idCuentaPagar)} - {isCuentaManual(selectedEdit) ? 'Factura manual' : displayCompraCode(selectedEdit.idCompras)}
               </Typography>
             ) : null}
 
@@ -592,6 +619,16 @@ export default function CuentasPagar() {
               label="Moneda"
               value={editForm.moneda}
               onChange={handleEditChange('moneda')}
+              disabled={!isCuentaManual(selectedEdit)}
+              helperText={!isCuentaManual(selectedEdit) ? 'Moneda tomada de la compra' : ''}
+              sx={{
+                '& .MuiInputBase-root.Mui-disabled': {
+                  backgroundColor: '#f1f5f9',
+                },
+                '& .MuiInputBase-input.Mui-disabled': {
+                  WebkitTextFillColor: '#475569',
+                },
+              }}
             >
               {monedas.map((moneda) => (
                 <MenuItem key={moneda.idMoneda} value={moneda.codigo}>

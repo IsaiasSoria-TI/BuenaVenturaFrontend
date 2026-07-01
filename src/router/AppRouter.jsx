@@ -11,7 +11,8 @@ import Dashboard from '../pages/dashboard/Dashboard';
 import DashboardHome from '../pages/dashboard/DashboardHome';
 
 import Articulo from '../pages/inventario/articulo/Articulo';
-import Kardex from '../pages/inventario/kardex/Kardex';
+import ConsultaStock from '../pages/inventario/kardex/consulta-stock/ConsultaStock';
+import HistorialMovimientos from '../pages/inventario/kardex/historial-movimientos/HistorialMovimientos';
 import Transferencia from '../pages/inventario/transferencia/Transferencia';
 import CuentasPagar from '../pages/cuentaspagar/CuentasPagar';
 
@@ -75,7 +76,12 @@ function AppRouter() {
           <Route path="compras/recepciones" element={<Recepciones />} />
 
           {/* Modulo de inventarios. */}
-          <Route path="inventarios/kardex" element={<Kardex />} />
+          <Route
+            path="inventarios/kardex"
+            element={<Navigate to="/dashboard/inventarios/kardex/consulta-stock" replace />}
+          />
+          <Route path="inventarios/kardex/consulta-stock" element={<ConsultaStock />} />
+          <Route path="inventarios/kardex/historial-movimientos" element={<HistorialMovimientos />} />
           <Route path="inventarios/transferencia" element={<Transferencia />} />
           <Route path="inventarios/articulos" element={<Articulo />} />
 

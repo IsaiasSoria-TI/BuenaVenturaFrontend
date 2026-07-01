@@ -35,7 +35,7 @@ const KPI_CARDS = [
 
 // Accesos directos a los modulos mas usados desde la pantalla principal.
 const QUICK_MODULES = [
-  { id: 'kardex', label: 'Kardex', icon: 'inventory', color: '#10b981', bg: '#ecfdf5', to: '/dashboard/inventarios/kardex' },
+  { id: 'kardex', label: 'Kardex', icon: 'inventory', color: '#10b981', bg: '#ecfdf5', to: '/dashboard/inventarios/kardex/consulta-stock' },
   { id: 'transferencia', label: 'Transferencia', icon: 'sync_alt', color: '#0891b2', bg: '#ecfeff', to: '/dashboard/inventarios/transferencia' },
   { id: 'articulos', label: 'Articulos', icon: 'inventory_2', color: '#0f766e', bg: '#f0fdfa', to: '/dashboard/inventarios/articulos' },
   { id: 'gestionar-compras', label: 'Gestionar Compra', icon: 'shopping_cart', color: '#f59e0b', bg: '#fef9ec', to: '/dashboard/compras/gestionar' },

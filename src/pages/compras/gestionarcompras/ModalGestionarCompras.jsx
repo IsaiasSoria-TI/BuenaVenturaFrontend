@@ -364,7 +364,7 @@ export default function ModalGestionarCompras({
 
                                             <TextField
                                                 fullWidth
-                                                type="number"
+                                                type="text"
                                                 label="Peso"
                                                 value={detalle.peso}
                                                 onChange={(event) =>
@@ -379,7 +379,7 @@ export default function ModalGestionarCompras({
 
                                             <TextField
                                                 fullWidth
-                                                type="number"
+                                                type="text"
                                                 label={`Costo kilo (${monedaLabel})`}
                                                 value={detalle.costoKilo}
                                                 onChange={(event) =>
@@ -466,7 +466,7 @@ export default function ModalGestionarCompras({
 
                                     <TextField
                                         fullWidth
-                                        type="number"
+                                    type="text"
                                         label="Porcentaje IGV"
                                         value={form.porcentajeIgv}
                                         onChange={handleChange('porcentajeIgv')}
@@ -565,7 +565,7 @@ export default function ModalGestionarCompras({
                                     variant="outlined"
                                     onClick={handleAddImpuesto}
                                     startIcon={<Icon name="add" size={18} />}
-                                    sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2 }}
+                                    sx={{ textTransform: 'none', fontWeight: 700, borderRadius: '8px' }}
                                 >
                                     Agregar ret./det.
                                 </Button>

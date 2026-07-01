@@ -85,7 +85,7 @@ export default function ConfiguracionMenu({ seccionActiva, onChangeSeccion }) {
                                 alignItems: 'flex-start',
                                 justifyContent: 'center',
                                 textTransform: 'none',
-                                borderRadius: 2.5,
+                                borderRadius: '8px',
                                 px: 2,
                                 py: 1.5,
                                 minHeight: 72,

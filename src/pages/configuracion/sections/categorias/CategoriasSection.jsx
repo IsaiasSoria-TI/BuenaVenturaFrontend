@@ -357,48 +357,24 @@ export default function CategoriasSection() {
                 <CardContent>
                     <Stack
                         direction={{ xs: 'column', md: 'row' }}
-                        justifyContent="space-between"
+                        justifyContent="flex-end"
                         alignItems={{ xs: 'stretch', md: 'center' }}
                         spacing={2}
                         sx={{ mb: 2.5 }}
                     >
-                        <Box>
-                            <Typography sx={{ fontWeight: 700, color: '#0f172a', mb: 0.5 }}>
-                                Categorías
-                            </Typography>
-                            <Typography sx={{ color: '#64748b', fontSize: '0.9rem' }}>
-                                Crea categorías y asígnales una cuenta contable.
-                            </Typography>
-                        </Box>
-
-                        <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
-                            <Button
-                                variant="outlined"
-                                onClick={cargarCategorias}
-                                startIcon={<Icon name="refresh" size={18} />}
-                                sx={{
-                                    textTransform: 'none',
-                                    fontWeight: 700,
-                                    borderRadius: 2,
-                                }}
-                            >
-                                Actualizar
-                            </Button>
-
-                            <Button
-                                variant="contained"
-                                onClick={handleOpenCreate}
-                                startIcon={<Icon name="add" size={18} color="#fff" />}
-                                sx={{
-                                    textTransform: 'none',
-                                    fontWeight: 700,
-                                    borderRadius: 2,
-                                    boxShadow: 'none',
-                                }}
-                            >
-                                Nueva categoría
-                            </Button>
-                        </Stack>
+                        <Button
+                            variant="contained"
+                            onClick={handleOpenCreate}
+                            startIcon={<Icon name="add" size={18} color="#fff" />}
+                            sx={{
+                                textTransform: 'none',
+                                fontWeight: 700,
+                                borderRadius: '8px',
+                                boxShadow: 'none',
+                            }}
+                        >
+                            Nueva categoría
+                        </Button>
                     </Stack>
 
                     {successMessage && (

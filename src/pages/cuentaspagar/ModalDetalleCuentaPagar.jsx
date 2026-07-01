@@ -56,6 +56,14 @@ function formatCurrency(value, item) {
   return prefix ? `${prefix} ${amount}` : amount;
 }
 
+function displayCompraCode(idCompras) {
+  return idCompras ? formatCompraCode(idCompras) : '-';
+}
+
+function displayRecepcionCode(idRecepciones) {
+  return idRecepciones ? formatRecepcionCode(idRecepciones) : '-';
+}
+
 function getEstadoChipStyles(estado) {
   if (estado === 'Completo' || estado === 'Pagado') {
     return {
@@ -166,11 +174,11 @@ export default function ModalDetalleCuentaPagar({ open, onClose, cuenta = null }
               />
               <InfoItem
                 label="Operación"
-                value={formatCompraCode(cuenta?.idCompras)}
+                value={displayCompraCode(cuenta?.idCompras)}
               />
               <InfoItem
                 label="Código recepción"
-                value={formatRecepcionCode(cuenta?.idRecepciones)}
+                value={displayRecepcionCode(cuenta?.idRecepciones)}
               />
               <InfoItem label="RUC proveedor" value={cuenta?.ruc || '-'} />
               <InfoItem label="Proveedor" value={cuenta?.proveedor || '-'} strong />

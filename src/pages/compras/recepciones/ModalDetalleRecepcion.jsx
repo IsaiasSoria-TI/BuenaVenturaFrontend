@@ -37,6 +37,10 @@ function formatNumber(value) {
     return toNumber(value).toFixed(2);
 }
 
+function formatInteger(value) {
+    return String(Math.trunc(toNumber(value)));
+}
+
 function getCurrencyPrefix(item) {
     const normalize = (value) => String(value || '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
     const codigo = normalize(item?.codigo || item?.codigoMoneda);
@@ -157,7 +161,8 @@ export default function ModalDetalleRecepcion({ open, onClose, recepcion = null 
                                 strong
                             />
                             <InfoItem label="Guia de remision" value={recepcion?.guiaRemision || '-'} />
-                            <InfoItem label="Cantidad jabas" value={formatNumber(recepcion?.cantidadJabas)} />
+                            <InfoItem label="Tipo de envase" value={recepcion?.tipoEnvase || '-'} />
+                            <InfoItem label="Cantidad envase" value={formatInteger(recepcion?.cantidadEnvase)} />
                             <InfoItem label="Moneda compra" value={monedaLabel} />
                             <InfoItem label="Total compra" value={formatCurrency(recepcion?.costoTotal, recepcion)} />
                             <InfoItem label="RUC proveedor" value={recepcion?.ruc || '-'} />
@@ -284,7 +289,8 @@ ModalDetalleRecepcion.propTypes = {
         idRecepciones: PropTypes.number,
         fechaRecepcion: PropTypes.string,
         guiaRemision: PropTypes.string,
-        cantidadJabas: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        tipoEnvase: PropTypes.string,
+        cantidadEnvase: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         idCompras: PropTypes.number,
         ruc: PropTypes.string,
         razonSocial: PropTypes.string,

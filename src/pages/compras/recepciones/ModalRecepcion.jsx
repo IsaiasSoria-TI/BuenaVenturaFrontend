@@ -242,7 +242,7 @@ ResumenCompra.propTypes = {
 };
 
 // Datos operativos generales de la recepcion.
-function DatosRecepcion({ form, errors, onFieldChange }) {
+function DatosRecepcion({ form, onFieldChange }) {
     return (
         <Box
             sx={{
@@ -264,25 +264,25 @@ function DatosRecepcion({ form, errors, onFieldChange }) {
 DatosRecepcion.propTypes = {
     form: PropTypes.shape({
         guiaRemision: PropTypes.string,
-        cantidadJabas: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        tipoEnvase: PropTypes.string,
+        cantidadEnvase: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     }).isRequired,
-    errors: PropTypes.objectOf(PropTypes.string).isRequired,
     onFieldChange: PropTypes.func.isRequired,
 };
 
-function JabasSection({ detalles, form, errors, onFieldChange }) {
+function EnvaseSection({ detalles, form, errors, onFieldChange }) {
     const tiposEnvase = getTiposEnvase(detalles);
-    const envaseValue = tiposEnvase.length ? tiposEnvase.join(', ') : 'Sin tipo de envase asociado';
+    const envasePlaceholder = tiposEnvase.length ? tiposEnvase.join(', ') : 'Ej. Jaba, Caja, Bandeja';
 
     return (
         <Box>
             <Divider sx={{ mb: 2 }} />
 
             <Typography sx={{ fontWeight: 700, color: '#0f172a', mb: 0.5 }}>
-                Jabas
+                Envase
             </Typography>
             <Typography sx={{ color: '#64748b', fontSize: '0.85rem', mb: 1.5 }}>
-                El tipo de envase se obtiene automaticamente de las categorias de los articulos seleccionados.
+                Registra el tipo de envase usado y la cantidad recibida.
             </Typography>
 
             <Box
@@ -295,23 +295,31 @@ function JabasSection({ detalles, form, errors, onFieldChange }) {
             >
                 <TextField
                     fullWidth
-                    label={tiposEnvase.length > 1 ? 'Tipos de envase' : 'Tipo de envase'}
-                    value={envaseValue}
+                    label="TIPO DE ENVASE"
+                    value={form.tipoEnvase || envasePlaceholder}
+                    helperText="Tomado del maestro de articulos"
                     slotProps={{ input: { readOnly: true } }}
+                    sx={{
+                        '& .MuiInputBase-root': {
+                            backgroundColor: '#f8fafc',
+                        },
+                    }}
                 />
 
                 <TextField
                     fullWidth
                     type="text"
-                    label="CANTIDAD JABAS"
-                    value={form.cantidadJabas}
-                    onChange={onFieldChange('cantidadJabas')}
-                    error={!!errors.cantidadJabas}
-                    helperText={errors.cantidadJabas || ''}
+                    label="CANTIDAD"
+                    value={form.cantidadEnvase}
+                    onChange={onFieldChange('cantidadEnvase')}
+                    error={!!errors.cantidadEnvase}
+                    helperText={errors.cantidadEnvase || ''}
                     slotProps={{
                         htmlInput: {
-                            inputMode: 'decimal',
-                            pattern: '[0-9]*[.]?[0-9]*',
+                            min: 0,
+                            step: 1,
+                            inputMode: 'numeric',
+                            pattern: '[0-9]*',
                         },
                     }}
                 />
@@ -320,10 +328,11 @@ function JabasSection({ detalles, form, errors, onFieldChange }) {
     );
 }
 
-JabasSection.propTypes = {
+EnvaseSection.propTypes = {
     detalles: PropTypes.arrayOf(PropTypes.object).isRequired,
     form: PropTypes.shape({
-        cantidadJabas: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        tipoEnvase: PropTypes.string,
+        cantidadEnvase: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     }).isRequired,
     errors: PropTypes.objectOf(PropTypes.string).isRequired,
     onFieldChange: PropTypes.func.isRequired,
@@ -427,7 +436,7 @@ const DetalleRecepcionItem = React.memo(function DetalleRecepcionItem({
 
                 <TextField
                     fullWidth
-                    type="number"
+                    type="text"
                     label="Recibir"
                     value={detalle.recibido}
                     onChange={(event) => onDetalleChange(index, event.target.value)}
@@ -439,6 +448,8 @@ const DetalleRecepcionItem = React.memo(function DetalleRecepcionItem({
                             min: 0,
                             max: pendiente,
                             step: '0.01',
+                            inputMode: 'decimal',
+                            pattern: '[0-9]*[.]?[0-9]*',
                         },
                     }}
                 />
@@ -543,8 +554,8 @@ function DetalleCompraSeleccionada({
         <>
             <ResumenCompra detalleCompra={detalleCompra} />
             <Divider />
-            <DatosRecepcion form={form} errors={errors} onFieldChange={onFieldChange} />
-            <JabasSection
+            <DatosRecepcion form={form} onFieldChange={onFieldChange} />
+            <EnvaseSection
                 detalles={form.detalles}
                 form={form}
                 errors={errors}
@@ -568,7 +579,8 @@ DetalleCompraSeleccionada.propTypes = {
     detalleCompra: PropTypes.object.isRequired,
     form: PropTypes.shape({
         guiaRemision: PropTypes.string,
-        cantidadJabas: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        tipoEnvase: PropTypes.string,
+        cantidadEnvase: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         detalles: PropTypes.arrayOf(PropTypes.object).isRequired,
     }).isRequired,
     errors: PropTypes.objectOf(PropTypes.string).isRequired,
@@ -744,7 +756,8 @@ ModalRecepcion.propTypes = {
     form: PropTypes.shape({
         idCompras: PropTypes.oneOfType([PropTypes.number, PropTypes.oneOf([null])]),
         guiaRemision: PropTypes.string,
-        cantidadJabas: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        tipoEnvase: PropTypes.string,
+        cantidadEnvase: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         detalles: PropTypes.arrayOf(
             PropTypes.shape({
                 idCompraDetalle: PropTypes.number,

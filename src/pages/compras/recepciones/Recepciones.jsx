@@ -68,7 +68,8 @@ Icon.propTypes = {
 const initialForm = {
     idCompras: null,
     guiaRemision: '',
-    cantidadJabas: '',
+    tipoEnvase: '',
+    cantidadEnvase: '',
     detalles: [],
 };
 
@@ -80,6 +81,15 @@ function formatNumber(value) {
     if (Number.isNaN(number)) return '0.00';
 
     return number.toFixed(2);
+}
+
+function formatInteger(value) {
+    if (value === null || value === undefined || value === '') return '0';
+
+    const number = Number(value);
+    if (!Number.isFinite(number)) return '0';
+
+    return String(Math.trunc(number));
 }
 
 function getCurrencyPrefix(item) {
@@ -131,6 +141,15 @@ function getArticulosResumen(recepcion) {
     return recepcion.articulo || '-';
 }
 
+function getTiposEnvase(detalles) {
+    return [...new Set(
+        detalles
+            .map((detalle) => detalle.tipoEnvase || detalle.descripcionCategoria || '')
+            .map((value) => String(value || '').trim())
+            .filter(Boolean)
+    )];
+}
+
 export default function Recepciones() {
     const [recepciones, setRecepciones] = React.useState([]);
     const [comprasDisponibles, setComprasDisponibles] = React.useState([]);
@@ -151,7 +170,7 @@ export default function Recepciones() {
     const [selectedDetail, setSelectedDetail] = React.useState(null);
     const [editDialogOpen, setEditDialogOpen] = React.useState(false);
     const [selectedEdit, setSelectedEdit] = React.useState(null);
-    const [editForm, setEditForm] = React.useState({ guiaRemision: '', cantidadJabas: '' });
+    const [editForm, setEditForm] = React.useState({ guiaRemision: '', tipoEnvase: '', cantidadEnvase: '' });
     const [editSaving, setEditSaving] = React.useState(false);
     const [successMessage, setSuccessMessage] = React.useState('');
 
@@ -227,7 +246,8 @@ export default function Recepciones() {
         setSelectedEdit(recepcion);
         setEditForm({
             guiaRemision: recepcion.guiaRemision || '',
-            cantidadJabas: recepcion.cantidadJabas ?? '',
+            tipoEnvase: recepcion.tipoEnvase || '',
+            cantidadEnvase: recepcion.cantidadEnvase ?? '',
         });
         setErrors({});
         setServerError('');
@@ -260,13 +280,15 @@ export default function Recepciones() {
     const handleSubmitEdit = async () => {
         if (!selectedEdit?.idRecepciones) return;
 
-        const cantidadJabas = Number(editForm.cantidadJabas || 0);
-        if (!Number.isFinite(cantidadJabas) || cantidadJabas < 0) {
+        const cantidadEnvase = Number(editForm.cantidadEnvase || 0);
+        if (!Number.isFinite(cantidadEnvase) || !Number.isInteger(cantidadEnvase) || cantidadEnvase < 0) {
             setErrors((prev) => ({
                 ...prev,
-                cantidadJabas: !Number.isFinite(cantidadJabas)
+                cantidadEnvase: !Number.isFinite(cantidadEnvase)
                     ? 'Ingrese una cantidad valida'
-                    : 'No puede ser negativo',
+                    : !Number.isInteger(cantidadEnvase)
+                        ? 'Ingrese un numero entero'
+                        : 'No puede ser negativo',
             }));
             return;
         }
@@ -278,7 +300,7 @@ export default function Recepciones() {
 
             await recepcionService.actualizarDatos(selectedEdit.idRecepciones, {
                 guiaRemision: editForm.guiaRemision.trim() || null,
-                cantidadJabas,
+                cantidadEnvase,
             });
 
             setSuccessMessage('Datos de recepcion actualizados correctamente.');
@@ -319,10 +341,12 @@ export default function Recepciones() {
                     recibido: '',
                 }))
                 : [];
+            const tiposEnvase = getTiposEnvase(detallesForm);
 
             setForm((prev) => ({
                 ...prev,
                 idCompras,
+                tipoEnvase: tiposEnvase.join(', '),
                 detalles: detallesForm,
             }));
         } catch (error) {
@@ -388,11 +412,13 @@ export default function Recepciones() {
             newErrors.detalles = 'La compra no tiene detalles disponibles';
         }
 
-        const cantidadJabas = Number(form.cantidadJabas || 0);
-        if (!Number.isFinite(cantidadJabas)) {
-            newErrors.cantidadJabas = 'Ingrese una cantidad valida';
-        } else if (cantidadJabas < 0) {
-            newErrors.cantidadJabas = 'No puede ser negativo';
+        const cantidadEnvase = Number(form.cantidadEnvase || 0);
+        if (!Number.isFinite(cantidadEnvase)) {
+            newErrors.cantidadEnvase = 'Ingrese una cantidad valida';
+        } else if (!Number.isInteger(cantidadEnvase)) {
+            newErrors.cantidadEnvase = 'Ingrese un numero entero';
+        } else if (cantidadEnvase < 0) {
+            newErrors.cantidadEnvase = 'No puede ser negativo';
         }
 
         let tieneRecibido = false;
@@ -426,7 +452,7 @@ export default function Recepciones() {
     const buildPayload = () => ({
         idCompras: Number(form.idCompras),
         guiaRemision: form.guiaRemision.trim() || null,
-        cantidadJabas: Number(form.cantidadJabas || 0),
+        cantidadEnvase: Number(form.cantidadEnvase || 0),
         detalles: form.detalles
             .filter((detalle) => Number(detalle.recibido || 0) > 0)
             .map((detalle) => ({
@@ -507,7 +533,8 @@ export default function Recepciones() {
                 recepcion.estadoCompra,
                 recepcion.estado,
                 recepcion.guiaRemision,
-                recepcion.cantidadJabas,
+                recepcion.tipoEnvase,
+                recepcion.cantidadEnvase,
                 getArticulosResumen(recepcion),
             ];
             return valoresBusqueda.some((value) =>
@@ -555,7 +582,7 @@ export default function Recepciones() {
                                 alignSelf: { xs: 'flex-start', md: 'auto' },
                                 textTransform: 'none',
                                 fontWeight: 700,
-                                borderRadius: 2,
+                                borderRadius: '8px',
                                 boxShadow: 'none',
                             }}
                         >
@@ -609,7 +636,8 @@ export default function Recepciones() {
                                     <TableCell sx={{ fontWeight: 700 }}>FECHA</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>COMPRA</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>GUIA</TableCell>
-                                    <TableCell sx={{ fontWeight: 700 }}>JABAS</TableCell>
+                                    <TableCell sx={{ fontWeight: 700 }}>TIPO ENVASE</TableCell>
+                                    <TableCell sx={{ fontWeight: 700 }}>CANTIDAD</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>RUC</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>PROVEEDOR</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>ARTÍCULOS</TableCell>
@@ -625,7 +653,7 @@ export default function Recepciones() {
                             <TableBody>
                                 {showLoading ? (
                                     <TableRow>
-                                        <TableCell colSpan={14} align="center" sx={{ py: 4 }}>
+                                        <TableCell colSpan={15} align="center" sx={{ py: 4 }}>
                                             <CircularProgress size={28} />
                                         </TableCell>
                                     </TableRow>
@@ -633,7 +661,7 @@ export default function Recepciones() {
 
                                 {showEmpty ? (
                                     <TableRow>
-                                        <TableCell colSpan={14} align="center" sx={{ py: 4, color: '#64748b' }}>
+                                        <TableCell colSpan={15} align="center" sx={{ py: 4, color: '#64748b' }}>
                                             No hay recepciones registradas.
                                         </TableCell>
                                     </TableRow>
@@ -641,7 +669,7 @@ export default function Recepciones() {
 
                                 {showNoResults ? (
                                     <TableRow>
-                                        <TableCell colSpan={14} align="center" sx={{ py: 4, color: '#64748b' }}>
+                                        <TableCell colSpan={15} align="center" sx={{ py: 4, color: '#64748b' }}>
                                             No se encontraron recepciones con ese criterio.
                                         </TableCell>
                                     </TableRow>
@@ -654,7 +682,8 @@ export default function Recepciones() {
                                             <TableCell>{formatDateWithCurrentTimePeru(recepcion.fechaRecepcion)}</TableCell>
                                             <TableCell>{formatCompraCode(recepcion.idCompras)}</TableCell>
                                             <TableCell>{recepcion.guiaRemision || '-'}</TableCell>
-                                            <TableCell>{formatNumber(recepcion.cantidadJabas)}</TableCell>
+                                            <TableCell>{recepcion.tipoEnvase || '-'}</TableCell>
+                                            <TableCell>{formatInteger(recepcion.cantidadEnvase)}</TableCell>
                                             <TableCell>{recepcion.ruc}</TableCell>
                                             <TableCell>{recepcion.razonSocial}</TableCell>
                                             <TableCell>{getArticulosResumen(recepcion)}</TableCell>
@@ -687,7 +716,7 @@ export default function Recepciones() {
                                                         <Icon name="visibility" size={20} color="#0f766e" />
                                                     </IconButton>
                                                 </Tooltip>
-                                                <Tooltip title="Editar guia y jabas">
+                                                <Tooltip title="Editar guia y envase">
                                                     <IconButton onClick={() => handleOpenEditDialog(recepcion)}>
                                                         <Icon name="edit" size={20} color="#1976d2" />
                                                     </IconButton>
@@ -762,16 +791,31 @@ export default function Recepciones() {
 
                         <TextField
                             fullWidth
+                            label="TIPO DE ENVASE"
+                            value={editForm.tipoEnvase}
+                            helperText="Tomado del maestro de articulos"
+                            slotProps={{ input: { readOnly: true } }}
+                            sx={{
+                                '& .MuiInputBase-root': {
+                                    backgroundColor: '#f8fafc',
+                                },
+                            }}
+                        />
+
+                        <TextField
+                            fullWidth
                             type="text"
-                            label="CANTIDAD JABAS"
-                            value={editForm.cantidadJabas}
-                            onChange={handleEditChange('cantidadJabas')}
-                            error={!!errors.cantidadJabas}
-                            helperText={errors.cantidadJabas || ''}
+                            label="CANTIDAD"
+                            value={editForm.cantidadEnvase}
+                            onChange={handleEditChange('cantidadEnvase')}
+                            error={!!errors.cantidadEnvase}
+                            helperText={errors.cantidadEnvase || ''}
                             slotProps={{
                                 htmlInput: {
-                                    inputMode: 'decimal',
-                                    pattern: '[0-9]*[.]?[0-9]*',
+                                    min: 0,
+                                    step: 1,
+                                    inputMode: 'numeric',
+                                    pattern: '[0-9]*',
                                 },
                             }}
                         />

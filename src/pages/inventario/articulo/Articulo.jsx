@@ -64,6 +64,7 @@ const initialForm = {
   idArticulo: null,
   descripcion: '',
   medida: '',
+  tipoEnvase: '',
   stock: '',
   idCategoria: '',
   estado: 'Activo',
@@ -179,6 +180,7 @@ export default function Articulo() {
       idArticulo: articulo.idArticulo,
       descripcion: articulo.descripcion || '',
       medida: articulo.medida || '',
+      tipoEnvase: articulo.tipoEnvase || '',
       stock: articulo.stock ?? '',
       idCategoria: articulo.idCategoria ?? '',
       estado: articulo.estado || 'Activo',
@@ -227,6 +229,10 @@ export default function Articulo() {
       newErrors.medida = 'La medida es obligatoria';
     }
 
+    if (!form.tipoEnvase.trim()) {
+      newErrors.tipoEnvase = 'El tipo de envase es obligatorio';
+    }
+
     if (form.stock !== '' && Number(form.stock) < 0) {
       newErrors.stock = 'El stock no puede ser negativo';
     }
@@ -250,6 +256,7 @@ export default function Articulo() {
       const payload = {
         descripcion: form.descripcion.trim(),
         medida: form.medida,
+        tipoEnvase: form.tipoEnvase.trim(),
         stock: form.stock === '' ? null : Number(form.stock),
         idCategoria: Number(form.idCategoria),
         estado: form.estado,
@@ -343,6 +350,7 @@ export default function Articulo() {
       const valoresBusqueda = [
         articulo.descripcion,
         articulo.medida,
+        articulo.tipoEnvase,
         articulo.descripcionCategoria,
         articulo.estado,
       ];
@@ -363,7 +371,7 @@ export default function Articulo() {
     if (loading || catalogLoading) {
       return (
         <TableRow>
-          <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+          <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
             <CircularProgress size={28} />
           </TableCell>
         </TableRow>
@@ -373,7 +381,7 @@ export default function Articulo() {
     if (articulos.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={6} align="center" sx={{ py: 4, color: '#64748b' }}>
+          <TableCell colSpan={7} align="center" sx={{ py: 4, color: '#64748b' }}>
             No hay artÃ­culos registrados.
           </TableCell>
         </TableRow>
@@ -383,7 +391,7 @@ export default function Articulo() {
     if (articulosFiltrados.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={6} align="center" sx={{ py: 4, color: '#64748b' }}>
+          <TableCell colSpan={7} align="center" sx={{ py: 4, color: '#64748b' }}>
             No se encontraron artÃ­culos con ese criterio.
           </TableCell>
         </TableRow>
@@ -394,6 +402,7 @@ export default function Articulo() {
       <TableRow key={articulo.idArticulo} hover>
         <TableCell>{articulo.descripcion}</TableCell>
         <TableCell>{articulo.medida}</TableCell>
+        <TableCell>{articulo.tipoEnvase || '-'}</TableCell>
         <TableCell>{formatNumber(articulo.stock)}</TableCell>
         <TableCell>{articulo.descripcionCategoria || '-'}</TableCell>
         <TableCell>
@@ -446,7 +455,7 @@ export default function Articulo() {
                 alignSelf: { xs: 'flex-start', md: 'auto' },
                 textTransform: 'none',
                 fontWeight: 700,
-                borderRadius: 2,
+                borderRadius: '8px',
                 boxShadow: 'none',
               }}
             >
@@ -498,6 +507,7 @@ export default function Articulo() {
                 <TableRow sx={{ backgroundColor: '#f8fafc' }}>
                   <TableCell sx={{ fontWeight: 700 }}>DESCRIPCIÓN</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>MEDIDA</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>TIPO ENVASE</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>STOCK</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>CATEGORÍA</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>ESTADO</TableCell>

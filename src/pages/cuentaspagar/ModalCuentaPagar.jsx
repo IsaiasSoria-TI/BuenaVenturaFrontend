@@ -225,7 +225,7 @@ RecepcionesTable.propTypes = {
   errors: PropTypes.objectOf(PropTypes.string).isRequired,
 };
 
-export default function ModalCuentaPagar({ open, onClose, onSaved, monedas }) {
+export default function ModalCuentaPagar({ open, onClose, onSaved, monedas, manual = false }) {
   const [comprasValidas, setComprasValidas] = React.useState([]);
   const [detalleCompra, setDetalleCompra] = React.useState(null);
 
@@ -278,8 +278,14 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas }) {
     setSelectedCompra(null);
     setDetalleCompra(null);
     setSelectedRecepciones([]);
+    if (manual) {
+      setComprasValidas([]);
+      setComprasLoading(false);
+      return;
+    }
+
     cargarComprasValidas();
-  }, [open, cargarComprasValidas, monedas]);
+  }, [open, cargarComprasValidas, monedas, manual]);
 
   React.useEffect(() => {
     if (!open || form.moneda || monedas.length === 0) return;
@@ -416,7 +422,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas }) {
   const validate = React.useCallback(() => {
     const newErrors = {};
 
-    if (!selectedCompra?.idCompras) {
+    if (!manual && !selectedCompra?.idCompras) {
       newErrors.idCompras = 'Seleccione una compra válida';
     }
 
@@ -432,7 +438,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas }) {
       newErrors.codigoDetRet = 'El código de detracción/retención es obligatorio';
     }
 
-    if (selectedRecepciones.length === 0) {
+    if (!manual && selectedRecepciones.length === 0) {
       newErrors.detalles = 'Seleccione al menos una recepción';
     }
 
@@ -440,7 +446,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas }) {
       newErrors.numeroFactura = 'El número de factura es obligatorio';
     }
 
-    if (form.tipoFactura === 'MULTIPLE') {
+    if (!manual && form.tipoFactura === 'MULTIPLE') {
       const faltaFactura = selectedRecepciones.some(
         (item) => !item.numeroFactura?.trim()
       );
@@ -453,10 +459,22 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas }) {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [selectedCompra, form, selectedRecepciones, monedas]);
+  }, [selectedCompra, form, selectedRecepciones, monedas, manual]);
 
   const buildPayload = React.useCallback(() => {
+    if (manual) {
+      return {
+        manual: true,
+        tipoFactura: 'UNICA',
+        numeroFactura: form.numeroFactura.trim(),
+        moneda: form.moneda,
+        codigoDetRet: form.codigoDetRet.trim(),
+        detalles: [],
+      };
+    }
+
     return {
+      manual: false,
       tipoFactura: form.tipoFactura,
       numeroFactura: form.tipoFactura === 'UNICA' ? form.numeroFactura.trim() : null,
       moneda: form.moneda,
@@ -470,7 +488,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas }) {
             : null,
       })),
     };
-  }, [form, selectedRecepciones]);
+  }, [form, selectedRecepciones, manual]);
 
   const handleSubmit = React.useCallback(async () => {
     if (!validate()) return;
@@ -520,7 +538,49 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas }) {
           {serverError && <Alert severity="error">{serverError}</Alert>}
           {serverSuccess && <Alert severity="success">{serverSuccess}</Alert>}
 
-          {comprasLoading ? (
+          {manual ? (
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
+                gap: 2,
+              }}
+            >
+              <TextField
+                fullWidth
+                label="Numero de factura"
+                value={form.numeroFactura}
+                onChange={handleChange('numeroFactura')}
+                error={!!errors.numeroFactura}
+                helperText={errors.numeroFactura || ''}
+              />
+
+              <TextField
+                fullWidth
+                label="Moneda"
+                select
+                value={form.moneda}
+                onChange={handleChange('moneda')}
+                error={!!errors.moneda}
+                helperText={errors.moneda || (monedas.length === 0 ? 'No hay monedas configuradas' : '')}
+              >
+                {monedas.map((moneda) => (
+                  <MenuItem key={moneda.idMoneda} value={moneda.codigo}>
+                    {formatMonedaOption(moneda)}
+                  </MenuItem>
+                ))}
+              </TextField>
+
+              <TextField
+                fullWidth
+                label="Codigo de detraccion/retencion"
+                value={form.codigoDetRet}
+                onChange={handleChange('codigoDetRet')}
+                error={!!errors.codigoDetRet}
+                helperText={errors.codigoDetRet || ''}
+              />
+            </Box>
+          ) : comprasLoading ? (
             <Box sx={{ py: 4, display: 'flex', justifyContent: 'center' }}>
               <CircularProgress size={26} />
             </Box>
@@ -716,8 +776,17 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas }) {
                       select
                       value={form.moneda}
                       onChange={handleChange('moneda')}
+                      disabled
                       error={!!errors.moneda}
-                      helperText={errors.moneda || (monedas.length === 0 ? 'No hay monedas configuradas' : '')}
+                      helperText={errors.moneda || 'Moneda tomada de la compra'}
+                      sx={{
+                        '& .MuiInputBase-root.Mui-disabled': {
+                          backgroundColor: '#f1f5f9',
+                        },
+                        '& .MuiInputBase-input.Mui-disabled': {
+                          WebkitTextFillColor: '#475569',
+                        },
+                      }}
                     >
                       {monedas.map((moneda) => (
                         <MenuItem key={moneda.idMoneda} value={moneda.codigo}>
@@ -777,7 +846,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas }) {
         <Button
           variant="contained"
           onClick={handleSubmit}
-          disabled={saving || comprasLoading || detalleLoading || !detalleCompra}
+          disabled={saving || (!manual && (comprasLoading || detalleLoading || !detalleCompra))}
           sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
         >
           {saving ? 'Guardando...' : 'Registrar'}
@@ -791,6 +860,7 @@ ModalCuentaPagar.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onSaved: PropTypes.func.isRequired,
+  manual: PropTypes.bool,
   monedas: PropTypes.arrayOf(
     PropTypes.shape({
       idMoneda: PropTypes.number,

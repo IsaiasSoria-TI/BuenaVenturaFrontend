@@ -531,7 +531,7 @@ export default function Proveedor() {
                 alignSelf: { xs: 'flex-start', md: 'auto' },
                 textTransform: 'none',
                 fontWeight: 700,
-                borderRadius: 2,
+                borderRadius: '8px',
                 boxShadow: 'none',
               }}
             >

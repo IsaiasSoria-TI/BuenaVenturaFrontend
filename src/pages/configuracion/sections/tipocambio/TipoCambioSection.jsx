@@ -289,19 +289,11 @@ export default function TipoCambioSection() {
         <Box>
             <Card sx={{ borderRadius: 3 }}>
                 <CardContent>
-                    <Stack
-                        direction={{ xs: 'column', sm: 'row' }}
-                        justifyContent="space-between"
-                        alignItems={{ xs: 'stretch', sm: 'center' }}
-                        spacing={1.5}
-                        sx={{ mb: 2 }}
-                    >
-                        <Typography fontWeight={700}>TIPO DE CAMBIO</Typography>
+                    <Stack direction="row" justifyContent="flex-end" sx={{ mb: 2 }}>
                         <Button
                             variant="contained"
                             onClick={handleOpenCreate}
                             startIcon={<Icon name="add" size={18} color="#fff" />}
-                            sx={{ alignSelf: { xs: 'flex-start', sm: 'auto' } }}
                         >
                             Agregar
                         </Button>

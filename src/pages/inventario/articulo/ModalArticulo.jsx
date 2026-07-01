@@ -35,6 +35,7 @@ export default function ModalArticulo({
     // Textos auxiliares: muestran errores si existen o ayuda por defecto.
     const helperDescripcion = errors.descripcion || '';
     const helperMedida = errors.medida || 'Seleccione la unidad';
+    const helperTipoEnvase = errors.tipoEnvase || 'Ej. Jaba, Caja, Bandeja';
     const helperStock =
         errors.stock || 'Opcional. Puede quedar vacío.';
     const helperCategoria = errors.idCategoria || 'Seleccione una categoría';
@@ -88,13 +89,22 @@ export default function ModalArticulo({
 
                     <TextField
                         fullWidth
-                        type="number"
+                        type="text"
                         label="Stock de seguridad"
                         value={form.stock}
                         onChange={onChange('stock')}
                         error={!!errors.stock}
                         helperText={helperStock}
-                        slotProps={{ htmlInput: { min: 0, step: '0.01' } }}
+                        slotProps={{ htmlInput: { inputMode: 'decimal', pattern: '[0-9]*[.]?[0-9]*' } }}
+                    />
+
+                    <TextField
+                        fullWidth
+                        label="Tipo de envase"
+                        value={form.tipoEnvase}
+                        onChange={onChange('tipoEnvase')}
+                        error={!!errors.tipoEnvase}
+                        helperText={helperTipoEnvase}
                     />
 
                     <TextField
@@ -162,6 +172,7 @@ ModalArticulo.propTypes = {
         idArticulo: PropTypes.oneOfType([PropTypes.number, PropTypes.oneOf([null])]),
         descripcion: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         medida: PropTypes.string,
+        tipoEnvase: PropTypes.string,
         stock: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         idCategoria: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         estado: PropTypes.string,
@@ -169,6 +180,7 @@ ModalArticulo.propTypes = {
     errors: PropTypes.shape({
         descripcion: PropTypes.string,
         medida: PropTypes.string,
+        tipoEnvase: PropTypes.string,
         stock: PropTypes.string,
         idCategoria: PropTypes.string,
         estado: PropTypes.string,
