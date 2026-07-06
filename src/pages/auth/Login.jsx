@@ -16,6 +16,30 @@ import {
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
+const textFieldSx = {
+    '& .MuiInputLabel-outlined': {
+        transform: 'translate(14px, 14px) scale(1)',
+    },
+    '& .MuiInputLabel-outlined.MuiInputLabel-shrink': {
+        transform: 'translate(14px, -9px) scale(0.75)',
+    },
+    '& .MuiOutlinedInput-root': {
+        borderRadius: 1.5,
+        backgroundColor: '#fbfdff',
+        '& input': {
+            py: 1.35,
+            fontSize: '0.98rem',
+        },
+    },
+};
+
+const passwordFieldSx = {
+    ...textFieldSx,
+    '& input::-ms-reveal, & input::-ms-clear': {
+        display: 'none',
+    },
+};
+
 export default function LoginPage() {
     const navigate = useNavigate();
     const [form, setForm] = React.useState({
@@ -37,6 +61,10 @@ export default function LoginPage() {
 
     const handleTogglePassword = () => {
         setShowPassword((prev) => !prev);
+    };
+
+    const handlePasswordMouseDown = (event) => {
+        event.preventDefault();
     };
 
     const handleSubmit = async (event) => {
@@ -163,20 +191,7 @@ export default function LoginPage() {
                             disabled={loading}
                             sx={{
                                 mb: 1.5,
-                                '& .MuiInputLabel-outlined': {
-                                    transform: 'translate(14px, 14px) scale(1)',
-                                },
-                                '& .MuiInputLabel-outlined.MuiInputLabel-shrink': {
-                                    transform: 'translate(14px, -9px) scale(0.75)',
-                                },
-                                '& .MuiOutlinedInput-root': {
-                                    borderRadius: 1.5,
-                                    backgroundColor: '#fbfdff',
-                                    '& input': {
-                                        py: 1.35,
-                                        fontSize: '0.98rem',
-                                    },
-                                },
+                                ...textFieldSx,
                             }}
                         />
 
@@ -197,8 +212,9 @@ export default function LoginPage() {
                                         <InputAdornment position="end">
                                             <IconButton
                                                 aria-label={showPassword ? 'Ocultar contrasena' : 'Mostrar contrasena'}
+                                                aria-pressed={showPassword}
                                                 onClick={handleTogglePassword}
-                                                onMouseDown={(event) => event.preventDefault()}
+                                                onMouseDown={handlePasswordMouseDown}
                                                 edge="end"
                                                 sx={{ color: '#64748b' }}
                                             >
@@ -210,20 +226,7 @@ export default function LoginPage() {
                             }}
                             sx={{
                                 mb: 1,
-                                '& .MuiInputLabel-outlined': {
-                                    transform: 'translate(14px, 14px) scale(1)',
-                                },
-                                '& .MuiInputLabel-outlined.MuiInputLabel-shrink': {
-                                    transform: 'translate(14px, -9px) scale(0.75)',
-                                },
-                                '& .MuiOutlinedInput-root': {
-                                    borderRadius: 1.5,
-                                    backgroundColor: '#fbfdff',
-                                    '& input': {
-                                        py: 1.35,
-                                        fontSize: '0.98rem',
-                                    },
-                                },
+                                ...passwordFieldSx,
                             }}
                         />
 

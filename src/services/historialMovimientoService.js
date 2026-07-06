@@ -15,4 +15,9 @@ export const historialMovimientoService = {
 
     return data;
   },
+
+  registrarManual: async (payload) => {
+    const { data } = await api.post(`${BASE_URL}/manual`, payload);
+    return data;
+  },
 };

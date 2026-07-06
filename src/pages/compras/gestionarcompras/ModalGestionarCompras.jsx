@@ -103,6 +103,8 @@ export default function ModalGestionarCompras({
     igvPreview,
     igvTributarioPreview,
     totalGeneralPreview,
+    createTitle,
+    createSubmitLabel,
 }) {
     // El IGV se controla con campos propios; esta lista solo permite otros impuestos referenciales.
     const impuestosDisponibles = React.useMemo(
@@ -122,7 +124,7 @@ export default function ModalGestionarCompras({
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="lg">
             <DialogTitle sx={{ fontWeight: 700 }}>
-                {editing ? 'Editar compra' : 'Nueva compra'}
+                {editing ? 'Editar compra' : createTitle}
             </DialogTitle>
 
             <DialogContent dividers sx={{ pt: 2.5 }}>
@@ -215,6 +217,87 @@ export default function ModalGestionarCompras({
                             }}
                         >
                             <TextField
+                                fullWidth
+                                type="datetime-local"
+                                label="Fecha emision"
+                                value={form.fechaEmision || form.fechaCompras}
+                                onChange={handleChange('fechaEmision')}
+                                error={!!errors.fechaEmision || !!errors.fechaCompras}
+                                helperText={errors.fechaEmision || errors.fechaCompras}
+                                slotProps={{
+                                    inputLabel: { shrink: true },
+                                }}
+                            />
+
+                            <TextField
+                                fullWidth
+                                type="datetime-local"
+                                label="Fecha ingreso producto"
+                                value={form.fechaIngresoProducto}
+                                onChange={handleChange('fechaIngresoProducto')}
+                                error={!!errors.fechaIngresoProducto}
+                                helperText={errors.fechaIngresoProducto}
+                                slotProps={{
+                                    inputLabel: { shrink: true },
+                                }}
+                            />
+
+                            <TextField
+                                select
+                                fullWidth
+                                label="Tipo"
+                                value={form.tipoDocumento || 'FACTURA'}
+                                onChange={handleChange('tipoDocumento')}
+                                error={!!errors.tipoDocumento}
+                                helperText={errors.tipoDocumento}
+                            >
+                                <MenuItem value="FACTURA">FACTURA</MenuItem>
+                                <MenuItem value="BOLETA">BOLETA</MenuItem>
+                                <MenuItem value="GUIA">GUIA</MenuItem>
+                                <MenuItem value="OTRO">OTRO</MenuItem>
+                            </TextField>
+
+                            <TextField
+                                fullWidth
+                                label="Nro doc provee"
+                                value={form.numeroDocumentoProveedor}
+                                onChange={handleChange('numeroDocumentoProveedor')}
+                                error={!!errors.numeroDocumentoProveedor}
+                                helperText={errors.numeroDocumentoProveedor}
+                            />
+
+                            <TextField
+                                fullWidth
+                                label="Serie referencia"
+                                value={form.serieReferencia}
+                                onChange={handleChange('serieReferencia')}
+                            />
+
+                            <TextField
+                                fullWidth
+                                label="Correlativo referencia"
+                                value={form.correlativoReferencia}
+                                onChange={handleChange('correlativoReferencia')}
+                            />
+                        </Box>
+
+                        <TextField
+                            fullWidth
+                            label="Observacion"
+                            value={form.observacion}
+                            onChange={handleChange('observacion')}
+                            multiline
+                            minRows={2}
+                        />
+
+                        <Box
+                            sx={{
+                                display: 'grid',
+                                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
+                                gap: 2,
+                            }}
+                        >
+                            <TextField
                                 select
                                 fullWidth
                                 label="Condición de pago"
@@ -252,19 +335,6 @@ export default function ModalGestionarCompras({
                                     </MenuItem>
                                 ))}
                             </TextField>
-
-                            <TextField
-                                fullWidth
-                                type="datetime-local"
-                                label="Fecha de compra"
-                                value={form.fechaCompras}
-                                onChange={handleChange('fechaCompras')}
-                                error={!!errors.fechaCompras}
-                                helperText={errors.fechaCompras}
-                                slotProps={{
-                                    inputLabel: { shrink: true },
-                                }}
-                            />
 
                             <TextField
                                 fullWidth
@@ -669,7 +739,7 @@ export default function ModalGestionarCompras({
                     disabled={saving || catalogLoading}
                     sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
                 >
-                    {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Registrar'}
+                    {saving ? 'Guardando...' : editing ? 'Actualizar' : createSubmitLabel}
                 </Button>
             </DialogActions>
         </Dialog>
@@ -689,6 +759,13 @@ ModalGestionarCompras.propTypes = {
         idTipoCambio: PropTypes.oneOfType([PropTypes.number, PropTypes.oneOf([null])]),
         tipoCambioAplicado: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         fechaCompras: PropTypes.string.isRequired,
+        fechaEmision: PropTypes.string,
+        fechaIngresoProducto: PropTypes.string,
+        tipoDocumento: PropTypes.string,
+        numeroDocumentoProveedor: PropTypes.string,
+        serieReferencia: PropTypes.string,
+        correlativoReferencia: PropTypes.string,
+        observacion: PropTypes.string,
         zonaProduccion: PropTypes.string.isRequired,
         numeroLote: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
         detalles: PropTypes.arrayOf(
@@ -741,8 +818,12 @@ ModalGestionarCompras.propTypes = {
     igvPreview: PropTypes.string.isRequired,
     igvTributarioPreview: PropTypes.string.isRequired,
     totalGeneralPreview: PropTypes.string.isRequired,
+    createTitle: PropTypes.string,
+    createSubmitLabel: PropTypes.string,
 };
 
 ModalGestionarCompras.defaultProps = {
     selectedProveedor: null,
+    createTitle: 'Nueva compra',
+    createSubmitLabel: 'Registrar',
 };

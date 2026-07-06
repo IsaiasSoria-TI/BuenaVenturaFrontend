@@ -108,6 +108,13 @@ const initialForm = {
   tipoCambioAplicado: '',
   idProveedor: null,
   fechaCompras: '',
+  fechaEmision: '',
+  fechaIngresoProducto: '',
+  tipoDocumento: 'FACTURA',
+  numeroDocumentoProveedor: '',
+  serieReferencia: '',
+  correlativoReferencia: '',
+  observacion: '',
   zonaProduccion: '',
   numeroLote: '',
   detalles: [createDetalle()],
@@ -165,6 +172,10 @@ function isMonedaSoles(moneda) {
 
 function getFechaTipoCambio(fechaCompras) {
   return fechaCompras ? String(fechaCompras).slice(0, 10) : '';
+}
+
+function getCompraFechaBase(compraForm) {
+  return compraForm.fechaEmision || compraForm.fechaCompras;
 }
 
 export default function GestionarCompras() {
@@ -259,7 +270,7 @@ export default function GestionarCompras() {
     if (!open) return undefined;
 
     const monedaSeleccionada = monedas.find((moneda) => moneda.idMoneda === Number(form.idMoneda));
-    const fechaTipoCambio = getFechaTipoCambio(form.fechaCompras);
+    const fechaTipoCambio = getFechaTipoCambio(form.fechaEmision || form.fechaCompras);
 
     if (!monedaSeleccionada || !fechaTipoCambio) {
       setForm((prev) => ({
@@ -348,6 +359,7 @@ export default function GestionarCompras() {
   }, [
     editing,
     form.fechaCompras,
+    form.fechaEmision,
     form.idMoneda,
     form.tipoCambioAplicado,
     monedas,
@@ -356,12 +368,18 @@ export default function GestionarCompras() {
   ]);
 
   const handleOpenCreate = () => {
+    const fechaActual = formatDateTimeInputPeru(new Date());
+
     setEditing(false);
     setForm({
       ...initialForm,
       idMoneda: getDefaultMonedaId(monedas),
       idTipoCambio: null,
       tipoCambioAplicado: '',
+      fechaCompras: fechaActual,
+      fechaEmision: fechaActual,
+      fechaIngresoProducto: fechaActual,
+      tipoDocumento: 'FACTURA',
       detalles: [createDetalle()],
       impuestos: [createImpuesto()],
     });
@@ -412,9 +430,13 @@ export default function GestionarCompras() {
     setSuccessMessage('');
     setSelectedProveedor(proveedorEncontrado);
     const fechaCompras = formatDateTimeInputPeru(compra.fechaCompras);
+    const fechaEmision = formatDateTimeInputPeru(compra.fechaEmision || compra.fechaCompras);
+    const fechaIngresoProducto = formatDateTimeInputPeru(
+      compra.fechaIngresoProducto || compra.fechaEmision || compra.fechaCompras
+    );
     setTipoCambioBase({
       idMoneda: compra.idMoneda ?? getDefaultMonedaId(monedas),
-      fecha: getFechaTipoCambio(fechaCompras),
+      fecha: getFechaTipoCambio(fechaEmision || fechaCompras),
     });
     setForm({
       idCompras: compra.idCompras,
@@ -424,6 +446,13 @@ export default function GestionarCompras() {
       tipoCambioAplicado: compra.tipoCambioAplicado ?? '',
       idProveedor: compra.idProveedor ?? null,
       fechaCompras,
+      fechaEmision,
+      fechaIngresoProducto,
+      tipoDocumento: compra.tipoDocumento || 'FACTURA',
+      numeroDocumentoProveedor: compra.numeroDocumentoProveedor || '',
+      serieReferencia: compra.serieReferencia || '',
+      correlativoReferencia: compra.correlativoReferencia || '',
+      observacion: compra.observacion || '',
       zonaProduccion: compra.zonaProduccion || '',
       numeroLote: compra.numeroLote ?? '',
       detalles,
@@ -457,12 +486,14 @@ export default function GestionarCompras() {
     setForm((prev) => ({
       ...prev,
       [field]: value,
+      ...(field === 'fechaEmision' ? { fechaCompras: value } : {}),
     }));
 
     if (errors[field]) {
       setErrors((prev) => ({
         ...prev,
         [field]: '',
+        ...(field === 'fechaEmision' ? { fechaCompras: '' } : {}),
       }));
     }
 
@@ -603,8 +634,16 @@ export default function GestionarCompras() {
       newErrors.idProveedor = 'Seleccione un proveedor';
     }
 
-    if (!form.fechaCompras) {
-      newErrors.fechaCompras = 'La fecha de compra es obligatoria';
+    if (!getCompraFechaBase(form)) {
+      newErrors.fechaEmision = 'La fecha de emision es obligatoria';
+    }
+
+    if (!form.fechaIngresoProducto) {
+      newErrors.fechaIngresoProducto = 'La fecha de ingreso es obligatoria';
+    }
+
+    if (!form.tipoDocumento?.trim()) {
+      newErrors.tipoDocumento = 'Seleccione un tipo de documento';
     }
 
     if (!form.zonaProduccion.trim()) {
@@ -672,7 +711,14 @@ export default function GestionarCompras() {
     idTipoCambio: form.idTipoCambio ? Number(form.idTipoCambio) : null,
     tipoCambioAplicado: form.tipoCambioAplicado ? Number(form.tipoCambioAplicado) : null,
     idProveedor: Number(form.idProveedor),
-    fechaCompras: form.fechaCompras,
+    fechaCompras: getCompraFechaBase(form),
+    fechaEmision: getCompraFechaBase(form),
+    fechaIngresoProducto: form.fechaIngresoProducto,
+    tipoDocumento: form.tipoDocumento?.trim() || 'FACTURA',
+    numeroDocumentoProveedor: form.numeroDocumentoProveedor?.trim() || null,
+    serieReferencia: form.serieReferencia?.trim() || null,
+    correlativoReferencia: form.correlativoReferencia?.trim() || null,
+    observacion: form.observacion?.trim() || null,
     zonaProduccion: form.zonaProduccion.trim(),
     numeroLote: Number(form.numeroLote),
     detalles: form.detalles.map((detalle) => ({
