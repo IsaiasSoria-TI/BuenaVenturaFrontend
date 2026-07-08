@@ -249,6 +249,7 @@ export default function SeguridadSection() {
                                 <TableRow>
                                     <TableCell>Usuario</TableCell>
                                     <TableCell>Nombre</TableCell>
+                                    <TableCell>Contrasena</TableCell>
                                     <TableCell align="center" sx={{ width: 112 }}>Acciones</TableCell>
                                 </TableRow>
                             </TableHead>
@@ -256,13 +257,13 @@ export default function SeguridadSection() {
                             <TableBody>
                                 {loading ? (
                                     <TableRow>
-                                        <TableCell colSpan={3} align="center">
+                                        <TableCell colSpan={4} align="center">
                                             <CircularProgress />
                                         </TableCell>
                                     </TableRow>
                                 ) : usuarios.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={3} align="center">
+                                        <TableCell colSpan={4} align="center">
                                             Sin registros
                                         </TableCell>
                                     </TableRow>
@@ -271,6 +272,7 @@ export default function SeguridadSection() {
                                         <TableRow key={usuario.idUsuario}>
                                             <TableCell>{usuario.usuario}</TableCell>
                                             <TableCell>{usuario.nombre}</TableCell>
+                                            <TableCell>{usuario.contrasena || '-'}</TableCell>
                                             <TableCell align="center" sx={{ width: 112 }}>
                                                 <IconButton
                                                     onClick={() => handleOpenEdit(usuario)}
