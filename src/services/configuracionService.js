@@ -4,13 +4,17 @@ const BASE_URL = '/api/configuracion';
 
 // Agrupa endpoints de configuracion general: perfil propio y usuarios de seguridad.
 export const configuracionService = {
-  obtenerPerfil: async () => {
-    const { data } = await api.get(`${BASE_URL}/perfil`);
+  obtenerPerfil: async (usuarioId) => {
+    const { data } = await api.get(`${BASE_URL}/perfil`, {
+      params: { usuarioId },
+    });
     return data;
   },
 
-  actualizarPerfil: async (payload) => {
-    const { data } = await api.put(`${BASE_URL}/perfil`, payload);
+  actualizarPerfil: async (usuarioId, payload) => {
+    const { data } = await api.put(`${BASE_URL}/perfil`, payload, {
+      params: { usuarioId },
+    });
     return data;
   },
 

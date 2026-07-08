@@ -14,6 +14,11 @@ const initialForm = {
     correo: '',
 };
 
+function getUsuarioIdActual() {
+    const usuarioActual = JSON.parse(localStorage.getItem('user') || '{}');
+    return usuarioActual.idUsuario;
+}
+
 // Sincroniza localStorage para que Topbar muestre el nombre actualizado sin reloguear.
 function actualizarUsuarioLocal(data) {
     const usuarioActual = JSON.parse(localStorage.getItem('user') || '{}');
@@ -44,7 +49,13 @@ export default function PerfilSection() {
             setLoading(true);
             setServerError('');
 
-            const data = await configuracionService.obtenerPerfil();
+            const usuarioId = getUsuarioIdActual();
+
+            if (!usuarioId) {
+                throw new Error('No se encontro el id del usuario actual.');
+            }
+
+            const data = await configuracionService.obtenerPerfil(usuarioId);
 
             setForm({
                 nombres: data.nombres || '',
@@ -129,6 +140,12 @@ export default function PerfilSection() {
             setServerError('');
             setSuccessMessage('');
 
+            const usuarioId = getUsuarioIdActual();
+
+            if (!usuarioId) {
+                throw new Error('No se encontro el id del usuario actual.');
+            }
+
             // El backend espera datos limpios, por eso se aplica trim antes de enviar.
             const payload = {
                 nombres: form.nombres.trim(),
@@ -139,7 +156,7 @@ export default function PerfilSection() {
                 correo: form.correo.trim(),
             };
 
-            const data = await configuracionService.actualizarPerfil(payload);
+            const data = await configuracionService.actualizarPerfil(usuarioId, payload);
 
             setForm({
                 nombres: data.nombres || '',
