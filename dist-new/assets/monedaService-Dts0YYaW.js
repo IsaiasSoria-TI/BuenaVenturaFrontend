@@ -1,0 +1,1 @@
+import{C as e}from"./TextField-D6h_crf8.js";var t=`/api/monedas`,n={listar:async()=>{let{data:n}=await e.get(t);return n}};export{n as t};

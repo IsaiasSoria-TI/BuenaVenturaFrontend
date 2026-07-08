@@ -1,9 +1,7 @@
 import axios from 'axios';
 
-const defaultBaseURL = '/';
-
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || defaultBaseURL,
+  baseURL: '/',
 });
 
 // Rutas que no deben llevar token JWT porque aun no existe una sesion iniciada.
@@ -31,11 +29,11 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Si el backend responde 401, se limpia la sesion local y se fuerza volver al login.
+// Si el backend responde 401 o 403, se limpia la sesion local y se fuerza volver al login.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error?.response?.status === 401) {
+    if (error?.response?.status === 401 || error?.response?.status === 403) {
       clearSession();
 
       if (window.location.pathname !== '/login') {
