@@ -5,6 +5,7 @@ import {
     Button,
     Card,
     CardContent,
+    Chip,
     CircularProgress,
     Dialog,
     DialogActions,
@@ -64,6 +65,12 @@ function Icon({ name, size = 20, color = 'inherit' }) {
 function getMessage(error, fallback) {
     const message = error?.response?.data?.message || error?.response?.data || fallback;
     return typeof message === 'string' ? message : fallback;
+}
+
+function getEstadoChipStyles(flgActivo) {
+    return flgActivo
+        ? { backgroundColor: '#dcfce7', color: '#16a34a' }
+        : { backgroundColor: '#fee2e2', color: '#dc2626' };
 }
 
 export default function SeguridadSection() {
@@ -250,6 +257,7 @@ export default function SeguridadSection() {
                                     <TableCell>Usuario</TableCell>
                                     <TableCell>Nombre</TableCell>
                                     <TableCell>Contrasena</TableCell>
+                                    <TableCell>Estado</TableCell>
                                     <TableCell align="center" sx={{ width: 112 }}>Acciones</TableCell>
                                 </TableRow>
                             </TableHead>
@@ -257,13 +265,13 @@ export default function SeguridadSection() {
                             <TableBody>
                                 {loading ? (
                                     <TableRow>
-                                        <TableCell colSpan={4} align="center">
+                                        <TableCell colSpan={5} align="center">
                                             <CircularProgress />
                                         </TableCell>
                                     </TableRow>
                                 ) : usuarios.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={4} align="center">
+                                        <TableCell colSpan={5} align="center">
                                             Sin registros
                                         </TableCell>
                                     </TableRow>
@@ -273,6 +281,13 @@ export default function SeguridadSection() {
                                             <TableCell>{usuario.usuario}</TableCell>
                                             <TableCell>{usuario.nombre}</TableCell>
                                             <TableCell>{usuario.contrasena || '-'}</TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={usuario.flgActivo ? 'Activo' : 'Inactivo'}
+                                                    size="small"
+                                                    sx={getEstadoChipStyles(usuario.flgActivo)}
+                                                />
+                                            </TableCell>
                                             <TableCell align="center" sx={{ width: 112 }}>
                                                 <IconButton
                                                     onClick={() => handleOpenEdit(usuario)}
