@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+const defaultBaseURL = '/';
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
+  baseURL: import.meta.env.VITE_API_URL || defaultBaseURL,
 });
 
 // Rutas que no deben llevar token JWT porque aun no existe una sesion iniciada.
