@@ -21,6 +21,7 @@ import {
     Typography,
 } from '@mui/material';
 
+import { getAutocompleteTextFieldProps } from '../../../utils/autocompleteTextField';
 import { formatCurrency, getCurrencyPrefix, isMonedaSolesData } from './compraCalculations';
 
 function Icon({ name, size = 20, color = 'inherit' }) {
@@ -171,7 +172,7 @@ export default function ModalGestionarCompras({
                             }}
                             renderInput={(params) => (
                                 <TextField
-                                    {...params}
+                                    {...getAutocompleteTextFieldProps(params)}
                                     label="Proveedor"
                                     placeholder="Buscar por RUC o razón social"
                                     error={!!errors.idProveedor}
@@ -364,10 +365,12 @@ export default function ModalGestionarCompras({
                         <Box>
                             <Stack
                                 direction={{ xs: 'column', md: 'row' }}
-                                justifyContent="space-between"
-                                alignItems={{ xs: 'stretch', md: 'center' }}
                                 spacing={1.5}
-                                sx={{ mb: 1.5 }}
+                                sx={{
+                                    mb: 1.5,
+                                    alignItems: { xs: 'stretch', md: 'center' },
+                                    justifyContent: 'space-between',
+                                }}
                             >
                                 <Box>
                                     <Typography sx={{ fontWeight: 700, color: '#0f172a' }}>
@@ -617,10 +620,12 @@ export default function ModalGestionarCompras({
                         <Box>
                             <Stack
                                 direction={{ xs: 'column', md: 'row' }}
-                                justifyContent="space-between"
-                                alignItems={{ xs: 'stretch', md: 'center' }}
                                 spacing={1.5}
-                                sx={{ mb: 1.5 }}
+                                sx={{
+                                    mb: 1.5,
+                                    alignItems: { xs: 'stretch', md: 'center' },
+                                    justifyContent: 'space-between',
+                                }}
                             >
                                 <Box>
                                     <Typography sx={{ fontWeight: 700, color: '#0f172a' }}>

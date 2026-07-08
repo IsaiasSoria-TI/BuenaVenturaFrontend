@@ -7,7 +7,6 @@ import {
   Card,
   CardContent,
   CircularProgress,
-  InputAdornment,
   Paper,
   Stack,
   Table,
@@ -22,6 +21,7 @@ import {
 
 import { articuloService } from '../../../../services/articuloService';
 import { consultaStockService } from '../../../../services/consultaStockService';
+import { getAutocompleteTextFieldProps } from '../../../../utils/autocompleteTextField';
 import { formatDatePeru } from '../../../../utils/formatters';
 
 function Icon({ name, size = 20, color = 'inherit' }) {
@@ -164,7 +164,7 @@ export default function ConsultaStock() {
             <Stack
               direction={{ xs: 'column', md: 'row' }}
               spacing={1.5}
-              alignItems={{ xs: 'stretch', md: 'center' }}
+              sx={{ alignItems: { xs: 'stretch', md: 'center' } }}
             >
               <TextField
                 label="Periodo"
@@ -203,20 +203,9 @@ export default function ConsultaStock() {
                 loadingText="Cargando articulos..."
                 renderInput={(params) => (
                   <TextField
-                    {...params}
+                    {...getAutocompleteTextFieldProps(params)}
                     label="Buscar producto"
                     placeholder="Codigo o descripcion"
-                    InputProps={{
-                      ...params.InputProps,
-                      startAdornment: (
-                        <>
-                          <InputAdornment position="start">
-                            <Icon name="search" size={19} color="#64748b" />
-                          </InputAdornment>
-                          {params.InputProps?.startAdornment}
-                        </>
-                      ),
-                    }}
                   />
                 )}
               />

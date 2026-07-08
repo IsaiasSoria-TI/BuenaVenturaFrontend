@@ -3,7 +3,6 @@ import {
     Box,
     Button,
     CircularProgress,
-    Grid,
     Stack,
     TextField,
     Typography,
@@ -30,8 +29,14 @@ export default function PerfilForm({
                 Datos personales
             </Typography>
 
-            <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
+            <Box
+                sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
+                    gap: 2,
+                }}
+            >
+                <Box>
                     <TextField
                         fullWidth
                         label="Nombres"
@@ -40,9 +45,9 @@ export default function PerfilForm({
                         error={!!errors.nombres}
                         helperText={errors.nombres || ''}
                     />
-                </Grid>
+                </Box>
 
-                <Grid item xs={12} md={6}>
+                <Box>
                     <TextField
                         fullWidth
                         label="Usuario"
@@ -51,9 +56,9 @@ export default function PerfilForm({
                         error={!!errors.usuario}
                         helperText={errors.usuario || ''}
                     />
-                </Grid>
+                </Box>
 
-                <Grid item xs={12} md={6}>
+                <Box>
                     <TextField
                         fullWidth
                         label="Apellido paterno"
@@ -62,9 +67,9 @@ export default function PerfilForm({
                         error={!!errors.apellidoPaterno}
                         helperText={errors.apellidoPaterno || ''}
                     />
-                </Grid>
+                </Box>
 
-                <Grid item xs={12} md={6}>
+                <Box>
                     <TextField
                         fullWidth
                         label="Apellido materno"
@@ -73,9 +78,9 @@ export default function PerfilForm({
                         error={!!errors.apellidoMaterno}
                         helperText={errors.apellidoMaterno || ''}
                     />
-                </Grid>
+                </Box>
 
-                <Grid item xs={12} md={6}>
+                <Box>
                     <TextField
                         fullWidth
                         label="Teléfono"
@@ -84,9 +89,9 @@ export default function PerfilForm({
                         error={!!errors.telefono}
                         helperText={errors.telefono || ''}
                     />
-                </Grid>
+                </Box>
 
-                <Grid item xs={12} md={6}>
+                <Box>
                     <TextField
                         fullWidth
                         label="Correo"
@@ -95,10 +100,10 @@ export default function PerfilForm({
                         error={!!errors.correo}
                         helperText={errors.correo || ''}
                     />
-                </Grid>
-            </Grid>
+                </Box>
+            </Box>
 
-            <Stack direction="row" justifyContent="flex-end" sx={{ mt: 3 }}>
+            <Stack direction="row" sx={{ mt: 3, justifyContent: 'flex-end' }}>
                 <Button
                     variant="contained"
                     onClick={onSubmit}
@@ -112,7 +117,7 @@ export default function PerfilForm({
                     }}
                 >
                     {saving ? (
-                        <Stack direction="row" spacing={1} alignItems="center">
+                        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                             <CircularProgress size={18} color="inherit" />
                             <span>Guardando...</span>
                         </Stack>

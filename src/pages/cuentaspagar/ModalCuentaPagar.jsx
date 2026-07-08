@@ -28,6 +28,7 @@ import {
 } from '@mui/material';
 
 import { cuentaPagarService } from '../../services/cuentaPagarService';
+import { getAutocompleteTextFieldProps } from '../../utils/autocompleteTextField';
 import {
   formatCompraCode,
   formatDateTimePeru,
@@ -637,7 +638,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas, manu
                 }}
                 renderInput={(params) => (
                   <TextField
-                    {...params}
+                    {...getAutocompleteTextFieldProps(params)}
                     label="Compras con recepciones válidas"
                     placeholder="Busca por compra, RUC o proveedor"
                     error={!!errors.idCompras}

@@ -20,6 +20,7 @@ import {
     Typography,
 } from '@mui/material';
 
+import { getAutocompleteTextFieldProps } from '../../../utils/autocompleteTextField';
 import { formatCompraCode, formatDateTimePeru } from '../../../utils/formatters';
 
 function formatNumber(value) {
@@ -167,7 +168,7 @@ function CompraSelector({
             renderOption={renderCompraOption}
             renderInput={(params) => (
                 <TextField
-                    {...params}
+                    {...getAutocompleteTextFieldProps(params)}
                     label="Compra disponible para recepcion"
                     placeholder="Busca por codigo, RUC, proveedor o articulo"
                     error={!!errorIdCompras}

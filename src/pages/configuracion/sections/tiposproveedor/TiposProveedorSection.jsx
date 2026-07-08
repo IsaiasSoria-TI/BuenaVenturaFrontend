@@ -217,7 +217,7 @@ export default function TiposProveedorSection() {
         <Box>
             <Card sx={{ borderRadius: 3 }}>
                 <CardContent>
-                    <Stack direction="row" justifyContent="flex-end" sx={{ mb: 2 }}>
+                    <Stack direction="row" sx={{ mb: 2, justifyContent: 'flex-end' }}>
                         <Button
                             variant="contained"
                             onClick={handleOpenCreate}

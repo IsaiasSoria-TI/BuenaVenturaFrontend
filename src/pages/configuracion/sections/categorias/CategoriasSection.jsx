@@ -360,10 +360,12 @@ export default function CategoriasSection() {
                 <CardContent>
                     <Stack
                         direction={{ xs: 'column', md: 'row' }}
-                        justifyContent="flex-end"
-                        alignItems={{ xs: 'stretch', md: 'center' }}
                         spacing={2}
-                        sx={{ mb: 2.5 }}
+                        sx={{
+                            mb: 2.5,
+                            alignItems: { xs: 'stretch', md: 'center' },
+                            justifyContent: 'flex-end',
+                        }}
                     >
                         <Button
                             variant="contained"

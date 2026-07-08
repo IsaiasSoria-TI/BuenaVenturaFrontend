@@ -32,9 +32,10 @@ import { compraService } from '../../../../services/compraService';
 import { historialMovimientoService } from '../../../../services/historialMovimientoService';
 import { monedaService } from '../../../../services/monedaService';
 import { motivoMovimientoService } from '../../../../services/motivoMovimientoService';
-import { pagoService } from '../../../../services/pagoService';
+import { pagoService } from '../../../../services/pagoService.js';
 import { proveedorService } from '../../../../services/proveedorService';
 import { tipoCambioService } from '../../../../services/tipoCambioService';
+import { getAutocompleteTextFieldProps } from '../../../../utils/autocompleteTextField';
 import { formatDatePeru } from '../../../../utils/formatters';
 import {
   getDefaultMonedaId,
@@ -672,7 +673,7 @@ export default function HistorialMovimientos() {
             <Stack
               direction={{ xs: 'column', md: 'row' }}
               spacing={1.5}
-              alignItems={{ xs: 'stretch', md: 'center' }}
+              sx={{ alignItems: { xs: 'stretch', md: 'center' } }}
             >
               <Button
                 variant="contained"
@@ -710,7 +711,7 @@ export default function HistorialMovimientos() {
             <Stack
               direction={{ xs: 'column', md: 'row' }}
               spacing={1.5}
-              alignItems={{ xs: 'stretch', md: 'center' }}
+              sx={{ alignItems: { xs: 'stretch', md: 'center' } }}
             >
               <TextField
                 label="Periodo"
@@ -770,20 +771,9 @@ export default function HistorialMovimientos() {
                 loadingText="Cargando articulos..."
                 renderInput={(params) => (
                   <TextField
-                    {...params}
+                    {...getAutocompleteTextFieldProps(params)}
                     label="Articulo"
                     placeholder="Codigo o descripcion"
-                    InputProps={{
-                      ...params.InputProps,
-                      startAdornment: (
-                        <>
-                          <InputAdornment position="start">
-                            <Icon name="search" size={19} color="#64748b" />
-                          </InputAdornment>
-                          {params.InputProps?.startAdornment}
-                        </>
-                      ),
-                    }}
                   />
                 )}
               />
@@ -983,7 +973,7 @@ export default function HistorialMovimientos() {
                   noOptionsText="No se encontraron proveedores"
                   renderInput={(params) => (
                     <TextField
-                      {...params}
+                      {...getAutocompleteTextFieldProps(params)}
                       label="NOMBRE PROVEEDOR"
                       error={!!compraErrors.idProveedor}
                       helperText={compraErrors.idProveedor}
@@ -1149,7 +1139,7 @@ export default function HistorialMovimientos() {
               disabled={savingManual}
               renderInput={(params) => (
                 <TextField
-                  {...params}
+                  {...getAutocompleteTextFieldProps(params)}
                   label="Articulo"
                   error={!!manualErrors.articulo}
                   helperText={manualErrors.articulo}

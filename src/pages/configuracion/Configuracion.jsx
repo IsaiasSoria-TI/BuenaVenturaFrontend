@@ -61,7 +61,7 @@ export default function Configuracion() {
                     <Stack
                         direction={{ xs: 'column', lg: 'row' }}
                         spacing={3}
-                        alignItems="stretch"
+                        sx={{ alignItems: 'stretch' }}
                     >
                         <Box
                             sx={{

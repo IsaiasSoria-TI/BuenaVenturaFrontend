@@ -33,7 +33,7 @@ import { compraService } from '../../../services/compraService';
 import { proveedorService } from '../../../services/proveedorService';
 import { articuloService } from '../../../services/articuloService';
 import { impuestoService } from '../../../services/impuestoService';
-import { pagoService } from '../../../services/pagoService';
+import { pagoService } from '../../../services/pagoService.js';
 import { monedaService } from '../../../services/monedaService';
 import { tipoCambioService } from '../../../services/tipoCambioService';
 import { useAutoClearMessage } from '../../../utils/useAutoClearMessage';
@@ -855,10 +855,12 @@ export default function GestionarCompras() {
         <CardContent sx={{ p: { xs: 2, md: 3 } }}>
           <Stack
             direction={{ xs: 'column', md: 'row' }}
-            justifyContent="space-between"
-            alignItems={{ xs: 'stretch', md: 'center' }}
             spacing={2}
-            sx={{ mb: 2.5 }}
+            sx={{
+              mb: 2.5,
+              alignItems: { xs: 'stretch', md: 'center' },
+              justifyContent: 'space-between',
+            }}
           >
             <Box>
               <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
