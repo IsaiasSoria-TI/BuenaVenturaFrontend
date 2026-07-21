@@ -95,6 +95,26 @@ export default function LoginPage() {
                 return;
             }
 
+            const status = error.response.status;
+
+            if (status === 503) {
+                setErrorMessage(
+                    error.response.data?.message
+                    || 'El servicio no puede consultar la base de datos en este momento'
+                );
+                return;
+            }
+
+            if (status >= 500) {
+                setErrorMessage('El servidor no esta disponible en este momento');
+                return;
+            }
+
+            if (status === 403) {
+                setErrorMessage('La solicitud fue rechazada por la configuracion del servidor');
+                return;
+            }
+
             setErrorMessage('Usuario o contrasena incorrectos');
         } finally {
             setLoading(false);
