@@ -1,5 +1,4 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 import {
     Alert,
     Box,
@@ -7,7 +6,6 @@ import {
     Card,
     CardContent,
     Chip,
-    CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
@@ -28,6 +26,9 @@ import {
 import { tipoCambioService } from '../../../../services/tipoCambioService';
 import ModalTipoCambio from './ModalTipoCambio';
 import { useAutoClearMessage } from '../../../../utils/useAutoClearMessage';
+import { getApiErrorMessage } from '../../../../utils/getApiErrorMessage';
+import MaterialSymbol from '../../../../components/MaterialSymbol';
+import TableSkeletonRows from '../../../../components/loading/TableSkeletonRows';
 
 // Estado inicial para registrar el valor de cambio de una fecha.
 const initialForm = {
@@ -37,31 +38,7 @@ const initialForm = {
     flgActivo: 'true',
 };
 
-function Icon({ name, size = 20, color = 'inherit' }) {
-    return (
-        <Box
-            component="span"
-            className="material-symbols-rounded"
-            sx={{
-                fontSize: size,
-                color,
-                lineHeight: 1,
-                userSelect: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-            }}
-        >
-            {name}
-        </Box>
-    );
-}
-
-Icon.propTypes = {
-    name: PropTypes.string.isRequired,
-    size: PropTypes.number,
-    color: PropTypes.string,
-};
+const Icon = MaterialSymbol;
 
 function getEstadoChipStyles(flgActivo) {
     return flgActivo
@@ -210,8 +187,7 @@ export default function TipoCambioSection() {
             setOpen(false);
             await cargarTiposCambio();
         } catch (error) {
-            const message = error?.response?.data?.message || error?.response?.data || 'Error al guardar tipo de cambio';
-            setServerError(typeof message === 'string' ? message : 'Error al guardar tipo de cambio');
+            setServerError(getApiErrorMessage(error, 'Error al guardar tipo de cambio'));
         } finally {
             setSaving(false);
         }
@@ -239,13 +215,7 @@ export default function TipoCambioSection() {
 
     const renderTableRows = () => {
         if (loading) {
-            return (
-                <TableRow>
-                    <TableCell colSpan={4} align="center">
-                        <CircularProgress />
-                    </TableCell>
-                </TableRow>
-            );
+            return <TableSkeletonRows columns={4} />;
         }
 
         if (tiposCambio.length === 0) {

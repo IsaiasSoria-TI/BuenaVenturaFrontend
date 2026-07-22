@@ -1,6 +1,8 @@
 import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
+import { clearSession, getToken } from '../services/sessionService';
+import AppLoadingSkeleton from '../components/loading/AppLoadingSkeleton';
 
 const Login = lazy(() => import('../pages/auth/Login'));
 const Proveedor = lazy(() => import('../pages/compras/proveedor/Proveedor'));
@@ -17,14 +19,8 @@ const HistorialMovimientos = lazy(() => import('../pages/inventario/kardex/histo
 const Transferencia = lazy(() => import('../pages/inventario/transferencia/Transferencia'));
 const CuentasPagar = lazy(() => import('../pages/cuentaspagar/CuentasPagar'));
 
-const clearSession = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('username');
-  localStorage.removeItem('user');
-};
-
 const hasValidToken = () => {
-  const token = localStorage.getItem('token');
+  const token = getToken();
 
   if (!token) {
     return false;
@@ -55,7 +51,7 @@ const PrivateRoute = ({ children }) => {
 function AppRouter() {
   return (
     <BrowserRouter>
-      <Suspense fallback={null}>
+      <Suspense fallback={<AppLoadingSkeleton />}>
         <Routes>
           {/* Ruta publica: pantalla de inicio de sesion. */}
           <Route path="/login" element={<Login />} />

@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import logoImg from '../../assets/BUENAVENTURA SAC.png';
 import { login } from '../../services/authService';
+import { saveSession } from '../../services/sessionService';
 import {
     Alert,
     Box,
@@ -72,9 +73,9 @@ export default function LoginPage() {
         setErrorMessage('');
 
         const usuario = form.usuario.trim();
-        const contrasena = form.contrasena.trim();
+        const contrasena = form.contrasena;
 
-        if (!usuario || !contrasena) {
+        if (!usuario || !contrasena.trim()) {
             setErrorMessage('Ingresa usuario y contrasena');
             return;
         }
@@ -84,9 +85,7 @@ export default function LoginPage() {
             const response = await login(usuario, contrasena);
             const { token, ...user } = response;
 
-            localStorage.setItem('token', token);
-            localStorage.setItem('username', user.nombreCompleto || user.usuario);
-            localStorage.setItem('user', JSON.stringify(user));
+            saveSession(token, user);
 
             navigate('/dashboard', { replace: true });
         } catch (error) {

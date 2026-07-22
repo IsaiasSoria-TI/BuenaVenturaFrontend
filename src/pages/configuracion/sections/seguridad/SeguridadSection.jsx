@@ -6,7 +6,6 @@ import {
     Card,
     CardContent,
     Chip,
-    CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
@@ -27,6 +26,9 @@ import {
 import { configuracionService } from '../../../../services/configuracionService';
 import ModalUsuarioSeguridad from './ModalUsuarioSeguridad';
 import { useAutoClearMessage } from '../../../../utils/useAutoClearMessage';
+import { getApiErrorMessage } from '../../../../utils/getApiErrorMessage';
+import MaterialSymbol from '../../../../components/MaterialSymbol';
+import TableSkeletonRows from '../../../../components/loading/TableSkeletonRows';
 
 // Estado base para crear usuarios de seguridad desde configuracion.
 const initialForm = {
@@ -42,30 +44,7 @@ const initialForm = {
     flgActivo: 'true',
 };
 
-function Icon({ name, size = 20, color = 'inherit' }) {
-    return (
-        <Box
-            component="span"
-            className="material-symbols-rounded"
-            sx={{
-                fontSize: size,
-                color,
-                lineHeight: 1,
-                userSelect: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-            }}
-        >
-            {name}
-        </Box>
-    );
-}
-
-function getMessage(error, fallback) {
-    const message = error?.response?.data?.message || error?.response?.data || fallback;
-    return typeof message === 'string' ? message : fallback;
-}
+const Icon = MaterialSymbol;
 
 function getEstadoChipStyles(flgActivo) {
     return flgActivo
@@ -175,7 +154,7 @@ export default function SeguridadSection() {
     // Transforma strings del formulario al formato que espera el backend.
     const buildPayload = () => ({
         usuario: form.usuario.trim(),
-        contrasena: form.contrasena.trim(),
+        contrasena: form.contrasena,
         nombres: form.nombres.trim(),
         apellidoPaterno: form.apellidoPaterno.trim(),
         apellidoMaterno: form.apellidoMaterno.trim(),
@@ -203,7 +182,7 @@ export default function SeguridadSection() {
             setOpen(false);
             await cargarUsuarios();
         } catch (error) {
-            setServerError(getMessage(error, 'Error al guardar usuario'));
+            setServerError(getApiErrorMessage(error, 'Error al guardar usuario'));
         } finally {
             setSaving(false);
         }
@@ -220,7 +199,7 @@ export default function SeguridadSection() {
             setSelectedDelete(null);
             await cargarUsuarios();
         } catch (error) {
-            setServerError(getMessage(error, 'Error al inactivar usuario'));
+            setServerError(getApiErrorMessage(error, 'Error al inactivar usuario'));
         }
     };
 
@@ -264,11 +243,7 @@ export default function SeguridadSection() {
 
                             <TableBody>
                                 {loading ? (
-                                    <TableRow>
-                                        <TableCell colSpan={5} align="center">
-                                            <CircularProgress />
-                                        </TableCell>
-                                    </TableRow>
+                                    <TableSkeletonRows columns={5} />
                                 ) : usuarios.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={5} align="center">

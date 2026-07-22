@@ -1,5 +1,4 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 import {
     Alert,
     Box,
@@ -7,7 +6,6 @@ import {
     Card,
     CardContent,
     Chip,
-    CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
@@ -28,6 +26,9 @@ import {
 import { bancoService } from '../../../../services/bancoService';
 import ModalBanco from './ModalBanco';
 import { useAutoClearMessage } from '../../../../utils/useAutoClearMessage';
+import { getApiErrorMessage } from '../../../../utils/getApiErrorMessage';
+import MaterialSymbol from '../../../../components/MaterialSymbol';
+import TableSkeletonRows from '../../../../components/loading/TableSkeletonRows';
 
 // Estado inicial para crear o editar bancos del catalogo.
 const initialForm = {
@@ -36,31 +37,7 @@ const initialForm = {
     flgActivo: 'true',
 };
 
-function Icon({ name, size = 20, color = 'inherit' }) {
-    return (
-        <Box
-            component="span"
-            className="material-symbols-rounded"
-            sx={{
-                fontSize: size,
-                color,
-                lineHeight: 1,
-                userSelect: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-            }}
-        >
-            {name}
-        </Box>
-    );
-}
-
-Icon.propTypes = {
-    name: PropTypes.string.isRequired,
-    size: PropTypes.number,
-    color: PropTypes.string,
-};
+const Icon = MaterialSymbol;
 
 function getEstadoChipStyles(flgActivo) {
     return flgActivo
@@ -163,8 +140,7 @@ export default function BancosSection() {
             setOpen(false);
             await cargarBancos();
         } catch (error) {
-            const message = error?.response?.data?.message || error?.response?.data || 'Error al guardar banco';
-            setServerError(typeof message === 'string' ? message : 'Error al guardar banco');
+            setServerError(getApiErrorMessage(error, 'Error al guardar banco'));
         } finally {
             setSaving(false);
         }
@@ -192,13 +168,7 @@ export default function BancosSection() {
 
     const renderTableRows = () => {
         if (loading) {
-            return (
-                <TableRow>
-                    <TableCell colSpan={3} align="center">
-                        <CircularProgress />
-                    </TableCell>
-                </TableRow>
-            );
+            return <TableSkeletonRows columns={3} />;
         }
 
         if (bancos.length === 0) {

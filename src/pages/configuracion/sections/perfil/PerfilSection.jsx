@@ -1,8 +1,11 @@
 import React from 'react';
-import { Alert, Box, CircularProgress, Typography } from '@mui/material';
+import { Alert, Box, Skeleton, Typography } from '@mui/material';
 import PerfilForm from './PerfilForm';
+import FormSkeleton from '../../../../components/loading/FormSkeleton';
 import { configuracionService } from '../../../../services/configuracionService';
+import { getUser, updateUser } from '../../../../services/sessionService';
 import { useAutoClearMessage } from '../../../../utils/useAutoClearMessage';
+import { getApiErrorMessage } from '../../../../utils/getApiErrorMessage';
 
 // Estado base del perfil antes de cargar los datos del backend.
 const initialForm = {
@@ -15,22 +18,15 @@ const initialForm = {
 };
 
 function getUsuarioIdActual() {
-    const usuarioActual = JSON.parse(localStorage.getItem('user') || '{}');
-    return usuarioActual.idUsuario;
+    return getUser().idUsuario;
 }
 
 // Sincroniza localStorage para que Topbar muestre el nombre actualizado sin reloguear.
 function actualizarUsuarioLocal(data) {
-    const usuarioActual = JSON.parse(localStorage.getItem('user') || '{}');
-
-    const nuevoUsuario = {
-        ...usuarioActual,
+    updateUser({
         usuario: data.usuario || '',
         nombreCompleto: data.nombreCompleto || '',
-    };
-
-    localStorage.setItem('user', JSON.stringify(nuevoUsuario));
-    window.dispatchEvent(new Event('user-updated'));
+    });
 }
 
 export default function PerfilSection() {
@@ -67,16 +63,7 @@ export default function PerfilSection() {
             });
         } catch (error) {
 
-            const message =
-                error?.response?.data?.message ||
-                error?.response?.data ||
-                'No se pudo cargar la información del perfil.';
-
-            setServerError(
-                typeof message === 'string'
-                    ? message
-                    : 'No se pudo cargar la información del perfil.'
-            );
+            setServerError(getApiErrorMessage(error, 'No se pudo cargar la informacion del perfil.'));
         } finally {
             setLoading(false);
         }
@@ -171,16 +158,7 @@ export default function PerfilSection() {
             setSuccessMessage('Perfil actualizado correctamente.');
         } catch (error) {
 
-            const message =
-                error?.response?.data?.message ||
-                error?.response?.data ||
-                'No se pudo actualizar el perfil.';
-
-            setServerError(
-                typeof message === 'string'
-                    ? message
-                    : 'No se pudo actualizar el perfil.'
-            );
+            setServerError(getApiErrorMessage(error, 'No se pudo actualizar el perfil.'));
         } finally {
             setSaving(false);
         }
@@ -188,15 +166,12 @@ export default function PerfilSection() {
 
     if (loading) {
         return (
-            <Box
-                sx={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    py: 6,
-                }}
-            >
-                <CircularProgress />
+            <Box aria-busy="true">
+                <Box sx={{ mb: 2 }} aria-hidden="true">
+                    <Skeleton animation="wave" width={90} height={28} />
+                    <Skeleton animation="wave" width={260} height={22} />
+                </Box>
+                <FormSkeleton fields={6} />
             </Box>
         );
     }

@@ -1,5 +1,4 @@
 import * as React from 'react';
-import PropTypes from 'prop-types';
 
 import {
     Alert,
@@ -8,7 +7,6 @@ import {
     Card,
     CardContent,
     Chip,
-    CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
@@ -29,33 +27,10 @@ import {
 import { cuentaContableService } from '../../../../services/cuentaContableService';
 import ModalCuentaContable from './ModalCuentaContable';
 import { useAutoClearMessage } from '../../../../utils/useAutoClearMessage';
+import MaterialSymbol from '../../../../components/MaterialSymbol';
+import TableSkeletonRows from '../../../../components/loading/TableSkeletonRows';
 
-/* ICON COMPONENT */
-function Icon({ name, size = 20, color = 'inherit' }) {
-    return (
-        <Box
-            component="span"
-            className="material-symbols-rounded"
-            sx={{
-                fontSize: size,
-                color,
-                lineHeight: 1,
-                userSelect: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-            }}
-        >
-            {name}
-        </Box>
-    );
-}
-
-Icon.propTypes = {
-    name: PropTypes.string.isRequired,
-    size: PropTypes.number,
-    color: PropTypes.string,
-};
+const Icon = MaterialSymbol;
 
 // Estado inicial usado por el formulario de cuenta contable.
 const initialForm = {
@@ -227,13 +202,7 @@ export default function CuentasContablesSection() {
 
     const renderTableRows = () => {
         if (loading) {
-            return (
-                <TableRow>
-                    <TableCell colSpan={4} align="center">
-                        <CircularProgress />
-                    </TableCell>
-                </TableRow>
-            );
+            return <TableSkeletonRows columns={4} />;
         }
 
         return cuentasPaginadas.map((cuenta) => (

@@ -6,7 +6,6 @@ import {
   Button,
   Card,
   CardContent,
-  CircularProgress,
   Paper,
   Stack,
   Table,
@@ -23,27 +22,11 @@ import { articuloService } from '../../../../services/articuloService';
 import { consultaStockService } from '../../../../services/consultaStockService';
 import { getAutocompleteTextFieldProps } from '../../../../utils/autocompleteTextField';
 import { formatDatePeru } from '../../../../utils/formatters';
+import { getApiErrorMessage } from '../../../../utils/getApiErrorMessage';
+import MaterialSymbol from '../../../../components/MaterialSymbol';
+import TableSkeletonRows from '../../../../components/loading/TableSkeletonRows';
 
-function Icon({ name, size = 20, color = 'inherit' }) {
-  return (
-    <Box
-      component="span"
-      className="material-symbols-rounded"
-      sx={{
-        fontSize: size,
-        color,
-        lineHeight: 1,
-        userSelect: 'none',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontVariationSettings: '"FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24',
-      }}
-    >
-      {name}
-    </Box>
-  );
-}
+const Icon = MaterialSymbol;
 
 function getCurrentPeriod() {
   const now = new Date();
@@ -96,16 +79,7 @@ export default function ConsultaStock() {
         }
       } catch (error) {
         if (active) {
-          const message =
-            error?.response?.data?.message ||
-            error?.response?.data ||
-            'No se pudo cargar el catalogo de articulos.';
-
-          setServerError(
-            typeof message === 'string'
-              ? message
-              : 'No se pudo cargar el catalogo de articulos.'
-          );
+          setServerError(getApiErrorMessage(error, 'No se pudo cargar el catalogo de articulos.'));
         }
       } finally {
         if (active) {
@@ -136,16 +110,7 @@ export default function ConsultaStock() {
 
       setMovimientos(Array.isArray(data) ? data : []);
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data ||
-        'No se pudo consultar los movimientos de stock.';
-
-      setServerError(
-        typeof message === 'string'
-          ? message
-          : 'No se pudo consultar los movimientos de stock.'
-      );
+      setServerError(getApiErrorMessage(error, 'No se pudo consultar los movimientos de stock.'));
       setMovimientos([]);
     } finally {
       setLoadingMovimientos(false);
@@ -288,11 +253,7 @@ export default function ConsultaStock() {
 
                 <TableBody>
                   {showLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
-                        <CircularProgress size={28} />
-                      </TableCell>
-                    </TableRow>
+                    <TableSkeletonRows columns={6} />
                   ) : null}
 
                   {!showLoading && showInitialState ? (

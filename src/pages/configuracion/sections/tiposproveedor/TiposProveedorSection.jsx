@@ -1,5 +1,4 @@
 import * as React from 'react';
-import PropTypes from 'prop-types';
 
 import {
     Alert,
@@ -8,7 +7,6 @@ import {
     Card,
     CardContent,
     Chip,
-    CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
@@ -29,32 +27,10 @@ import {
 import { tipoProveedorService } from '../../../../services/tipoProveedorService';
 import ModalTipoProveedor from './ModalTipoProveedor';
 import { useAutoClearMessage } from '../../../../utils/useAutoClearMessage';
+import MaterialSymbol from '../../../../components/MaterialSymbol';
+import TableSkeletonRows from '../../../../components/loading/TableSkeletonRows';
 
-function Icon({ name, size = 20, color = 'inherit' }) {
-    return (
-        <Box
-            component="span"
-            className="material-symbols-rounded"
-            sx={{
-                fontSize: size,
-                color,
-                lineHeight: 1,
-                userSelect: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-            }}
-        >
-            {name}
-        </Box>
-    );
-}
-
-Icon.propTypes = {
-    name: PropTypes.string.isRequired,
-    size: PropTypes.number,
-    color: PropTypes.string,
-};
+const Icon = MaterialSymbol;
 
 // Estado base del formulario de tipos de proveedor.
 const initialForm = {
@@ -248,11 +224,7 @@ export default function TiposProveedorSection() {
 
                             <TableBody>
                                 {loading ? (
-                                    <TableRow>
-                                        <TableCell colSpan={3} align="center">
-                                            <CircularProgress />
-                                        </TableCell>
-                                    </TableRow>
+                                    <TableSkeletonRows columns={3} />
                                 ) : (
                                     tiposProveedorPaginados.map((tipoProveedor) => (
                                         <TableRow key={tipoProveedor.idTipoProveedor}>

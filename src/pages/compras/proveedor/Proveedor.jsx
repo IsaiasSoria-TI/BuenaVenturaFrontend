@@ -1,5 +1,4 @@
 import * as React from 'react';
-import PropTypes from 'prop-types';
 
 import {
   Alert,
@@ -8,7 +7,6 @@ import {
   Card,
   CardContent,
   Chip,
-  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -33,33 +31,11 @@ import { tipoProveedorService } from '../../../services/tipoProveedorService';
 import { bancoService } from '../../../services/bancoService';
 import ModalProveedor from './ModalProveedor';
 import { useAutoClearMessage } from '../../../utils/useAutoClearMessage';
+import { getApiErrorMessage } from '../../../utils/getApiErrorMessage';
+import MaterialSymbol from '../../../components/MaterialSymbol';
+import TableSkeletonRows from '../../../components/loading/TableSkeletonRows';
 
-function Icon({ name, size = 20, color = 'inherit' }) {
-  return (
-    <Box
-      component="span"
-      className="material-symbols-rounded"
-      sx={{
-        fontSize: size,
-        color,
-        lineHeight: 1,
-        userSelect: 'none',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontVariationSettings: '"FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24',
-      }}
-    >
-      {name}
-    </Box>
-  );
-}
-
-Icon.propTypes = {
-  name: PropTypes.string.isRequired,
-  size: PropTypes.number,
-  color: PropTypes.string,
-};
+const Icon = MaterialSymbol;
 
 const initialForm = {
   idProveedor: null,
@@ -142,16 +118,7 @@ export default function Proveedor() {
       setPage(0);
     } catch (error) {
 
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data ||
-        'No se pudo listar los proveedores.';
-
-      setServerError(
-        typeof message === 'string'
-          ? message
-          : 'No se pudo listar los proveedores.'
-      );
+      setServerError(getApiErrorMessage(error, 'No se pudo listar los proveedores.'));
     } finally {
       setLoading(false);
     }
@@ -164,16 +131,7 @@ export default function Proveedor() {
       setTiposProveedor(Array.isArray(data) ? data : []);
     } catch (error) {
 
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data ||
-        'No se pudo listar los tipos de proveedor.';
-
-      setServerError(
-        typeof message === 'string'
-          ? message
-          : 'No se pudo listar los tipos de proveedor.'
-      );
+      setServerError(getApiErrorMessage(error, 'No se pudo listar los tipos de proveedor.'));
     }
   }, []);
 
@@ -184,16 +142,7 @@ export default function Proveedor() {
       setBancos(Array.isArray(data) ? data : []);
     } catch (error) {
 
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data ||
-        'No se pudo listar los bancos.';
-
-      setServerError(
-        typeof message === 'string'
-          ? message
-          : 'No se pudo listar los bancos.'
-      );
+      setServerError(getApiErrorMessage(error, 'No se pudo listar los bancos.'));
     }
   }, []);
 
@@ -398,15 +347,7 @@ export default function Proveedor() {
       handleClose();
     } catch (error) {
 
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data ||
-        'No se pudo guardar el proveedor.';
-
-      const errorMessage =
-        typeof message === 'string'
-          ? message
-          : 'No se pudo guardar el proveedor.';
+      const errorMessage = getApiErrorMessage(error, 'No se pudo guardar el proveedor.');
 
       setBackendFieldError(errorMessage);
       setServerError(errorMessage);
@@ -441,16 +382,7 @@ export default function Proveedor() {
       setServerSuccess('Proveedor inactivado correctamente.');
     } catch (error) {
 
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data ||
-        'No se pudo inactivar el proveedor.';
-
-      setServerError(
-        typeof message === 'string'
-          ? message
-          : 'No se pudo inactivar el proveedor.'
-      );
+      setServerError(getApiErrorMessage(error, 'No se pudo inactivar el proveedor.'));
     }
   };
 
@@ -605,11 +537,7 @@ export default function Proveedor() {
 
               <TableBody>
                 {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={14} align="center" sx={{ py: 4 }}>
-                      <CircularProgress size={28} />
-                    </TableCell>
-                  </TableRow>
+                  <TableSkeletonRows columns={14} />
                 ) : proveedores.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={14} align="center" sx={{ py: 4, color: '#64748b' }}>

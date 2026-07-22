@@ -6,7 +6,6 @@ import {
     Box,
     Button,
     Checkbox,
-    CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
@@ -23,33 +22,10 @@ import {
 
 import { getAutocompleteTextFieldProps } from '../../../utils/autocompleteTextField';
 import { formatCurrency, getCurrencyPrefix, isMonedaSolesData } from './compraCalculations';
+import MaterialSymbol from '../../../components/MaterialSymbol';
+import FormSkeleton from '../../../components/loading/FormSkeleton';
 
-function Icon({ name, size = 20, color = 'inherit' }) {
-    return (
-        <Box
-            component="span"
-            className="material-symbols-rounded"
-            sx={{
-                fontSize: size,
-                color,
-                lineHeight: 1,
-                userSelect: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontVariationSettings: '"FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24',
-            }}
-        >
-            {name}
-        </Box>
-    );
-}
-
-Icon.propTypes = {
-    name: PropTypes.string.isRequired,
-    size: PropTypes.number,
-    color: PropTypes.string,
-};
+const Icon = MaterialSymbol;
 
 function isIgvImpuesto(impuesto) {
     const tipo = String(impuesto?.tipoImpuesto || '').replace(/[.\s]/g, '').toUpperCase();
@@ -130,9 +106,7 @@ export default function ModalGestionarCompras({
 
             <DialogContent dividers sx={{ pt: 2.5 }}>
                 {catalogLoading ? (
-                    <Box sx={{ py: 4, display: 'flex', justifyContent: 'center' }}>
-                        <CircularProgress size={26} />
-                    </Box>
+                    <FormSkeleton fields={8} />
                 ) : (
                     <Stack spacing={2.5}>
                         <Autocomplete

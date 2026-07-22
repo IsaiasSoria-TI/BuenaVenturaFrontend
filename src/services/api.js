@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { clearSession, getToken } from './sessionService';
 
 const api = axios.create({
   baseURL: '/',
@@ -7,15 +8,9 @@ const api = axios.create({
 // Rutas que no deben llevar token JWT porque aun no existe una sesion iniciada.
 const publicRoutes = ['/auth/login'];
 
-const clearSession = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('username');
-  localStorage.removeItem('user');
-};
-
 // Antes de cada request, agrega el token al header Authorization si la ruta es privada.
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = getToken();
   const url = config.url || '';
 
   const isPublicRoute = publicRoutes.some(

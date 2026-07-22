@@ -1,5 +1,4 @@
 import * as React from 'react';
-import PropTypes from 'prop-types';
 
 import {
   Alert,
@@ -8,7 +7,6 @@ import {
   Card,
   CardContent,
   Chip,
-  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -37,6 +35,14 @@ import { pagoService } from '../../../services/pagoService.js';
 import { monedaService } from '../../../services/monedaService';
 import { tipoCambioService } from '../../../services/tipoCambioService';
 import { useAutoClearMessage } from '../../../utils/useAutoClearMessage';
+import { getApiErrorMessage } from '../../../utils/getApiErrorMessage';
+import Icon from '../../../components/MaterialSymbol';
+import TableSkeletonRows from '../../../components/loading/TableSkeletonRows';
+import {
+  getCompraFechaBase,
+  getFechaTipoCambio,
+  isMonedaSoles,
+} from '../../../utils/compraFormUtils';
 
 import ModalDetalleCompra from './ModalDetalleCompra';
 import ModalGestionarCompras from './ModalGestionarCompras';
@@ -58,33 +64,6 @@ import {
   getDefaultMonedaId,
   isIgvImpuesto,
 } from './compraCalculations';
-
-function Icon({ name, size = 20, color = 'inherit' }) {
-  return (
-    <Box
-      component="span"
-      className="material-symbols-rounded"
-      sx={{
-        fontSize: size,
-        color,
-        lineHeight: 1,
-        userSelect: 'none',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontVariationSettings: '"FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24',
-      }}
-    >
-      {name}
-    </Box>
-  );
-}
-
-Icon.propTypes = {
-  name: PropTypes.string.isRequired,
-  size: PropTypes.number,
-  color: PropTypes.string,
-};
 
 const createDetalle = () => ({
   tempId: Math.random().toString(36).substring(2) + Date.now(),
@@ -164,20 +143,6 @@ function getEstadoCompra(compra) {
   return compra?.estado || '-';
 }
 
-function isMonedaSoles(moneda) {
-  const codigo = String(moneda?.codigo || '').trim().toUpperCase();
-  const nombre = String(moneda?.nombre || '').trim().toUpperCase();
-  return codigo === 'PEN' || codigo === 'SOL' || nombre === 'SOLES' || nombre === 'SOL';
-}
-
-function getFechaTipoCambio(fechaCompras) {
-  return fechaCompras ? String(fechaCompras).slice(0, 10) : '';
-}
-
-function getCompraFechaBase(compraForm) {
-  return compraForm.fechaEmision || compraForm.fechaCompras;
-}
-
 export default function GestionarCompras() {
   const [compras, setCompras] = React.useState([]);
   const [proveedores, setProveedores] = React.useState([]);
@@ -224,12 +189,7 @@ export default function GestionarCompras() {
       setPage(0);
     } catch (error) {
 
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data ||
-        'No se pudo listar las compras.';
-
-      setServerError(typeof message === 'string' ? message : 'No se pudo listar las compras.');
+      setServerError(getApiErrorMessage(error, 'No se pudo listar las compras.'));
     } finally {
       setLoading(false);
     }
@@ -330,10 +290,10 @@ export default function GestionarCompras() {
       })
       .catch((error) => {
         if (cancelled) return;
-        const message =
-          error?.response?.data?.message ||
-          error?.response?.data ||
-          'No existe tipo de cambio registrado para la fecha seleccionada.';
+        const message = getApiErrorMessage(
+          error,
+          'No existe tipo de cambio registrado para la fecha seleccionada.'
+        );
 
         setForm((prev) => ({
           ...prev,
@@ -342,9 +302,7 @@ export default function GestionarCompras() {
         }));
         setErrors((prev) => ({
           ...prev,
-          tipoCambioAplicado: typeof message === 'string'
-            ? message
-            : 'No existe tipo de cambio registrado para la fecha seleccionada.',
+          tipoCambioAplicado: message,
         }));
       })
       .finally(() => {
@@ -753,12 +711,7 @@ export default function GestionarCompras() {
       await cargarCompras();
     } catch (error) {
 
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data ||
-        'No se pudo guardar la compra.';
-
-      setServerError(typeof message === 'string' ? message : 'No se pudo guardar la compra.');
+      setServerError(getApiErrorMessage(error, 'No se pudo guardar la compra.'));
     } finally {
       setSaving(false);
     }
@@ -797,12 +750,7 @@ export default function GestionarCompras() {
       await cargarCompras();
     } catch (error) {
 
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data ||
-        'No se pudo inactivar la compra.';
-
-      setServerError(typeof message === 'string' ? message : 'No se pudo inactivar la compra.');
+      setServerError(getApiErrorMessage(error, 'No se pudo inactivar la compra.'));
     }
   };
 
@@ -945,11 +893,7 @@ export default function GestionarCompras() {
 
               <TableBody>
                 {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
-                      <CircularProgress size={28} />
-                    </TableCell>
-                  </TableRow>
+                  <TableSkeletonRows columns={11} />
                 ) : compras.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={11} align="center" sx={{ py: 4, color: '#64748b' }}>

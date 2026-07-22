@@ -6,7 +6,6 @@ import {
     Card,
     CardContent,
     Chip,
-    CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
@@ -27,6 +26,9 @@ import {
 import { impuestoService } from '../../../../services/impuestoService';
 import ModalImpuesto from './ModalImpuesto';
 import { useAutoClearMessage } from '../../../../utils/useAutoClearMessage';
+import { getApiErrorMessage } from '../../../../utils/getApiErrorMessage';
+import MaterialSymbol from '../../../../components/MaterialSymbol';
+import TableSkeletonRows from '../../../../components/loading/TableSkeletonRows';
 
 // Estado inicial del formulario para crear o editar impuestos.
 const initialForm = {
@@ -36,25 +38,7 @@ const initialForm = {
     flgActivo: 'true',
 };
 
-function Icon({ name, size = 20, color = 'inherit' }) {
-    return (
-        <Box
-            component="span"
-            className="material-symbols-rounded"
-            sx={{
-                fontSize: size,
-                color,
-                lineHeight: 1,
-                userSelect: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-            }}
-        >
-            {name}
-        </Box>
-    );
-}
+const Icon = MaterialSymbol;
 
 function getEstadoChipStyles(flgActivo) {
     return flgActivo
@@ -196,8 +180,7 @@ export default function ImpuestosSection() {
             setOpen(false);
             await cargarImpuestos();
         } catch (error) {
-            const message = error?.response?.data?.message || error?.response?.data || 'Error al guardar impuesto';
-            setServerError(typeof message === 'string' ? message : 'Error al guardar impuesto');
+            setServerError(getApiErrorMessage(error, 'Error al guardar impuesto'));
         } finally {
             setSaving(false);
         }
@@ -253,11 +236,7 @@ export default function ImpuestosSection() {
 
                             <TableBody>
                                 {loading ? (
-                                    <TableRow>
-                                        <TableCell colSpan={4} align="center">
-                                            <CircularProgress />
-                                        </TableCell>
-                                    </TableRow>
+                                    <TableSkeletonRows columns={4} />
                                 ) : impuestos.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={4} align="center">

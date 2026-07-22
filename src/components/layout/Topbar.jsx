@@ -2,47 +2,10 @@ import PropTypes from 'prop-types';
 import { Box, Avatar, IconButton, Typography } from '@mui/material';
 import { useLocation } from 'react-router-dom';
 import { getTitleFromPath } from '../../navigation/navSections';
+import { getUser } from '../../services/sessionService';
+import MaterialSymbol from '../MaterialSymbol';
 
-// Renderiza iconos de Google Material Symbols sin depender de un componente externo.
-function Icon({ name, size, color }) {
-  return (
-    <span
-      className="material-symbols-rounded"
-      style={{
-        fontSize: size,
-        color,
-        lineHeight: 1,
-        userSelect: 'none',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontVariationSettings: '"FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24',
-      }}
-    >
-      {name}
-    </span>
-  );
-}
-
-Icon.propTypes = {
-  name: PropTypes.string.isRequired,
-  size: PropTypes.number,
-  color: PropTypes.string,
-};
-
-Icon.defaultProps = {
-  size: 22,
-  color: 'inherit',
-};
-
-// Lee el usuario desde localStorage de forma segura.
-function getUserFromStorage() {
-  try {
-    return JSON.parse(localStorage.getItem('user') || '{}');
-  } catch {
-    return {};
-  }
-}
+const Icon = MaterialSymbol;
 
 // Genera iniciales para el avatar cuando el usuario no tiene foto.
 function getInitials(username) {
@@ -63,7 +26,7 @@ export default function Topbar({ isMobile, onMenuClick }) {
   // Titulo dinamico calculado desde la ruta activa.
   const title = getTitleFromPath(location.pathname);
 
-  const user = getUserFromStorage();
+  const user = getUser();
   const username = user.nombreCompleto || user.usuario || 'Usuario';
   const fotoPerfil = user.fotoPerfil || '';
   const initials = getInitials(username);

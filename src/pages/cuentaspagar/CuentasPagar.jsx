@@ -1,5 +1,4 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 
 import {
   Alert,
@@ -8,7 +7,6 @@ import {
   Card,
   CardContent,
   Chip,
-  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -41,33 +39,11 @@ import {
   formatRecepcionCode,
 } from '../../utils/formatters';
 import { useAutoClearMessage } from '../../utils/useAutoClearMessage';
+import { getApiErrorMessage } from '../../utils/getApiErrorMessage';
+import MaterialSymbol from '../../components/MaterialSymbol';
+import TableSkeletonRows from '../../components/loading/TableSkeletonRows';
 
-function Icon({ name, size = 20, color = 'inherit' }) {
-  return (
-    <Box
-      component="span"
-      className="material-symbols-rounded"
-      sx={{
-        fontSize: size,
-        color,
-        lineHeight: 1,
-        userSelect: 'none',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontVariationSettings: '"FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24',
-      }}
-    >
-      {name}
-    </Box>
-  );
-}
-
-Icon.propTypes = {
-  name: PropTypes.string.isRequired,
-  size: PropTypes.number,
-  color: PropTypes.string,
-};
+const Icon = MaterialSymbol;
 
 function getEstadoChipStyles(estado) {
   if (estado === 'Completo' || estado === 'Pagado') {
@@ -151,16 +127,7 @@ export default function CuentasPagar() {
       setPage(0);
     } catch (error) {
 
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data ||
-        'No se pudo listar las cuentas por pagar.';
-
-      setServerError(
-        typeof message === 'string'
-          ? message
-          : 'No se pudo listar las cuentas por pagar.'
-      );
+      setServerError(getApiErrorMessage(error, 'No se pudo listar las cuentas por pagar.'));
     } finally {
       setLoading(false);
     }
@@ -273,16 +240,7 @@ export default function CuentasPagar() {
       await cargarCuentas();
     } catch (error) {
 
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data ||
-        'No se pudo actualizar la cuenta por pagar.';
-
-      setServerError(
-        typeof message === 'string'
-          ? message
-          : 'No se pudo actualizar la cuenta por pagar.'
-      );
+      setServerError(getApiErrorMessage(error, 'No se pudo actualizar la cuenta por pagar.'));
     } finally {
       setEditSaving(false);
     }
@@ -317,16 +275,7 @@ export default function CuentasPagar() {
       await cargarCuentas();
     } catch (error) {
 
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data ||
-        'No se pudo anular la cuenta por pagar.';
-
-      setServerError(
-        typeof message === 'string'
-          ? message
-          : 'No se pudo anular la cuenta por pagar.'
-      );
+      setServerError(getApiErrorMessage(error, 'No se pudo anular la cuenta por pagar.'));
     } finally {
       setDeleteSaving(false);
     }
@@ -502,11 +451,7 @@ export default function CuentasPagar() {
 
               <TableBody>
                 {showLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={12} align="center" sx={{ py: 4 }}>
-                      <CircularProgress size={28} />
-                    </TableCell>
-                  </TableRow>
+                  <TableSkeletonRows columns={12} />
                 ) : null}
 
                 {showEmpty ? (

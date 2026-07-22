@@ -1,1 +1,0 @@
-import{C as e}from"./TextField-D6h_crf8.js";var t=`/api/articulos`,n={listar:async()=>{let{data:n}=await e.get(t);return n},crear:async n=>{let{data:r}=await e.post(t,n);return r},actualizar:async(n,r)=>{let{data:i}=await e.put(`${t}/${n}`,r);return i},eliminar:async n=>{await e.delete(`${t}/${n}`)}};export{n as t};

@@ -1,5 +1,4 @@
 import * as React from 'react';
-import PropTypes from 'prop-types';
 
 import {
   Box,
@@ -17,7 +16,6 @@ import {
   Paper,
   IconButton,
   Chip,
-  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -32,33 +30,11 @@ import { articuloService } from '../../../services/articuloService';
 import { categoriaService } from '../../../services/categoriaService';
 import ModalArticulo from './ModalArticulo';
 import { useAutoClearMessage } from '../../../utils/useAutoClearMessage';
+import { getApiErrorMessage } from '../../../utils/getApiErrorMessage';
+import MaterialSymbol from '../../../components/MaterialSymbol';
+import TableSkeletonRows from '../../../components/loading/TableSkeletonRows';
 
-function Icon({ name, size = 20, color = 'inherit' }) {
-  return (
-    <Box
-      component="span"
-      className="material-symbols-rounded"
-      sx={{
-        fontSize: size,
-        color,
-        lineHeight: 1,
-        userSelect: 'none',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontVariationSettings: '"FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24',
-      }}
-    >
-      {name}
-    </Box>
-  );
-}
-
-Icon.propTypes = {
-  name: PropTypes.string.isRequired,
-  size: PropTypes.number,
-  color: PropTypes.string,
-};
+const Icon = MaterialSymbol;
 
 // Estado base del modal de articulo, usado al crear y para limpiar el formulario.
 const initialForm = {
@@ -132,16 +108,7 @@ export default function Articulo() {
       setPage(0);
     } catch (error) {
 
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data ||
-        'No se pudo listar los artículos.';
-
-      setServerError(
-        typeof message === 'string'
-          ? message
-          : 'No se pudo listar los artículos.'
-      );
+      setServerError(getApiErrorMessage(error, 'No se pudo listar los articulos.'));
     } finally {
       setLoading(false);
     }
@@ -277,16 +244,7 @@ export default function Articulo() {
       await cargarArticulos();
     } catch (error) {
 
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data ||
-        'No se pudo guardar el artículo.';
-
-      setServerError(
-        typeof message === 'string'
-          ? message
-          : 'No se pudo guardar el artículo.'
-      );
+      setServerError(getApiErrorMessage(error, 'No se pudo guardar el articulo.'));
     } finally {
       setSaving(false);
     }
@@ -312,16 +270,7 @@ export default function Articulo() {
       await cargarArticulos();
     } catch (error) {
 
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data ||
-        'No se pudo eliminar el artículo.';
-
-      setServerError(
-        typeof message === 'string'
-          ? message
-          : 'No se pudo eliminar el artículo.'
-      );
+      setServerError(getApiErrorMessage(error, 'No se pudo eliminar el articulo.'));
     }
   };
 
@@ -372,20 +321,14 @@ export default function Articulo() {
 
   const renderTableRows = () => {
     if (loading || catalogLoading) {
-      return (
-        <TableRow>
-          <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-            <CircularProgress size={28} />
-          </TableCell>
-        </TableRow>
-      );
+      return <TableSkeletonRows columns={7} />;
     }
 
     if (articulos.length === 0) {
       return (
         <TableRow>
           <TableCell colSpan={7} align="center" sx={{ py: 4, color: '#64748b' }}>
-            No hay artÃ­culos registrados.
+            No hay articulos registrados.
           </TableCell>
         </TableRow>
       );
@@ -395,7 +338,7 @@ export default function Articulo() {
       return (
         <TableRow>
           <TableCell colSpan={7} align="center" sx={{ py: 4, color: '#64748b' }}>
-            No se encontraron artÃ­culos con ese criterio.
+            No se encontraron articulos con ese criterio.
           </TableCell>
         </TableRow>
       );

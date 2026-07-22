@@ -1,25 +1,6 @@
-import api from './api';
+import { createCrudService } from './createCrudService';
 
 const BASE_URL = '/api/articulos';
 
 // Centraliza el CRUD de articulos para que las pantallas no construyan URLs manualmente.
-export const articuloService = {
-  listar: async () => {
-    const { data } = await api.get(BASE_URL);
-    return data;
-  },
-
-  crear: async (payload) => {
-    const { data } = await api.post(BASE_URL, payload);
-    return data;
-  },
-
-  actualizar: async (id, payload) => {
-    const { data } = await api.put(`${BASE_URL}/${id}`, payload);
-    return data;
-  },
-
-  eliminar: async (id) => {
-    await api.delete(`${BASE_URL}/${id}`);
-  },
-};
+export const articuloService = createCrudService(BASE_URL);

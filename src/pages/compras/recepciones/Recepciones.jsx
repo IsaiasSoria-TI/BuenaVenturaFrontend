@@ -1,5 +1,4 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 
 import {
     Alert,
@@ -17,7 +16,6 @@ import {
     TableRow,
     Paper,
     Chip,
-    CircularProgress,
     TablePagination,
     IconButton,
     Tooltip,
@@ -39,33 +37,11 @@ import {
     formatRecepcionCode,
 } from '../../../utils/formatters';
 import { useAutoClearMessage } from '../../../utils/useAutoClearMessage';
+import { getApiErrorMessage } from '../../../utils/getApiErrorMessage';
+import MaterialSymbol from '../../../components/MaterialSymbol';
+import TableSkeletonRows from '../../../components/loading/TableSkeletonRows';
 
-function Icon({ name, size = 20, color = 'inherit' }) {
-    return (
-        <Box
-            component="span"
-            className="material-symbols-rounded"
-            sx={{
-                fontSize: size,
-                color,
-                lineHeight: 1,
-                userSelect: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontVariationSettings: '"FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24',
-            }}
-        >
-            {name}
-        </Box>
-    );
-}
-
-Icon.propTypes = {
-    name: PropTypes.string.isRequired,
-    size: PropTypes.number,
-    color: PropTypes.string,
-};
+const Icon = MaterialSymbol;
 
 const initialForm = {
     idCompras: null,
@@ -336,11 +312,7 @@ export default function Recepciones() {
             handleCloseEditDialog();
             await cargarRecepciones();
         } catch (error) {
-            const message =
-                error?.response?.data?.message ||
-                error?.response?.data ||
-                'No se pudieron actualizar los datos de recepcion.';
-            setServerError(typeof message === 'string' ? message : 'No se pudieron actualizar los datos de recepcion.');
+            setServerError(getApiErrorMessage(error, 'No se pudieron actualizar los datos de recepcion.'));
         } finally {
             setEditSaving(false);
         }
@@ -387,16 +359,7 @@ export default function Recepciones() {
                 detalles: [],
             }));
 
-            const message =
-                error?.response?.data?.message ||
-                error?.response?.data ||
-                'No se pudo cargar el detalle de la compra.';
-
-            setServerError(
-                typeof message === 'string'
-                    ? message
-                    : 'No se pudo cargar el detalle de la compra.'
-            );
+            setServerError(getApiErrorMessage(error, 'No se pudo cargar el detalle de la compra.'));
         } finally {
             setDetalleLoading(false);
         }
@@ -525,16 +488,7 @@ export default function Recepciones() {
             await Promise.all([cargarRecepciones(), cargarComprasDisponibles()]);
         } catch (error) {
 
-            const message =
-                error?.response?.data?.message ||
-                error?.response?.data ||
-                'No se pudo registrar la recepción.';
-
-            setServerError(
-                typeof message === 'string'
-                    ? message
-                    : 'No se pudo registrar la recepción.'
-            );
+            setServerError(getApiErrorMessage(error, 'No se pudo registrar la recepcion.'));
         } finally {
             setSaving(false);
         }
@@ -689,11 +643,7 @@ export default function Recepciones() {
 
                             <TableBody>
                                 {showLoading ? (
-                                    <TableRow>
-                                        <TableCell colSpan={15} align="center" sx={{ py: 4 }}>
-                                            <CircularProgress size={28} />
-                                        </TableCell>
-                                    </TableRow>
+                                    <TableSkeletonRows columns={15} />
                                 ) : null}
 
                                 {showEmpty ? (

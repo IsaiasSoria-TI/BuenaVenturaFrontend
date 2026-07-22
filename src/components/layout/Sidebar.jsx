@@ -14,29 +14,13 @@ import {
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import logoErp from '../../assets/Logoerp.png';
 import { NAV_SECTIONS, itemMatchesPath } from '../../navigation/navSections';
+import { clearSession, getUser } from '../../services/sessionService';
+import MaterialSymbol from '../MaterialSymbol';
 
 // Ancho del sidebar para mantener consistente el layout con Dashboard.jsx.
 const SIDEBAR_W = 256;
 
-// Renderiza iconos de Google Material Symbols usando el nombre del icono.
-const Icon = ({ name, size = 22, color = 'inherit' }) => (
-  <Box
-    component="span"
-    className="material-symbols-rounded"
-    sx={{
-      fontSize: size,
-      color,
-      lineHeight: 1,
-      userSelect: 'none',
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontVariationSettings: '"FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24',
-    }}
-  >
-    {name}
-  </Box>
-);
+const Icon = MaterialSymbol;
 
 // Item simple de navegacion.
 function SidebarLinkItem({ item, onNavigate, depth = 0 }) {
@@ -198,9 +182,9 @@ export default function Sidebar({ onNavigate }) {
   const pathname = location.pathname;
 
   // Datos del usuario autenticado guardados al iniciar sesion.
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const user = getUser();
 
-  const username = user.usuario || localStorage.getItem('username') || user.nombreCompleto || 'Usuario';
+  const username = user.usuario || user.nombreCompleto || 'Usuario';
 
   // Iniciales para el avatar cuando no hay foto de perfil.
   const initials = username
@@ -239,9 +223,7 @@ export default function Sidebar({ onNavigate }) {
 
   // Cierra la sesion limpiando los datos locales y volviendo al login.
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
-    localStorage.removeItem('user');
+    clearSession();
     navigate('/login');
   };
 

@@ -8,7 +8,6 @@ import {
   Button,
   Checkbox,
   Chip,
-  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -26,6 +25,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import FormSkeleton from '../../components/loading/FormSkeleton';
 
 import { cuentaPagarService } from '../../services/cuentaPagarService';
 import { getAutocompleteTextFieldProps } from '../../utils/autocompleteTextField';
@@ -35,6 +35,7 @@ import {
   formatRecepcionCode,
 } from '../../utils/formatters';
 import { useAutoClearMessage } from '../../utils/useAutoClearMessage';
+import { getApiErrorMessage } from '../../utils/getApiErrorMessage';
 
 // Valores iniciales del formulario cuando se abre el modal para registrar una cuenta.
 const initialForm = {
@@ -254,16 +255,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas, manu
       setComprasValidas(Array.isArray(data) ? data : []);
     } catch (error) {
 
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data ||
-        'No se pudo listar las compras válidas.';
-
-      setServerError(
-        typeof message === 'string'
-          ? message
-          : 'No se pudo listar las compras válidas.'
-      );
+      setServerError(getApiErrorMessage(error, 'No se pudo listar las compras validas.'));
     } finally {
       setComprasLoading(false);
     }
@@ -340,16 +332,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas, manu
       }));
     } catch (error) {
 
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data ||
-        'No se pudo cargar el detalle de la compra.';
-
-      setServerError(
-        typeof message === 'string'
-          ? message
-          : 'No se pudo cargar el detalle de la compra.'
-      );
+      setServerError(getApiErrorMessage(error, 'No se pudo cargar el detalle de la compra.'));
     } finally {
       setDetalleLoading(false);
     }
@@ -512,16 +495,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas, manu
       }, 500);
     } catch (error) {
 
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data ||
-        'No se pudo registrar la cuenta por pagar.';
-
-      setServerError(
-        typeof message === 'string'
-          ? message
-          : 'No se pudo registrar la cuenta por pagar.'
-      );
+      setServerError(getApiErrorMessage(error, 'No se pudo registrar la cuenta por pagar.'));
     } finally {
       setSaving(false);
     }
@@ -585,9 +559,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas, manu
               />
             </Box>
           ) : comprasLoading ? (
-            <Box sx={{ py: 4, display: 'flex', justifyContent: 'center' }}>
-              <CircularProgress size={26} />
-            </Box>
+            <FormSkeleton fields={5} />
           ) : (
             <>
               <Autocomplete
@@ -648,9 +620,7 @@ export default function ModalCuentaPagar({ open, onClose, onSaved, monedas, manu
               />
 
               {detalleLoading ? (
-                <Box sx={{ py: 3, display: 'flex', justifyContent: 'center' }}>
-                  <CircularProgress size={24} />
-                </Box>
+                <FormSkeleton fields={4} />
               ) : null}
 
               {!detalleLoading && detalleCompra ? (

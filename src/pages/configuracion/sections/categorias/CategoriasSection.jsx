@@ -1,5 +1,4 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 import {
     Alert,
     Box,
@@ -7,7 +6,6 @@ import {
     Card,
     CardContent,
     Chip,
-    CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
@@ -29,32 +27,11 @@ import { categoriaService } from '../../../../services/categoriaService';
 import { cuentaContableService } from '../../../../services/cuentaContableService';
 import ModalCategoria from './ModalCategoria';
 import { useAutoClearMessage } from '../../../../utils/useAutoClearMessage';
+import { getApiErrorMessage } from '../../../../utils/getApiErrorMessage';
+import MaterialSymbol from '../../../../components/MaterialSymbol';
+import TableSkeletonRows from '../../../../components/loading/TableSkeletonRows';
 
-// Icono simple basado en Material Symbols para acciones de la tabla.
-const Icon = ({ name, size = 20, color = 'inherit' }) => (
-    <Box
-        component="span"
-        className="material-symbols-rounded"
-        sx={{
-            fontSize: size,
-            color,
-            lineHeight: 1,
-            userSelect: 'none',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontVariationSettings: '"FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24',
-        }}
-    >
-        {name}
-    </Box>
-);
-
-Icon.propTypes = {
-    name: PropTypes.string.isRequired,
-    size: PropTypes.number,
-    color: PropTypes.string,
-};
+const Icon = MaterialSymbol;
 
 // Estado base de la categoria; se reutiliza al abrir el modal en modo creacion.
 const initialForm = {
@@ -113,16 +90,7 @@ export default function CategoriasSection() {
             setPage(0);
         } catch (error) {
 
-            const message =
-                error?.response?.data?.message ||
-                error?.response?.data ||
-                'No se pudo listar las categorías.';
-
-            setServerError(
-                typeof message === 'string'
-                    ? message
-                    : 'No se pudo listar las categorías.'
-            );
+            setServerError(getApiErrorMessage(error, 'No se pudo listar las categorias.'));
         } finally {
             setLoading(false);
         }
@@ -240,16 +208,7 @@ export default function CategoriasSection() {
             await cargarCategorias();
         } catch (error) {
 
-            const message =
-                error?.response?.data?.message ||
-                error?.response?.data ||
-                'No se pudo guardar la categoría.';
-
-            setServerError(
-                typeof message === 'string'
-                    ? message
-                    : 'No se pudo guardar la categoría.'
-            );
+            setServerError(getApiErrorMessage(error, 'No se pudo guardar la categoria.'));
         } finally {
             setSaving(false);
         }
@@ -275,16 +234,7 @@ export default function CategoriasSection() {
             await cargarCategorias();
         } catch (error) {
 
-            const message =
-                error?.response?.data?.message ||
-                error?.response?.data ||
-                'No se pudo eliminar la categoría.';
-
-            setServerError(
-                typeof message === 'string'
-                    ? message
-                    : 'No se pudo eliminar la categoría.'
-            );
+            setServerError(getApiErrorMessage(error, 'No se pudo eliminar la categoria.'));
         }
     };
 
@@ -305,20 +255,14 @@ export default function CategoriasSection() {
 
     const renderTableRows = () => {
         if (loading || catalogLoading) {
-            return (
-                <TableRow>
-                    <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
-                        <CircularProgress size={28} />
-                    </TableCell>
-                </TableRow>
-            );
+            return <TableSkeletonRows columns={4} />;
         }
 
         if (categorias.length === 0) {
             return (
                 <TableRow>
                     <TableCell colSpan={4} align="center" sx={{ py: 4, color: '#64748b' }}>
-                        No hay categorÃ­as registradas.
+                        No hay categorias registradas.
                     </TableCell>
                 </TableRow>
             );

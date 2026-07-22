@@ -7,7 +7,6 @@ import {
     Box,
     Button,
     Chip,
-    CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
@@ -22,6 +21,7 @@ import {
 
 import { getAutocompleteTextFieldProps } from '../../../utils/autocompleteTextField';
 import { formatCompraCode, formatDateTimePeru } from '../../../utils/formatters';
+import FormSkeleton from '../../../components/loading/FormSkeleton';
 
 function formatNumber(value) {
     if (value === null || value === undefined || value === '') return '0.00';
@@ -669,9 +669,7 @@ export default function ModalRecepcion({
                     {serverError && <Alert severity="error">{serverError}</Alert>}
 
                     {mostrarCargaCompras ? (
-                        <Box sx={{ py: 4, display: 'flex', justifyContent: 'center' }}>
-                            <CircularProgress size={26} />
-                        </Box>
+                        <FormSkeleton fields={6} />
                     ) : (
                         <>
                             <CompraSelector
@@ -682,9 +680,7 @@ export default function ModalRecepcion({
                             />
 
                             {mostrarCargaDetalle ? (
-                                <Box sx={{ py: 3, display: 'flex', justifyContent: 'center' }}>
-                                    <CircularProgress size={24} />
-                                </Box>
+                                <FormSkeleton fields={6} />
                             ) : null}
 
                             {mostrarDetalle ? (

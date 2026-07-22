@@ -7,23 +7,9 @@ import {
   Typography,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import MaterialSymbol from '../../components/MaterialSymbol';
 
-const Icon = ({ name, size = 22, color = 'inherit' }) => (
-  <span
-    className="material-symbols-rounded"
-    style={{
-      fontSize: size,
-      color,
-      lineHeight: 1,
-      userSelect: 'none',
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}
-  >
-    {name}
-  </span>
-);
+const Icon = MaterialSymbol;
 
 // Tarjetas resumen del dashboard. Por ahora usan guiones porque no consumen API.
 const KPI_CARDS = [
