@@ -28,7 +28,8 @@ const textFieldSx = {
         borderRadius: 1.5,
         backgroundColor: '#fbfdff',
         '& input': {
-            py: 1.35,
+            paddingTop: '8px',
+            paddingBottom: '14px',
             fontSize: '0.98rem',
         },
     },
