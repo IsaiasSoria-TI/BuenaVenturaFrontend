@@ -28,4 +28,8 @@ export const recepcionService = {
     const { data } = await api.put(`${BASE_URL}/${idRecepciones}/datos`, payload);
     return data;
   },
+
+  eliminar: async (idRecepciones) => {
+    await api.delete(`${BASE_URL}/${idRecepciones}`);
+  },
 };

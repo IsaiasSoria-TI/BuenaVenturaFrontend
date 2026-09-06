@@ -31,11 +31,12 @@ export default function ModalArticulo({
     onChange,
     onSubmit,
     categorias,
+    tiposEnvase,
 }) {
     // Textos auxiliares: muestran errores si existen o ayuda por defecto.
     const helperDescripcion = errors.descripcion || '';
     const helperMedida = errors.medida || 'Seleccione la unidad';
-    const helperTipoEnvase = errors.tipoEnvase || 'Ej. Jaba, Caja, Bandeja';
+    const helperTipoEnvase = errors.idTipoEnvase || 'Seleccione el tipo de envase';
     const helperStock =
         errors.stock || 'Opcional. Puede quedar vacío.';
     const helperCategoria = errors.idCategoria || 'Seleccione una categoría';
@@ -99,13 +100,26 @@ export default function ModalArticulo({
                     />
 
                     <TextField
+                        select
                         fullWidth
                         label="Tipo de envase"
-                        value={form.tipoEnvase}
-                        onChange={onChange('tipoEnvase')}
-                        error={!!errors.tipoEnvase}
+                        value={form.idTipoEnvase}
+                        onChange={onChange('idTipoEnvase')}
+                        error={!!errors.idTipoEnvase}
                         helperText={helperTipoEnvase}
-                    />
+                    >
+                        <MenuItem value="">
+                            <em>Seleccione</em>
+                        </MenuItem>
+
+                        {tiposEnvase
+                            .filter((tipoEnvase) => tipoEnvase.estado === 'Activo')
+                            .map((tipoEnvase) => (
+                                <MenuItem key={tipoEnvase.idTipoEnvase} value={tipoEnvase.idTipoEnvase}>
+                                    {tipoEnvase.nombre}
+                                </MenuItem>
+                            ))}
+                    </TextField>
 
                     <TextField
                         select
@@ -172,7 +186,7 @@ ModalArticulo.propTypes = {
         idArticulo: PropTypes.oneOfType([PropTypes.number, PropTypes.oneOf([null])]),
         descripcion: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         medida: PropTypes.string,
-        tipoEnvase: PropTypes.string,
+        idTipoEnvase: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         stock: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         idCategoria: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         estado: PropTypes.string,
@@ -180,7 +194,7 @@ ModalArticulo.propTypes = {
     errors: PropTypes.shape({
         descripcion: PropTypes.string,
         medida: PropTypes.string,
-        tipoEnvase: PropTypes.string,
+        idTipoEnvase: PropTypes.string,
         stock: PropTypes.string,
         idCategoria: PropTypes.string,
         estado: PropTypes.string,
@@ -192,6 +206,13 @@ ModalArticulo.propTypes = {
         PropTypes.shape({
             idCategoria: PropTypes.number.isRequired,
             descripcion: PropTypes.string.isRequired,
+            estado: PropTypes.string,
+        })
+    ).isRequired,
+    tiposEnvase: PropTypes.arrayOf(
+        PropTypes.shape({
+            idTipoEnvase: PropTypes.number.isRequired,
+            nombre: PropTypes.string,
             estado: PropTypes.string,
         })
     ).isRequired,

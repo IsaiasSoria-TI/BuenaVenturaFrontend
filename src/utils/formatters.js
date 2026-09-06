@@ -114,3 +114,10 @@ export function formatCuentaPagarCode(id) {
   if (id === null || id === undefined || id === '') return '-';
   return `CXP-${String(id).padStart(4, '0')}`;
 }
+
+// Mismo formato usado en Consulta de Stock: se repite en Compras, Recepciones y Cuentas por Pagar
+// para poder ubicar el articulo en el inventario desde cualquier pantalla.
+export function formatArticuloCode(id) {
+  if (id === null || id === undefined || id === '') return '-';
+  return `ART-${String(id).padStart(4, '0')}`;
+}

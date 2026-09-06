@@ -21,6 +21,7 @@ import {
 } from '@mui/material';
 
 import {
+  formatArticuloCode,
   formatCompraCode,
   formatCuentaPagarCode,
   formatDateTimePeru,
@@ -232,6 +233,7 @@ export default function ModalDetalleCuentaPagar({ open, onClose, cuenta = null }
                 <Table sx={{ minWidth: 820 }}>
                   <TableHead>
                     <TableRow sx={{ backgroundColor: '#f8fafc' }}>
+                      <TableCell sx={{ fontWeight: 700 }}>CÓDIGO</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>ARTÍCULO</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>MEDIDA</TableCell>
                       <TableCell sx={{ fontWeight: 700 }} align="right">
@@ -250,7 +252,7 @@ export default function ModalDetalleCuentaPagar({ open, onClose, cuenta = null }
                   <TableBody>
                     {detalles.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} align="center" sx={{ py: 3, color: '#64748b' }}>
+                        <TableCell colSpan={7} align="center" sx={{ py: 3, color: '#64748b' }}>
                           No hay detalles registrados para esta cuenta por pagar.
                         </TableCell>
                       </TableRow>
@@ -265,6 +267,7 @@ export default function ModalDetalleCuentaPagar({ open, onClose, cuenta = null }
 
                         return (
                           <TableRow key={key} hover>
+                            <TableCell>{formatArticuloCode(detalle.idArticulo)}</TableCell>
                             <TableCell>{getDetalleArticulo(detalle)}</TableCell>
                             <TableCell>{getDetalleMedida(detalle)}</TableCell>
                             <TableCell align="right">{formatNumber(getDetalleRecibido(detalle))}</TableCell>

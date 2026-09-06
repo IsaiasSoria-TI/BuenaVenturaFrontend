@@ -1,18 +1,18 @@
 import * as React from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Card,
   CardContent,
-  Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
+  Checkbox,
+  Divider,
+  FormControlLabel,
   IconButton,
-  InputAdornment,
+  MenuItem,
   Paper,
   Stack,
   Table,
@@ -23,7 +23,6 @@ import {
   TablePagination,
   TableRow,
   TextField,
-  Tooltip,
   Typography,
 } from '@mui/material';
 
@@ -36,49 +35,30 @@ import { monedaService } from '../../../services/monedaService';
 import { tipoCambioService } from '../../../services/tipoCambioService';
 import { useAutoClearMessage } from '../../../utils/useAutoClearMessage';
 import { getApiErrorMessage } from '../../../utils/getApiErrorMessage';
+import { getAutocompleteTextFieldProps } from '../../../utils/autocompleteTextField';
 import Icon from '../../../components/MaterialSymbol';
-import TableSkeletonRows from '../../../components/loading/TableSkeletonRows';
+import FormSkeleton from '../../../components/loading/FormSkeleton';
 import {
   getCompraFechaBase,
   getFechaTipoCambio,
   isMonedaSoles,
 } from '../../../utils/compraFormUtils';
-
-import ModalDetalleCompra from './ModalDetalleCompra';
-import ModalGestionarCompras from './ModalGestionarCompras';
-import {
-  formatCompraCode,
-  formatDateTimeInputPeru,
-  formatDateTimePeru,
-} from '../../../utils/formatters';
 import {
   DEFAULT_IGV_PERCENTAGE,
   calcularCompraPreview,
-  formatCompraCurrency,
-  formatNumber,
-  formatSoles,
-  getCompraIgv,
-  getCompraImporteImpuestos,
-  getCompraSubtotal,
-  getCompraTotalFinal,
+  formatCurrency,
+  getCurrencyPrefix,
   getDefaultMonedaId,
   isIgvImpuesto,
+  isMonedaSolesData,
 } from './compraCalculations';
+import { formatDateTimeInputPeru } from '../../../utils/formatters';
 
-const createDetalle = () => ({
-  tempId: Math.random().toString(36).substring(2) + Date.now(),
-  idArticulo: '',
-  peso: '',
-  costoKilo: '',
-});
-
-// Estructura base de cada impuesto referencial que se puede asociar a la compra.
 const createImpuesto = () => ({
   tempId: Math.random().toString(36).substring(2) + Date.now(),
   idImpuesto: '',
 });
 
-// Estado inicial del formulario de alta/edicion de compras.
 const initialForm = {
   idCompras: null,
   idPago: '',
@@ -90,110 +70,67 @@ const initialForm = {
   fechaEmision: '',
   fechaIngresoProducto: '',
   tipoDocumento: 'FACTURA',
-  numeroDocumentoProveedor: '',
-  serieReferencia: '',
-  correlativoReferencia: '',
   observacion: '',
   zonaProduccion: '',
   numeroLote: '',
-  detalles: [createDetalle()],
+  detalles: [],
   impuestos: [createImpuesto()],
   aplicaIgv: false,
   porcentajeIgv: DEFAULT_IGV_PERCENTAGE,
   importeIgv: 0,
 };
 
-function getEstadoChipStyles(estado) {
-  if (estado === 'Inactivo') {
-    return {
-      backgroundColor: '#f1f5f9',
-      color: '#64748b',
-    };
-  }
+const initialNuevoDetalle = { articulo: null, peso: '', costoKilo: '' };
 
-  if (estado === 'Completo') {
-    return {
-      backgroundColor: '#dcfce7',
-      color: '#16a34a',
-    };
-  }
-
-  if (estado === 'Completa parcial') {
-    return {
-      backgroundColor: '#dbeafe',
-      color: '#2563eb',
-    };
-  }
-
-  if (estado === 'Pendiente') {
-    return {
-      backgroundColor: '#fef3c7',
-      color: '#d97706',
-    };
-  }
-
-  return {
-    backgroundColor: '#fee2e2',
-    color: '#dc2626',
-  };
+function formatMonedaOption(moneda) {
+  const simbolo = moneda.simbolo ? ` (${moneda.simbolo})` : '';
+  return `${moneda.codigo} - ${moneda.nombre}${simbolo}`;
 }
 
-function getEstadoCompra(compra) {
-  if (compra?.flgActivo === false) return 'Inactivo';
-  return compra?.estado || '-';
+function formatArticuloOption(articulo) {
+  return articulo ? articulo.descripcion || '' : '';
+}
+
+function formatPorcentaje(value) {
+  const numero = Number(value);
+  if (!Number.isFinite(numero)) return '0.00';
+
+  return numero.toLocaleString('es-PE', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 export default function GestionarCompras() {
-  const [compras, setCompras] = React.useState([]);
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const idCompraEditar = searchParams.get('id');
+  const editing = Boolean(idCompraEditar);
+
   const [proveedores, setProveedores] = React.useState([]);
   const [articulos, setArticulos] = React.useState([]);
   const [impuestos, setImpuestos] = React.useState([]);
   const [pagos, setPagos] = React.useState([]);
   const [monedas, setMonedas] = React.useState([]);
 
-  const [loading, setLoading] = React.useState(true);
   const [catalogLoading, setCatalogLoading] = React.useState(true);
+  const [loadingCompra, setLoadingCompra] = React.useState(editing);
   const [saving, setSaving] = React.useState(false);
   const [tipoCambioLoading, setTipoCambioLoading] = React.useState(false);
-
-  const [open, setOpen] = React.useState(false);
-  const [editing, setEditing] = React.useState(false);
 
   const [form, setForm] = React.useState(initialForm);
   const [tipoCambioBase, setTipoCambioBase] = React.useState(null);
   const [errors, setErrors] = React.useState({});
   const [selectedProveedor, setSelectedProveedor] = React.useState(null);
+  const [nuevoDetalle, setNuevoDetalle] = React.useState(initialNuevoDetalle);
+  const [nuevoDetalleError, setNuevoDetalleError] = React.useState({});
+  const [detallesPage, setDetallesPage] = React.useState(0);
+  const [detallesRowsPerPage, setDetallesRowsPerPage] = React.useState(5);
 
   const [serverError, setServerError] = React.useState('');
   const [successMessage, setSuccessMessage] = React.useState('');
 
   useAutoClearMessage(successMessage, setSuccessMessage);
-
-  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
-  const [selectedDelete, setSelectedDelete] = React.useState(null);
-  const [detailDialogOpen, setDetailDialogOpen] = React.useState(false);
-  const [selectedDetail, setSelectedDetail] = React.useState(null);
-
-  const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(5);
-  const [searchTerm, setSearchTerm] = React.useState('');
-
-  // Carga el listado principal de compras que alimenta la tabla.
-  const cargarCompras = React.useCallback(async () => {
-    try {
-      setLoading(true);
-      setServerError('');
-
-      const data = await compraService.listar();
-      setCompras(Array.isArray(data) ? data : []);
-      setPage(0);
-    } catch (error) {
-
-      setServerError(getApiErrorMessage(error, 'No se pudo listar las compras.'));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   // Carga catalogos necesarios para registrar compras: proveedor, articulo, impuesto, pago y moneda.
   const cargarCatalogos = React.useCallback(async () => {
@@ -221,33 +158,154 @@ export default function GestionarCompras() {
   }, []);
 
   React.useEffect(() => {
-    cargarCompras();
     cargarCatalogos();
-  }, [cargarCompras, cargarCatalogos]);
+  }, [cargarCatalogos]);
+
+  const resetForm = React.useCallback(() => {
+    setForm({
+      ...initialForm,
+      idMoneda: getDefaultMonedaId(monedas),
+      fechaCompras: formatDateTimeInputPeru(new Date()),
+      fechaEmision: formatDateTimeInputPeru(new Date()),
+      fechaIngresoProducto: formatDateTimeInputPeru(new Date()),
+      impuestos: [createImpuesto()],
+    });
+    setTipoCambioBase(null);
+    setSelectedProveedor(null);
+    setNuevoDetalle(initialNuevoDetalle);
+    setNuevoDetalleError({});
+    setErrors({});
+    setServerError('');
+    setSuccessMessage('');
+  }, [monedas]);
+
+  // Carga la compra a editar segun el id recibido por query param.
+  React.useEffect(() => {
+    if (catalogLoading) return;
+
+    if (!editing) {
+      resetForm();
+      setLoadingCompra(false);
+      return;
+    }
+
+    let active = true;
+
+    async function cargarCompraEditar() {
+      try {
+        setLoadingCompra(true);
+        setServerError('');
+
+        const compras = await compraService.listar();
+        const compra = Array.isArray(compras)
+          ? compras.find((item) => String(item.idCompras) === String(idCompraEditar))
+          : null;
+
+        if (!active) return;
+
+        if (!compra) {
+          setServerError('No se encontró la compra solicitada.');
+          setLoadingCompra(false);
+          return;
+        }
+
+        const proveedorEncontrado =
+          proveedores.find((proveedor) => proveedor.idProveedor === compra.idProveedor) || null;
+
+        const detalles =
+          Array.isArray(compra.detalles) && compra.detalles.length > 0
+            ? compra.detalles.map((detalle) => ({
+              tempId: Math.random().toString(36).substring(2) + Date.now(),
+              idArticulo: detalle.idArticulo ?? '',
+              descripcionArticulo:
+                detalle.descripcionArticulo ||
+                articulos.find((articulo) => articulo.idArticulo === detalle.idArticulo)?.descripcion ||
+                '',
+              peso: detalle.peso ?? '',
+              costoKilo: detalle.costoKilo ?? '',
+            }))
+            : [];
+
+        const impuestosNormalesCompra = Array.isArray(compra.impuestos)
+          ? compra.impuestos.filter((impuesto) => !isIgvImpuesto(impuesto))
+          : [];
+
+        const impuestosCompra =
+          impuestosNormalesCompra.length > 0
+            ? impuestosNormalesCompra.map((impuesto) => ({
+              tempId: Math.random().toString(36).substring(2) + Date.now(),
+              idImpuesto: impuesto.idImpuesto ?? '',
+            }))
+            : [createImpuesto()];
+
+        const fechaCompras = formatDateTimeInputPeru(compra.fechaCompras);
+        const fechaEmision = formatDateTimeInputPeru(compra.fechaEmision || compra.fechaCompras);
+        const fechaIngresoProducto = formatDateTimeInputPeru(
+          compra.fechaIngresoProducto || compra.fechaEmision || compra.fechaCompras
+        );
+
+        setSelectedProveedor(proveedorEncontrado);
+        setTipoCambioBase({
+          idMoneda: compra.idMoneda ?? getDefaultMonedaId(monedas),
+          fecha: getFechaTipoCambio(fechaEmision || fechaCompras),
+        });
+        setForm({
+          idCompras: compra.idCompras,
+          idPago: compra.idPago ?? '',
+          idMoneda: compra.idMoneda ?? getDefaultMonedaId(monedas),
+          idTipoCambio: compra.idTipoCambio ?? null,
+          tipoCambioAplicado: compra.tipoCambioAplicado ?? '',
+          idProveedor: compra.idProveedor ?? null,
+          fechaCompras,
+          fechaEmision,
+          fechaIngresoProducto,
+          tipoDocumento: compra.tipoDocumento || 'FACTURA',
+          observacion: compra.observacion || '',
+          zonaProduccion: compra.zonaProduccion || '',
+          numeroLote: compra.numeroLote ?? '',
+          detalles,
+          impuestos: impuestosCompra,
+          aplicaIgv: Boolean(compra.aplicaIgv),
+          porcentajeIgv: compra.porcentajeIgv ?? DEFAULT_IGV_PERCENTAGE,
+          importeIgv: compra.importeIgv ?? 0,
+        });
+        setErrors({});
+        setNuevoDetalle(initialNuevoDetalle);
+        setNuevoDetalleError({});
+      } catch (error) {
+        if (active) {
+          setServerError(getApiErrorMessage(error, 'No se pudo cargar la compra a editar.'));
+        }
+      } finally {
+        if (active) {
+          setLoadingCompra(false);
+        }
+      }
+    }
+
+    cargarCompraEditar();
+
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing, idCompraEditar, catalogLoading]);
 
   // Resuelve automaticamente el tipo de cambio cuando la compra usa moneda distinta a soles.
   React.useEffect(() => {
-    if (!open) return undefined;
+    if (loadingCompra) return undefined;
 
     const monedaSeleccionada = monedas.find((moneda) => moneda.idMoneda === Number(form.idMoneda));
     const fechaTipoCambio = getFechaTipoCambio(form.fechaEmision || form.fechaCompras);
 
     if (!monedaSeleccionada || !fechaTipoCambio) {
-      setForm((prev) => ({
-        ...prev,
-        idTipoCambio: null,
-        tipoCambioAplicado: '',
-      }));
+      setForm((prev) => ({ ...prev, idTipoCambio: null, tipoCambioAplicado: '' }));
       setTipoCambioLoading(false);
       return undefined;
     }
 
     if (isMonedaSoles(monedaSeleccionada)) {
-      setForm((prev) => ({
-        ...prev,
-        idTipoCambio: null,
-        tipoCambioAplicado: '',
-      }));
+      setForm((prev) => ({ ...prev, idTipoCambio: null, tipoCambioAplicado: '' }));
       setErrors((prev) => ({ ...prev, tipoCambioAplicado: '' }));
       setTipoCambioLoading(false);
       return undefined;
@@ -295,15 +353,8 @@ export default function GestionarCompras() {
           'No existe tipo de cambio registrado para la fecha seleccionada.'
         );
 
-        setForm((prev) => ({
-          ...prev,
-          idTipoCambio: null,
-          tipoCambioAplicado: '',
-        }));
-        setErrors((prev) => ({
-          ...prev,
-          tipoCambioAplicado: message,
-        }));
+        setForm((prev) => ({ ...prev, idTipoCambio: null, tipoCambioAplicado: '' }));
+        setErrors((prev) => ({ ...prev, tipoCambioAplicado: message }));
       })
       .finally(() => {
         if (!cancelled) {
@@ -320,123 +371,10 @@ export default function GestionarCompras() {
     form.fechaEmision,
     form.idMoneda,
     form.tipoCambioAplicado,
+    loadingCompra,
     monedas,
-    open,
     tipoCambioBase,
   ]);
-
-  const handleOpenCreate = () => {
-    const fechaActual = formatDateTimeInputPeru(new Date());
-
-    setEditing(false);
-    setForm({
-      ...initialForm,
-      idMoneda: getDefaultMonedaId(monedas),
-      idTipoCambio: null,
-      tipoCambioAplicado: '',
-      fechaCompras: fechaActual,
-      fechaEmision: fechaActual,
-      fechaIngresoProducto: fechaActual,
-      tipoDocumento: 'FACTURA',
-      detalles: [createDetalle()],
-      impuestos: [createImpuesto()],
-    });
-    setTipoCambioBase(null);
-    setSelectedProveedor(null);
-    setErrors({});
-    setServerError('');
-    setSuccessMessage('');
-    setOpen(true);
-  };
-
-  const handleOpenEdit = (compra) => {
-    const proveedorEncontrado =
-      proveedores.find((proveedor) => proveedor.idProveedor === compra.idProveedor) || null;
-
-    const detalles =
-      Array.isArray(compra.detalles) && compra.detalles.length > 0
-        ? compra.detalles.map((detalle) => ({
-          tempId: Math.random().toString(36).substring(2) + Date.now(),
-          idArticulo: detalle.idArticulo ?? '',
-          peso: detalle.peso ?? '',
-          costoKilo: detalle.costoKilo ?? '',
-        }))
-        : [
-          {
-            tempId: Math.random().toString(36).substring(2) + Date.now(),
-            idArticulo: compra.idArticulo ?? '',
-            peso: compra.peso ?? '',
-            costoKilo: compra.costoKilo ?? '',
-          },
-        ];
-
-    const impuestosNormalesCompra = Array.isArray(compra.impuestos)
-      ? compra.impuestos.filter((impuesto) => !isIgvImpuesto(impuesto))
-      : [];
-
-    const impuestosCompra =
-      impuestosNormalesCompra.length > 0
-        ? impuestosNormalesCompra.map((impuesto) => ({
-          tempId: Math.random().toString(36).substring(2) + Date.now(),
-          idImpuesto: impuesto.idImpuesto ?? '',
-        }))
-        : [createImpuesto()];
-
-    setEditing(true);
-    setErrors({});
-    setServerError('');
-    setSuccessMessage('');
-    setSelectedProveedor(proveedorEncontrado);
-    const fechaCompras = formatDateTimeInputPeru(compra.fechaCompras);
-    const fechaEmision = formatDateTimeInputPeru(compra.fechaEmision || compra.fechaCompras);
-    const fechaIngresoProducto = formatDateTimeInputPeru(
-      compra.fechaIngresoProducto || compra.fechaEmision || compra.fechaCompras
-    );
-    setTipoCambioBase({
-      idMoneda: compra.idMoneda ?? getDefaultMonedaId(monedas),
-      fecha: getFechaTipoCambio(fechaEmision || fechaCompras),
-    });
-    setForm({
-      idCompras: compra.idCompras,
-      idPago: compra.idPago ?? '',
-      idMoneda: compra.idMoneda ?? getDefaultMonedaId(monedas),
-      idTipoCambio: compra.idTipoCambio ?? null,
-      tipoCambioAplicado: compra.tipoCambioAplicado ?? '',
-      idProveedor: compra.idProveedor ?? null,
-      fechaCompras,
-      fechaEmision,
-      fechaIngresoProducto,
-      tipoDocumento: compra.tipoDocumento || 'FACTURA',
-      numeroDocumentoProveedor: compra.numeroDocumentoProveedor || '',
-      serieReferencia: compra.serieReferencia || '',
-      correlativoReferencia: compra.correlativoReferencia || '',
-      observacion: compra.observacion || '',
-      zonaProduccion: compra.zonaProduccion || '',
-      numeroLote: compra.numeroLote ?? '',
-      detalles,
-      impuestos: impuestosCompra,
-      aplicaIgv: Boolean(compra.aplicaIgv),
-      porcentajeIgv: compra.porcentajeIgv ?? DEFAULT_IGV_PERCENTAGE,
-      importeIgv: compra.importeIgv ?? 0,
-    });
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    if (saving) return;
-
-    setOpen(false);
-    setTipoCambioBase(null);
-    setForm({
-      ...initialForm,
-      idTipoCambio: null,
-      tipoCambioAplicado: '',
-      detalles: [createDetalle()],
-      impuestos: [createImpuesto()],
-    });
-    setSelectedProveedor(null);
-    setErrors({});
-  };
 
   const handleChange = (field) => (event) => {
     const { value } = event.target;
@@ -455,13 +393,8 @@ export default function GestionarCompras() {
       }));
     }
 
-    if (serverError) {
-      setServerError('');
-    }
-
-    if (successMessage) {
-      setSuccessMessage('');
-    }
+    if (serverError) setServerError('');
+    if (successMessage) setSuccessMessage('');
   };
 
   const handleIgvChange = (event) => {
@@ -474,54 +407,70 @@ export default function GestionarCompras() {
     }));
 
     if (errors.porcentajeIgv) {
-      setErrors((prev) => ({
-        ...prev,
-        porcentajeIgv: '',
-      }));
-    }
-
-    if (serverError) {
-      setServerError('');
-    }
-
-    if (successMessage) {
-      setSuccessMessage('');
-    }
-  };
-
-  const handleDetalleChange = (index, field, value) => {
-    setForm((prev) => ({
-      ...prev,
-      detalles: prev.detalles.map((detalle, detalleIndex) =>
-        detalleIndex === index ? { ...detalle, [field]: value } : detalle
-      ),
-    }));
-
-    const errorKey = `detalle_${index}_${field}`;
-    if (errors[errorKey]) {
-      setErrors((prev) => ({
-        ...prev,
-        [errorKey]: '',
-      }));
+      setErrors((prev) => ({ ...prev, porcentajeIgv: '' }));
     }
   };
 
   const handleAddDetalle = () => {
+    const nuevoErrors = {};
+
+    if (!nuevoDetalle.articulo?.idArticulo) nuevoErrors.articulo = 'Seleccione un artículo';
+    if (!nuevoDetalle.peso || Number(nuevoDetalle.peso) <= 0) nuevoErrors.peso = 'El peso debe ser mayor a 0';
+    if (!nuevoDetalle.costoKilo || Number(nuevoDetalle.costoKilo) <= 0) {
+      nuevoErrors.costoKilo = 'El costo debe ser mayor a 0';
+    }
+
+    setNuevoDetalleError(nuevoErrors);
+    if (Object.keys(nuevoErrors).length > 0) return;
+
     setForm((prev) => ({
       ...prev,
-      detalles: [...prev.detalles, createDetalle()],
+      detalles: [
+        ...prev.detalles,
+        {
+          tempId: Math.random().toString(36).substring(2) + Date.now(),
+          idArticulo: nuevoDetalle.articulo.idArticulo,
+          descripcionArticulo: nuevoDetalle.articulo.descripcion,
+          peso: nuevoDetalle.peso,
+          costoKilo: nuevoDetalle.costoKilo,
+        },
+      ],
+    }));
+
+    setNuevoDetalle(initialNuevoDetalle);
+    setNuevoDetalleError({});
+    setErrors((prev) => ({ ...prev, detalles: '' }));
+
+    const totalDespues = form.detalles.length + 1;
+    const ultimaPagina = Math.max(0, Math.ceil(totalDespues / detallesRowsPerPage) - 1);
+    setDetallesPage(ultimaPagina);
+  };
+
+  const handleRemoveDetalle = (tempId) => {
+    setForm((prev) => ({
+      ...prev,
+      detalles: prev.detalles.filter((detalle) => detalle.tempId !== tempId),
     }));
   };
 
-  const handleRemoveDetalle = (index) => {
-    setForm((prev) => {
-      if (prev.detalles.length === 1) return prev;
+  // Evita quedar en una pagina vacia cuando se quitan articulos o se recarga una compra para editar.
+  React.useEffect(() => {
+    const ultimaPagina = Math.max(0, Math.ceil(form.detalles.length / detallesRowsPerPage) - 1);
+    setDetallesPage((prev) => (prev > ultimaPagina ? ultimaPagina : prev));
+  }, [form.detalles.length, detallesRowsPerPage]);
 
-      return {
-        ...prev,
-        detalles: prev.detalles.filter((_, detalleIndex) => detalleIndex !== index),
-      };
-    });
+  const detallesPaginados = React.useMemo(() => {
+    const inicio = detallesPage * detallesRowsPerPage;
+    return form.detalles.slice(inicio, inicio + detallesRowsPerPage);
+  }, [form.detalles, detallesPage, detallesRowsPerPage]);
+
+  const handleChangeDetallesPage = (_event, newPage) => {
+    setDetallesPage(newPage);
+  };
+
+  const handleChangeDetallesRowsPerPage = (event) => {
+    setDetallesRowsPerPage(Number.parseInt(event.target.value, 10));
+    setDetallesPage(0);
   };
 
   const handleImpuestoChange = (index, field, value) => {
@@ -534,10 +483,7 @@ export default function GestionarCompras() {
 
     const errorKey = `impuesto_${index}_${field}`;
     if (errors[errorKey]) {
-      setErrors((prev) => ({
-        ...prev,
-        [errorKey]: '',
-      }));
+      setErrors((prev) => ({ ...prev, [errorKey]: '' }));
     }
   };
 
@@ -559,25 +505,19 @@ export default function GestionarCompras() {
     });
   };
 
-  // Precalcula importes visibles en el modal sin esperar la respuesta del backend.
+  // Precalcula importes visibles sin esperar la respuesta del backend.
   const {
     subtotalPreview,
     subtotalTributarioPreview,
     igvPreview,
     igvTributarioPreview,
     totalGeneralPreview,
-  } = React.useMemo(
-    () => calcularCompraPreview(form),
-    [form]
-  );
+  } = React.useMemo(() => calcularCompraPreview(form), [form]);
 
-  // Valida campos obligatorios y evita enviar detalles incompletos al backend.
   const validate = () => {
     const newErrors = {};
 
-    if (!form.idPago) {
-      newErrors.idPago = 'Seleccione una condición de pago';
-    }
+    if (!form.idPago) newErrors.idPago = 'Seleccione una condición de pago';
 
     if (!form.idMoneda || !monedas.some((moneda) => moneda.idMoneda === Number(form.idMoneda))) {
       newErrors.idMoneda = 'Seleccione una moneda';
@@ -588,47 +528,17 @@ export default function GestionarCompras() {
       newErrors.tipoCambioAplicado = 'No existe tipo de cambio registrado para la fecha seleccionada.';
     }
 
-    if (!form.idProveedor) {
-      newErrors.idProveedor = 'Seleccione un proveedor';
-    }
-
-    if (!getCompraFechaBase(form)) {
-      newErrors.fechaEmision = 'La fecha de emision es obligatoria';
-    }
-
-    if (!form.fechaIngresoProducto) {
-      newErrors.fechaIngresoProducto = 'La fecha de ingreso es obligatoria';
-    }
-
-    if (!form.tipoDocumento?.trim()) {
-      newErrors.tipoDocumento = 'Seleccione un tipo de documento';
-    }
-
-    if (!form.zonaProduccion.trim()) {
-      newErrors.zonaProduccion = 'La zona de producción es obligatoria';
-    }
+    if (!form.idProveedor) newErrors.idProveedor = 'Seleccione un proveedor';
+    if (!getCompraFechaBase(form)) newErrors.fechaEmision = 'La fecha de emision es obligatoria';
+    if (!form.fechaIngresoProducto) newErrors.fechaIngresoProducto = 'La fecha de ingreso es obligatoria';
+    if (!form.tipoDocumento?.trim()) newErrors.tipoDocumento = 'Seleccione un tipo de documento';
+    if (!form.zonaProduccion.trim()) newErrors.zonaProduccion = 'La zona de producción es obligatoria';
 
     if (form.numeroLote === '' || Number(form.numeroLote) < 0) {
       newErrors.numeroLote = 'El numero de lote debe ser 0 o mayor';
     }
 
-    if (!form.detalles.length) {
-      newErrors.detalles = 'Debe agregar al menos un artículo';
-    }
-
-    form.detalles.forEach((detalle, index) => {
-      if (!detalle.idArticulo) {
-        newErrors[`detalle_${index}_idArticulo`] = 'Seleccione un artículo';
-      }
-
-      if (detalle.peso === '' || Number(detalle.peso) <= 0) {
-        newErrors[`detalle_${index}_peso`] = 'El peso debe ser mayor a 0';
-      }
-
-      if (detalle.costoKilo === '' || Number(detalle.costoKilo) <= 0) {
-        newErrors[`detalle_${index}_costoKilo`] = 'El costo debe ser mayor a 0';
-      }
-    });
+    if (!form.detalles.length) newErrors.detalles = 'Debe agregar al menos un artículo';
 
     form.impuestos.forEach((impuesto, index) => {
       if (impuesto.idImpuesto && !impuestos.some((item) => item.idImpuesto === Number(impuesto.idImpuesto))) {
@@ -655,14 +565,12 @@ export default function GestionarCompras() {
       .map((impuesto) => Number(impuesto.idImpuesto))
       .filter((idImpuesto) => {
         if (impuestosSeleccionados.has(idImpuesto)) return false;
-
         impuestosSeleccionados.add(idImpuesto);
         return true;
       })
       .map((idImpuesto) => ({ idImpuesto }));
   };
 
-  // Traduce el estado del formulario al contrato esperado por /api/compras.
   const buildPayload = () => ({
     idPago: Number(form.idPago),
     idMoneda: Number(form.idMoneda),
@@ -673,9 +581,6 @@ export default function GestionarCompras() {
     fechaEmision: getCompraFechaBase(form),
     fechaIngresoProducto: form.fechaIngresoProducto,
     tipoDocumento: form.tipoDocumento?.trim() || 'FACTURA',
-    numeroDocumentoProveedor: form.numeroDocumentoProveedor?.trim() || null,
-    serieReferencia: form.serieReferencia?.trim() || null,
-    correlativoReferencia: form.correlativoReferencia?.trim() || null,
     observacion: form.observacion?.trim() || null,
     zonaProduccion: form.zonaProduccion.trim(),
     numeroLote: Number(form.numeroLote),
@@ -701,340 +606,566 @@ export default function GestionarCompras() {
 
       if (editing && form.idCompras) {
         await compraService.actualizar(form.idCompras, payload);
-        setSuccessMessage('Compra actualizada correctamente.');
       } else {
         await compraService.crear(payload);
-        setSuccessMessage('Compra registrada correctamente.');
       }
 
-      handleClose();
-      await cargarCompras();
+      navigate('/dashboard/compras/historial', {
+        state: { successMessage: editing ? 'Compra actualizada correctamente.' : 'Compra registrada correctamente.' },
+      });
     } catch (error) {
-
       setServerError(getApiErrorMessage(error, 'No se pudo guardar la compra.'));
     } finally {
       setSaving(false);
     }
   };
 
-  const handleOpenDeleteDialog = (compra) => {
-    setSelectedDelete(compra);
-    setDeleteDialogOpen(true);
+  const handleCancel = () => {
+    navigate('/dashboard/compras/historial');
   };
 
-  const handleCloseDeleteDialog = () => {
-    setSelectedDelete(null);
-    setDeleteDialogOpen(false);
-  };
+  const monedaSeleccionada = React.useMemo(
+    () => monedas.find((moneda) => moneda.idMoneda === Number(form.idMoneda)) || null,
+    [form.idMoneda, monedas]
+  );
+  const monedaLabel = getCurrencyPrefix(monedaSeleccionada) || 'moneda';
+  const mostrarTipoCambio = Boolean(monedaSeleccionada && !isMonedaSolesData(monedaSeleccionada));
+  const tipoCambioTexto = tipoCambioLoading
+    ? 'Consultando...'
+    : form.tipoCambioAplicado || 'No disponible';
 
-  const handleOpenDetailDialog = (compra) => {
-    setSelectedDetail(compra);
-    setDetailDialogOpen(true);
-  };
+  const impuestosDisponibles = impuestos;
 
-  const handleCloseDetailDialog = () => {
-    setDetailDialogOpen(false);
-    setSelectedDetail(null);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!selectedDelete?.idCompras) return;
-
-    try {
-      setServerError('');
-      setSuccessMessage('');
-
-      await compraService.eliminar(selectedDelete.idCompras);
-      setSuccessMessage('Compra inactivada correctamente.');
-      handleCloseDeleteDialog();
-      await cargarCompras();
-    } catch (error) {
-
-      setServerError(getApiErrorMessage(error, 'No se pudo inactivar la compra.'));
-    }
-  };
-
-  const handleChangePage = (_event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(Number.parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  const handleSearchChange = (event) => {
-    setSearchTerm(event.target.value);
-    setPage(0);
-  };
-
-  // Aplica busqueda local sobre datos ya cargados para no consultar el backend por cada tecla.
-  const comprasFiltradas = React.useMemo(() => {
-    const criterio = searchTerm.trim().toLowerCase();
-
-    if (!criterio) return compras;
-
-    return compras.filter((compra) => {
-      const valoresBusqueda = [
-        formatCompraCode(compra.idCompras),
-        compra.idCompras,
-        formatDateTimePeru(compra.fechaCompras),
-        compra.fechaCompras,
-        compra.ruc,
-        compra.razonSocial,
-        getEstadoCompra(compra),
-      ];
-
-      return valoresBusqueda.some((value) =>
-        String(value || '').toLowerCase().includes(criterio)
-      );
-    });
-  }, [compras, searchTerm]);
-
-  const comprasPaginadas = React.useMemo(() => {
-    const inicio = page * rowsPerPage;
-    const fin = inicio + rowsPerPage;
-    return comprasFiltradas.slice(inicio, fin);
-  }, [comprasFiltradas, page, rowsPerPage]);
+  const isLoading = catalogLoading || loadingCompra;
 
   return (
     <Box>
-      <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e2e8f0' }}>
-        <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-          <Stack
-            direction={{ xs: 'column', md: 'row' }}
-            spacing={2}
-            sx={{
-              mb: 2.5,
-              alignItems: { xs: 'stretch', md: 'center' },
-              justifyContent: 'space-between',
-            }}
-          >
-            <Box>
-              <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
-                Gestionar compras
-              </Typography>
-              <Typography sx={{ fontSize: '0.86rem', color: '#64748b', mt: 0.5 }}>
-                Registra compras con múltiples artículos e impuestos.
-              </Typography>
-            </Box>
-
-            <Button
-              variant="contained"
-              onClick={handleOpenCreate}
-              startIcon={<Icon name="add" size={18} color="#fff" />}
-              sx={{
-                alignSelf: { xs: 'flex-start', md: 'auto' },
-                textTransform: 'none',
-                fontWeight: 700,
-                borderRadius: '8px',
-                boxShadow: 'none',
-              }}
-            >
-              Nueva compra
-            </Button>
-          </Stack>
-
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="Buscar por código, RUC, proveedor, fecha, estado..."
-            value={searchTerm}
-            onChange={handleSearchChange}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Icon name="search" size={18} color="#64748b" />
-                  </InputAdornment>
-                ),
-              },
-            }}
-            sx={{ mb: 2 }}
-          />
-
-          {successMessage ? (
-            <Alert severity="success" sx={{ mb: 2 }}>
-              {successMessage}
-            </Alert>
-          ) : null}
-
-          {serverError ? (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {serverError}
-            </Alert>
-          ) : null}
-
-          <TableContainer
-            component={Paper}
-            elevation={0}
-            sx={{
-              border: '1px solid #e2e8f0',
-              borderRadius: 2.5,
-              overflowX: 'auto',
-            }}
-          >
-            <Table sx={{ minWidth: 1180 }}>
-              <TableHead>
-                <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                  <TableCell sx={{ fontWeight: 700 }}>CÓDIGO</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>FECHA</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>RUC</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>PROVEEDOR</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }} align="right">SUBTOTAL</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }} align="right">IGV</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }} align="right">RET./DET. REF.</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }} align="right">PESO TOTAL</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }} align="right">TOTAL FINAL</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>ESTADO</TableCell>
-                  <TableCell sx={{ fontWeight: 700, textAlign: 'center' }}>ACCIONES</TableCell>
-                </TableRow>
-              </TableHead>
-
-              <TableBody>
-                {loading ? (
-                  <TableSkeletonRows columns={11} />
-                ) : compras.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={11} align="center" sx={{ py: 4, color: '#64748b' }}>
-                      No hay compras registradas.
-                    </TableCell>
-                  </TableRow>
-                ) : comprasFiltradas.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={11} align="center" sx={{ py: 4, color: '#64748b' }}>
-                      No se encontraron compras con ese criterio.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  comprasPaginadas.map((compra) => (
-                    <TableRow key={compra.idCompras} hover>
-                      <TableCell>{formatCompraCode(compra.idCompras)}</TableCell>
-                      <TableCell>{formatDateTimePeru(compra.fechaCompras)}</TableCell>
-                      <TableCell>{compra.ruc}</TableCell>
-                      <TableCell>{compra.razonSocial}</TableCell>
-                      <TableCell align="right">{formatCompraCurrency(compra, getCompraSubtotal(compra))}</TableCell>
-                      <TableCell align="right">{formatCompraCurrency(compra, getCompraIgv(compra))}</TableCell>
-                      <TableCell align="right">{formatSoles(getCompraImporteImpuestos(compra))}</TableCell>
-                      <TableCell align="right">{formatNumber(compra.peso)}</TableCell>
-                      <TableCell align="right">{formatCompraCurrency(compra, getCompraTotalFinal(compra))}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={getEstadoCompra(compra)}
-                          size="small"
-                          sx={{
-                            fontWeight: 700,
-                            ...getEstadoChipStyles(getEstadoCompra(compra)),
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell align="center">
-                        <Tooltip title="Ver detalle">
-                          <IconButton onClick={() => handleOpenDetailDialog(compra)}>
-                            <Icon name="visibility" size={20} color="#0f766e" />
-                          </IconButton>
-                        </Tooltip>
-                        <IconButton
-                          onClick={() => handleOpenEdit(compra)}
-                          disabled={compra.flgActivo === false}
-                        >
-                          <Icon name="edit" size={20} color="#1976d2" />
-                        </IconButton>
-                        <IconButton
-                          onClick={() => handleOpenDeleteDialog(compra)}
-                          disabled={compra.flgActivo === false}
-                        >
-                          <Icon name="delete" size={20} color="#ef4444" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-
-            {!loading && comprasFiltradas.length > 0 ? (
-              <TablePagination
-                component="div"
-                count={comprasFiltradas.length}
-                page={page}
-                onPageChange={handleChangePage}
-                rowsPerPage={rowsPerPage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                rowsPerPageOptions={[5, 10, 20]}
-                labelRowsPerPage="Filas por página:"
-              />
-            ) : null}
-          </TableContainer>
-        </CardContent>
-      </Card>
-
-      <ModalGestionarCompras
-        open={open}
-        onClose={handleClose}
-        editing={editing}
-        saving={saving}
-        catalogLoading={catalogLoading}
-        form={form}
-        errors={errors}
-        proveedores={proveedores}
-        articulos={articulos}
-        impuestos={impuestos}
-        pagos={pagos}
-        monedas={monedas}
-        selectedProveedor={selectedProveedor}
-        setSelectedProveedor={setSelectedProveedor}
-        setForm={setForm}
-        setErrors={setErrors}
-        handleChange={handleChange}
-        handleIgvChange={handleIgvChange}
-        handleSubmit={handleSubmit}
-        handleDetalleChange={handleDetalleChange}
-        handleAddDetalle={handleAddDetalle}
-        handleRemoveDetalle={handleRemoveDetalle}
-        handleImpuestoChange={handleImpuestoChange}
-        handleAddImpuesto={handleAddImpuesto}
-        handleRemoveImpuesto={handleRemoveImpuesto}
-        tipoCambioLoading={tipoCambioLoading}
-        subtotalPreview={subtotalPreview}
-        subtotalTributarioPreview={subtotalTributarioPreview}
-        igvPreview={igvPreview}
-        igvTributarioPreview={igvTributarioPreview}
-        totalGeneralPreview={totalGeneralPreview}
-      />
-
-      <ModalDetalleCompra
-        open={detailDialogOpen}
-        onClose={handleCloseDetailDialog}
-        compra={selectedDetail}
-      />
-
-      <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
-        <DialogTitle sx={{ fontWeight: 700 }}>Confirmar inactivación</DialogTitle>
-        <DialogContent>
-          <Typography sx={{ color: '#475569' }}>
-            ¿Seguro que deseas inactivar esta compra?
+      <Stack spacing={2.5}>
+        <Box>
+          <Typography sx={{ fontSize: '1.05rem', fontWeight: 700, color: '#0f172a' }}>
+            {editing ? 'Editar compra' : 'Nueva compra'}
           </Typography>
-          {selectedDelete ? (
-            <Typography sx={{ mt: 1, fontWeight: 700, color: '#0f172a' }}>
-              Compra {formatCompraCode(selectedDelete.idCompras)} - {selectedDelete.razonSocial}
-            </Typography>
-          ) : null}
-        </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button onClick={handleCloseDeleteDialog} sx={{ textTransform: 'none' }}>
-            Cancelar
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleConfirmDelete}
-            sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
-          >
-            Inactivar
-          </Button>
-        </DialogActions>
-      </Dialog>
+          <Typography sx={{ fontSize: '0.86rem', color: '#64748b', mt: 0.5 }}>
+            Completa los datos del proveedor, agrega los artículos y revisa los totales antes de guardar.
+          </Typography>
+        </Box>
+
+        {successMessage ? <Alert severity="success">{successMessage}</Alert> : null}
+        {serverError ? <Alert severity="error">{serverError}</Alert> : null}
+
+        {isLoading ? (
+          <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e2e8f0' }}>
+            <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+              <FormSkeleton fields={8} />
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {/* Seccion 1: proveedor y datos del documento */}
+            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e2e8f0' }}>
+              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                <Typography sx={{ fontWeight: 700, color: '#0f172a', mb: 2 }}>
+                  Proveedor y datos del documento
+                </Typography>
+
+                <Stack spacing={2.5}>
+                  <Autocomplete
+                    fullWidth
+                    options={proveedores}
+                    value={selectedProveedor}
+                    onChange={(_, newValue) => {
+                      setSelectedProveedor(newValue);
+                      setForm((prev) => ({
+                        ...prev,
+                        idProveedor: newValue ? newValue.idProveedor : null,
+                      }));
+
+                      if (errors.idProveedor) {
+                        setErrors((prev) => ({ ...prev, idProveedor: '' }));
+                      }
+                    }}
+                    getOptionLabel={(option) => (option ? `${option.ruc} - ${option.razonSocial}` : '')}
+                    isOptionEqualToValue={(option, value) => option.idProveedor === value.idProveedor}
+                    filterOptions={(options, state) => {
+                      const input = state.inputValue.toLowerCase().trim();
+
+                      return options
+                        .filter(
+                          (option) =>
+                            option.ruc?.toLowerCase().includes(input) ||
+                            option.razonSocial?.toLowerCase().includes(input)
+                        )
+                        .slice(0, 20);
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...getAutocompleteTextFieldProps(params)}
+                        label="Proveedor"
+                        placeholder="Buscar por RUC o razón social"
+                        error={!!errors.idProveedor}
+                        helperText={errors.idProveedor}
+                      />
+                    )}
+                  />
+
+                  {selectedProveedor ? (
+                    <Box sx={{ p: 1.5, borderRadius: 2, backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                      <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>Razón social</Typography>
+                      <Typography sx={{ fontWeight: 700, color: '#0f172a' }}>
+                        {selectedProveedor.razonSocial}
+                      </Typography>
+                      {selectedProveedor.direccion ? (
+                        <>
+                          <Typography sx={{ mt: 1, fontSize: '0.8rem', color: '#64748b' }}>Dirección</Typography>
+                          <Typography sx={{ color: '#334155' }}>{selectedProveedor.direccion}</Typography>
+                        </>
+                      ) : null}
+                    </Box>
+                  ) : null}
+
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' }, gap: 2 }}>
+                    <TextField
+                      fullWidth
+                      type="datetime-local"
+                      label="Fecha emision"
+                      value={form.fechaEmision || form.fechaCompras}
+                      onChange={handleChange('fechaEmision')}
+                      error={!!errors.fechaEmision || !!errors.fechaCompras}
+                      helperText={errors.fechaEmision || errors.fechaCompras}
+                      slotProps={{ inputLabel: { shrink: true } }}
+                    />
+
+                    <TextField
+                      fullWidth
+                      type="datetime-local"
+                      label="Fecha ingreso producto"
+                      value={form.fechaIngresoProducto}
+                      onChange={handleChange('fechaIngresoProducto')}
+                      error={!!errors.fechaIngresoProducto}
+                      helperText={errors.fechaIngresoProducto}
+                      slotProps={{ inputLabel: { shrink: true } }}
+                    />
+
+                    <TextField
+                      select
+                      fullWidth
+                      label="Tipo"
+                      value={form.tipoDocumento || 'FACTURA'}
+                      onChange={handleChange('tipoDocumento')}
+                      error={!!errors.tipoDocumento}
+                      helperText={errors.tipoDocumento}
+                    >
+                      <MenuItem value="FACTURA">FACTURA</MenuItem>
+                      <MenuItem value="BOLETA">BOLETA</MenuItem>
+                      <MenuItem value="GUIA">GUIA</MenuItem>
+                      <MenuItem value="OTRO">OTRO</MenuItem>
+                    </TextField>
+                  </Box>
+
+                  <TextField
+                    fullWidth
+                    label="Observacion"
+                    value={form.observacion}
+                    onChange={handleChange('observacion')}
+                    multiline
+                    minRows={2}
+                  />
+
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' }, gap: 2 }}>
+                    <TextField
+                      select
+                      fullWidth
+                      label="Condición de pago"
+                      value={form.idPago}
+                      onChange={handleChange('idPago')}
+                      error={!!errors.idPago}
+                      helperText={errors.idPago}
+                    >
+                      <MenuItem value="">
+                        <em>Seleccione</em>
+                      </MenuItem>
+                      {pagos.map((item) => (
+                        <MenuItem key={item.idPago} value={item.idPago}>
+                          {item.pago}
+                          {item.dias != null ? ` (${item.dias} días)` : ''}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+
+                    <TextField
+                      select
+                      fullWidth
+                      label="Moneda"
+                      value={form.idMoneda}
+                      onChange={handleChange('idMoneda')}
+                      error={!!errors.idMoneda}
+                      helperText={errors.idMoneda || (monedas.length === 0 ? 'No hay monedas configuradas' : '')}
+                    >
+                      <MenuItem value="">
+                        <em>Seleccione</em>
+                      </MenuItem>
+                      {monedas.map((moneda) => (
+                        <MenuItem key={moneda.idMoneda} value={moneda.idMoneda}>
+                          {formatMonedaOption(moneda)}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+
+                    <TextField
+                      fullWidth
+                      label="Zona de producción"
+                      value={form.zonaProduccion}
+                      onChange={handleChange('zonaProduccion')}
+                      error={!!errors.zonaProduccion}
+                      helperText={errors.zonaProduccion}
+                    />
+
+                    <TextField
+                      fullWidth
+                      type="text"
+                      label="Numero de lote"
+                      value={form.numeroLote}
+                      onChange={handleChange('numeroLote')}
+                      error={!!errors.numeroLote}
+                      helperText={errors.numeroLote}
+                      slotProps={{ htmlInput: { inputMode: 'decimal', pattern: '[0-9]*[.]?[0-9]*' } }}
+                    />
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
+
+            {/* Seccion 2: articulos de la compra */}
+            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e2e8f0' }}>
+              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                <Typography sx={{ fontWeight: 700, color: '#0f172a' }}>Artículos de la compra</Typography>
+                <Typography sx={{ fontSize: '0.85rem', color: '#64748b', mb: 2 }}>
+                  Busca el artículo, ingresa peso y costo por kilo, y agrégalo a la lista.
+                </Typography>
+
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', md: '1.6fr 1fr 1fr 1fr auto' },
+                    gap: 1.5,
+                    alignItems: 'flex-start',
+                  }}
+                >
+                  <Autocomplete
+                    fullWidth
+                    options={articulos}
+                    value={nuevoDetalle.articulo}
+                    onChange={(_, value) => {
+                      setNuevoDetalle((prev) => ({ ...prev, articulo: value }));
+                      setNuevoDetalleError((prev) => ({ ...prev, articulo: '' }));
+                    }}
+                    getOptionLabel={formatArticuloOption}
+                    isOptionEqualToValue={(option, value) => option.idArticulo === value.idArticulo}
+                    renderInput={(params) => (
+                      <TextField
+                        {...getAutocompleteTextFieldProps(params)}
+                        label="Artículo"
+                        placeholder="Buscar artículo"
+                        error={!!nuevoDetalleError.articulo}
+                        helperText={nuevoDetalleError.articulo}
+                      />
+                    )}
+                  />
+
+                  <TextField
+                    fullWidth
+                    type="text"
+                    label="Peso"
+                    value={nuevoDetalle.peso}
+                    onChange={(event) => {
+                      setNuevoDetalle((prev) => ({ ...prev, peso: event.target.value }));
+                      setNuevoDetalleError((prev) => ({ ...prev, peso: '' }));
+                    }}
+                    error={!!nuevoDetalleError.peso}
+                    helperText={nuevoDetalleError.peso}
+                    slotProps={{ htmlInput: { min: 0.01, step: '0.01' } }}
+                  />
+
+                  <TextField
+                    fullWidth
+                    type="text"
+                    label={`Costo kilo (${monedaLabel})`}
+                    value={nuevoDetalle.costoKilo}
+                    onChange={(event) => {
+                      setNuevoDetalle((prev) => ({ ...prev, costoKilo: event.target.value }));
+                      setNuevoDetalleError((prev) => ({ ...prev, costoKilo: '' }));
+                    }}
+                    error={!!nuevoDetalleError.costoKilo}
+                    helperText={nuevoDetalleError.costoKilo}
+                    slotProps={{ htmlInput: { min: 0.01, step: '0.01' } }}
+                  />
+
+                  <TextField
+                    fullWidth
+                    label={`Subtotal (${monedaLabel})`}
+                    value={(Number(nuevoDetalle.peso || 0) * Number(nuevoDetalle.costoKilo || 0)).toFixed(2)}
+                    slotProps={{ input: { readOnly: true } }}
+                  />
+
+                  <Button
+                    variant="contained"
+                    onClick={handleAddDetalle}
+                    startIcon={<Icon name="add" size={18} color="#fff" />}
+                    sx={{ height: '56px', textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
+                  >
+                    Agregar
+                  </Button>
+                </Box>
+
+                {errors.detalles ? (
+                  <Typography sx={{ mt: 1.5, color: '#dc2626', fontSize: '0.8rem' }}>{errors.detalles}</Typography>
+                ) : null}
+
+                <Divider sx={{ my: 2.5 }} />
+
+                <Typography sx={{ fontWeight: 700, color: '#0f172a', mb: 1.5, fontSize: '0.9rem' }}>
+                  Lista del producto que se va agregando
+                </Typography>
+
+                <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 2.5, overflowX: 'auto' }}>
+                  <Table sx={{ minWidth: 640 }}>
+                    <TableHead>
+                      <TableRow sx={{ backgroundColor: '#f8fafc' }}>
+                        <TableCell sx={{ fontWeight: 700 }}>Artículo</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }} align="right">Peso</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }} align="right">Costo kilo</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }} align="right">Subtotal</TableCell>
+                        <TableCell sx={{ fontWeight: 700, textAlign: 'center' }}>Quitar</TableCell>
+                      </TableRow>
+                    </TableHead>
+
+                    <TableBody>
+                      {form.detalles.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} align="center" sx={{ py: 3, color: '#64748b' }}>
+                            Aún no agregaste artículos.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        detallesPaginados.map((detalle) => (
+                          <TableRow key={detalle.tempId} hover>
+                            <TableCell>{detalle.descripcionArticulo || '-'}</TableCell>
+                            <TableCell align="right">{Number(detalle.peso || 0).toFixed(2)}</TableCell>
+                            <TableCell align="right">
+                              {formatCurrency(detalle.costoKilo, { codigo: monedaSeleccionada?.codigo })}
+                            </TableCell>
+                            <TableCell align="right">
+                              {formatCurrency(
+                                Number(detalle.peso || 0) * Number(detalle.costoKilo || 0),
+                                { codigo: monedaSeleccionada?.codigo }
+                              )}
+                            </TableCell>
+                            <TableCell align="center">
+                              <IconButton color="error" onClick={() => handleRemoveDetalle(detalle.tempId)}>
+                                <Icon name="delete" size={20} color="#ef4444" />
+                              </IconButton>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+
+                  {form.detalles.length > 0 ? (
+                    <TablePagination
+                      component="div"
+                      count={form.detalles.length}
+                      page={detallesPage}
+                      onPageChange={handleChangeDetallesPage}
+                      rowsPerPage={detallesRowsPerPage}
+                      onRowsPerPageChange={handleChangeDetallesRowsPerPage}
+                      rowsPerPageOptions={[5, 10, 20]}
+                      labelRowsPerPage="Filas por página:"
+                    />
+                  ) : null}
+                </TableContainer>
+              </CardContent>
+            </Card>
+
+            {/* Seccion 3: IGV, totales y retencion/detraccion referencial */}
+            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e2e8f0' }}>
+              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                <Stack spacing={0.5} sx={{ mb: 1.5 }}>
+                  <Typography sx={{ fontWeight: 700, color: '#0f172a' }}>IGV</Typography>
+                  <Typography sx={{ fontSize: '0.85rem', color: '#64748b' }}>
+                    Define si la compra aplica IGV y revisa el importe calculado.
+                  </Typography>
+                </Stack>
+
+                <Paper elevation={0} sx={{ p: 1.5, border: '1px solid #e2e8f0', borderRadius: 2 }}>
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: { xs: '1fr', md: form.aplicaIgv ? '1.2fr 1fr 1fr' : '1.2fr 1fr' },
+                      gap: 1.5,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <FormControlLabel
+                      control={<Checkbox checked={Boolean(form.aplicaIgv)} onChange={handleIgvChange} />}
+                      label="Aplicar IGV"
+                      sx={{ m: 0 }}
+                    />
+
+                    <TextField
+                      fullWidth
+                      type="text"
+                      label="Porcentaje IGV"
+                      value={form.porcentajeIgv}
+                      onChange={handleChange('porcentajeIgv')}
+                      error={!!errors.porcentajeIgv}
+                      helperText={errors.porcentajeIgv}
+                      slotProps={{ htmlInput: { min: 0, step: '0.01' } }}
+                    />
+
+                    {form.aplicaIgv ? (
+                      <TextField
+                        fullWidth
+                        label={`Importe IGV (${monedaLabel})`}
+                        value={igvPreview}
+                        slotProps={{ input: { readOnly: true } }}
+                      />
+                    ) : null}
+                  </Box>
+                </Paper>
+
+                <Divider sx={{ my: 2.5 }} />
+
+                <Stack spacing={1}>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' }, gap: 2 }}>
+                    <TextField
+                      fullWidth
+                      label={`Subtotal (${monedaLabel})`}
+                      value={subtotalPreview}
+                      slotProps={{ input: { readOnly: true } }}
+                    />
+
+                    <TextField
+                      fullWidth
+                      label={`IGV (${monedaLabel})`}
+                      value={form.aplicaIgv ? igvPreview : '0.00'}
+                      slotProps={{ input: { readOnly: true } }}
+                    />
+
+                    <TextField
+                      fullWidth
+                      label={`Total final (${monedaLabel})`}
+                      value={totalGeneralPreview}
+                      slotProps={{ input: { readOnly: true } }}
+                    />
+                  </Box>
+
+                  {mostrarTipoCambio ? (
+                    <Typography sx={{ fontSize: '0.78rem', color: errors.tipoCambioAplicado ? '#dc2626' : '#64748b' }}>
+                      Tipo de cambio aplicado: {tipoCambioTexto}
+                      {errors.tipoCambioAplicado ? ` - ${errors.tipoCambioAplicado}` : ''}
+                    </Typography>
+                  ) : null}
+                </Stack>
+
+                <Divider sx={{ my: 2.5 }} />
+
+                <Stack
+                  direction={{ xs: 'column', md: 'row' }}
+                  spacing={1.5}
+                  sx={{ mb: 1.5, alignItems: { xs: 'stretch', md: 'center' }, justifyContent: 'space-between' }}
+                >
+                  <Box>
+                    <Typography sx={{ fontWeight: 700, color: '#0f172a' }}>
+                      Retención / detracción referencial
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.85rem', color: '#64748b' }}>
+                      Agrega retenciones o detracciones solo como referencia; no afectan el total final.
+                    </Typography>
+                  </Box>
+
+                  <Button
+                    variant="outlined"
+                    onClick={handleAddImpuesto}
+                    startIcon={<Icon name="add" size={18} />}
+                    sx={{ textTransform: 'none', fontWeight: 700, borderRadius: '8px' }}
+                  >
+                    Agregar ret./det.
+                  </Button>
+                </Stack>
+
+                <Stack spacing={1.25}>
+                  {form.impuestos.map((impuestoItem, index) => {
+                    const impuestoSeleccionado = impuestosDisponibles.find(
+                      (item) => item.idImpuesto === Number(impuestoItem.idImpuesto)
+                    );
+
+                    const baseImpuestos = Number(subtotalTributarioPreview) + Number(igvTributarioPreview);
+                    const importe = impuestoSeleccionado
+                      ? (baseImpuestos * Number(impuestoSeleccionado.valor || 0)) / 100
+                      : 0;
+
+                    return (
+                      <Paper key={impuestoItem.tempId} elevation={0} sx={{ p: 1.5, border: '1px solid #e2e8f0', borderRadius: 2 }}>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1.5fr 1fr auto' }, gap: 1.5, alignItems: 'center' }}>
+                          <TextField
+                            select
+                            fullWidth
+                            label="Retención / detracción referencial"
+                            value={impuestoItem.idImpuesto}
+                            onChange={(event) => handleImpuestoChange(index, 'idImpuesto', event.target.value)}
+                            error={!!errors[`impuesto_${index}_idImpuesto`]}
+                            helperText={errors[`impuesto_${index}_idImpuesto`]}
+                          >
+                            <MenuItem value="">
+                              <em>Seleccione</em>
+                            </MenuItem>
+                            {impuestosDisponibles.map((item) => (
+                              <MenuItem key={item.idImpuesto} value={item.idImpuesto}>
+                                {item.tipoImpuesto} ({formatPorcentaje(item.valor)}%)
+                              </MenuItem>
+                            ))}
+                          </TextField>
+
+                          <TextField
+                            fullWidth
+                            label="Importe referencial (S/)"
+                            value={formatCurrency(importe, { codigo: 'PEN' })}
+                            slotProps={{ input: { readOnly: true } }}
+                          />
+
+                          <IconButton
+                            color="error"
+                            onClick={() => handleRemoveImpuesto(index)}
+                            disabled={form.impuestos.length === 1}
+                          >
+                            <Icon name="delete" size={20} />
+                          </IconButton>
+                        </Box>
+                      </Paper>
+                    );
+                  })}
+                </Stack>
+              </CardContent>
+            </Card>
+
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} justifyContent="flex-end">
+              <Button onClick={handleCancel} disabled={saving} sx={{ textTransform: 'none' }}>
+                Cancelar
+              </Button>
+
+              <Button
+                variant="contained"
+                onClick={handleSubmit}
+                disabled={saving}
+                sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none', minWidth: 180 }}
+              >
+                {saving ? 'Guardando...' : editing ? 'Actualizar compra' : 'Registrar compra'}
+              </Button>
+            </Stack>
+          </>
+        )}
+      </Stack>
     </Box>
   );
 }

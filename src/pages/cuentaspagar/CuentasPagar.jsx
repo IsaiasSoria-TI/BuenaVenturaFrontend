@@ -546,7 +546,7 @@ export default function CuentasPagar() {
         cuenta={selectedDetail}
       />
 
-      <Dialog open={editDialogOpen} onClose={handleCloseEditDialog} fullWidth maxWidth="sm">
+      <Dialog open={editDialogOpen} onClose={handleCloseEditDialog} fullWidth maxWidth="md">
         <DialogTitle sx={{ fontWeight: 700 }}>Editar factura</DialogTitle>
         <DialogContent dividers sx={{ pt: 2.5 }}>
           <Stack spacing={2}>
@@ -556,43 +556,104 @@ export default function CuentasPagar() {
               </Typography>
             ) : null}
 
-            <TextField
-              fullWidth
-              label="Número de factura"
-              value={editForm.numeroFactura}
-              onChange={handleEditChange('numeroFactura')}
-            />
+            {selectedEdit && !isCuentaManual(selectedEdit) ? (
+              <Box
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                }}
+              >
+                <Typography sx={{ fontWeight: 700, color: '#0f172a', mb: 1.5 }}>
+                  Detalle de compra
+                </Typography>
 
-            <TextField
-              select
-              fullWidth
-              label="Moneda"
-              value={editForm.moneda}
-              onChange={handleEditChange('moneda')}
-              disabled={!isCuentaManual(selectedEdit)}
-              helperText={!isCuentaManual(selectedEdit) ? 'Moneda tomada de la compra' : ''}
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
+                    gap: 1.5,
+                  }}
+                >
+                  <Box>
+                    <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>Compra</Typography>
+                    <Typography sx={{ fontWeight: 700 }}>{displayCompraCode(selectedEdit.idCompras)}</Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>Recepción</Typography>
+                    <Typography sx={{ fontWeight: 700 }}>{displayRecepcionCode(selectedEdit.idRecepciones)}</Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>RUC</Typography>
+                    <Typography>{selectedEdit.ruc || '-'}</Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>Proveedor</Typography>
+                    <Typography sx={{ fontWeight: 700 }}>{selectedEdit.proveedor || '-'}</Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>Artículo</Typography>
+                    <Typography>{selectedEdit.articulo || 'Varios artículos'}</Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>Estado</Typography>
+                    <Typography>{selectedEdit.estado || '-'}</Typography>
+                  </Box>
+                </Box>
+              </Box>
+            ) : null}
+
+            <Box
               sx={{
-                '& .MuiInputBase-root.Mui-disabled': {
-                  backgroundColor: '#f1f5f9',
-                },
-                '& .MuiInputBase-input.Mui-disabled': {
-                  WebkitTextFillColor: '#475569',
-                },
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
+                gap: 2,
               }}
             >
-              {monedas.map((moneda) => (
-                <MenuItem key={moneda.idMoneda} value={moneda.codigo}>
-                  {formatMonedaOption(moneda)}
-                </MenuItem>
-              ))}
-            </TextField>
+              <TextField
+                fullWidth
+                label="Número de factura"
+                value={editForm.numeroFactura}
+                onChange={handleEditChange('numeroFactura')}
+              />
 
-            <TextField
-              fullWidth
-              label="Código de detracción/retención"
-              value={editForm.codigoDetRet}
-              onChange={handleEditChange('codigoDetRet')}
-            />
+              <TextField
+                select
+                fullWidth
+                label="Moneda"
+                value={editForm.moneda}
+                onChange={handleEditChange('moneda')}
+                disabled={!isCuentaManual(selectedEdit)}
+                helperText={!isCuentaManual(selectedEdit) ? 'Moneda tomada de la compra' : ''}
+                sx={{
+                  '& .MuiInputBase-root.Mui-disabled': {
+                    backgroundColor: '#f1f5f9',
+                  },
+                  '& .MuiInputBase-input.Mui-disabled': {
+                    WebkitTextFillColor: '#475569',
+                  },
+                }}
+              >
+                {monedas.map((moneda) => (
+                  <MenuItem key={moneda.idMoneda} value={moneda.codigo}>
+                    {formatMonedaOption(moneda)}
+                  </MenuItem>
+                ))}
+              </TextField>
+
+              <TextField
+                fullWidth
+                label="Código de detracción/retención"
+                value={editForm.codigoDetRet}
+                onChange={handleEditChange('codigoDetRet')}
+              />
+            </Box>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}>

@@ -12,7 +12,6 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
-  InputAdornment,
   MenuItem,
   Paper,
   Stack,
@@ -35,7 +34,7 @@ import { pagoService } from '../../../../services/pagoService.js';
 import { proveedorService } from '../../../../services/proveedorService';
 import { tipoCambioService } from '../../../../services/tipoCambioService';
 import { getAutocompleteTextFieldProps } from '../../../../utils/autocompleteTextField';
-import { formatDatePeru } from '../../../../utils/formatters';
+import { formatArticuloCode, formatDatePeru } from '../../../../utils/formatters';
 import { getApiErrorMessage } from '../../../../utils/getApiErrorMessage';
 import Icon from '../../../../components/MaterialSymbol';
 import TableSkeletonRows from '../../../../components/loading/TableSkeletonRows';
@@ -81,9 +80,6 @@ const COMPRA_FORM_DEFAULT = {
   fechaEmision: '',
   fechaIngresoProducto: '',
   tipoDocumento: 'FACTURA',
-  numeroDocumentoProveedor: '',
-  serieReferencia: '',
-  correlativoReferencia: '',
   observacion: '',
 };
 
@@ -106,11 +102,6 @@ function getCurrentDateInput() {
 
 function toLocalDateTimeInput(dateValue) {
   return dateValue ? `${dateValue}T00:00:00` : '';
-}
-
-function formatArticuloCode(idArticulo) {
-  if (idArticulo === null || idArticulo === undefined || idArticulo === '') return '-';
-  return `ART-${String(idArticulo).padStart(4, '0')}`;
 }
 
 function formatNumber(value) {
@@ -454,9 +445,6 @@ export default function HistorialMovimientos() {
     if (!getCompraFechaBase(compraForm)) errors.fechaEmision = 'La fecha de emision es obligatoria';
     if (!compraForm.fechaIngresoProducto) errors.fechaIngresoProducto = 'La fecha de ingreso es obligatoria';
     if (!compraForm.tipoDocumento?.trim()) errors.tipoDocumento = 'Seleccione un tipo de documento';
-    if (!compraForm.numeroDocumentoProveedor?.trim()) {
-      errors.numeroDocumentoProveedor = 'Ingrese el numero de documento';
-    }
 
     const monedaSeleccionada = monedas.find((moneda) => moneda.idMoneda === Number(compraForm.idMoneda));
     if (monedaSeleccionada && !isMonedaSoles(monedaSeleccionada) && !compraForm.tipoCambioAplicado) {
@@ -477,9 +465,6 @@ export default function HistorialMovimientos() {
     fechaEmision: toLocalDateTimeInput(getCompraFechaBase(compraForm)),
     fechaIngresoProducto: toLocalDateTimeInput(compraForm.fechaIngresoProducto),
     tipoDocumento: compraForm.tipoDocumento?.trim() || 'FACTURA',
-    numeroDocumentoProveedor: compraForm.numeroDocumentoProveedor?.trim() || null,
-    serieReferencia: compraForm.serieReferencia?.trim() || null,
-    correlativoReferencia: compraForm.correlativoReferencia?.trim() || null,
     observacion: compraForm.observacion?.trim() || null,
     zonaProduccion: 'DIRECTA',
     numeroLote: 0,
@@ -878,25 +863,6 @@ export default function HistorialMovimientos() {
               </Stack>
 
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
-                <TextField
-                  fullWidth
-                  label="N° DOC PROVEE."
-                  value={compraForm.numeroDocumentoProveedor}
-                  onChange={handleCompraChange('numeroDocumentoProveedor')}
-                  error={!!compraErrors.numeroDocumentoProveedor}
-                  helperText={compraErrors.numeroDocumentoProveedor}
-                  disabled={savingCompra}
-                  slotProps={{
-                    input: {
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <Icon name="search" size={22} color="#64748b" />
-                        </InputAdornment>
-                      ),
-                    },
-                  }}
-                />
-
                 <Autocomplete
                   fullWidth
                   options={proveedores}
@@ -940,22 +906,6 @@ export default function HistorialMovimientos() {
                   <MenuItem value="GUIA">GUIA</MenuItem>
                   <MenuItem value="OTRO">OTRO</MenuItem>
                 </TextField>
-
-                <TextField
-                  fullWidth
-                  label="Serie Referencia"
-                  value={compraForm.serieReferencia}
-                  onChange={handleCompraChange('serieReferencia')}
-                  disabled={savingCompra}
-                />
-
-                <TextField
-                  fullWidth
-                  label="Correlativo Referencia"
-                  value={compraForm.correlativoReferencia}
-                  onChange={handleCompraChange('correlativoReferencia')}
-                  disabled={savingCompra}
-                />
               </Stack>
 
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>

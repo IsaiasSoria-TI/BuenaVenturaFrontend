@@ -28,6 +28,7 @@ import {
 
 import { articuloService } from '../../../services/articuloService';
 import { categoriaService } from '../../../services/categoriaService';
+import { tipoEnvaseService } from '../../../services/tipoEnvaseService';
 import ModalArticulo from './ModalArticulo';
 import { useAutoClearMessage } from '../../../utils/useAutoClearMessage';
 import { getApiErrorMessage } from '../../../utils/getApiErrorMessage';
@@ -41,7 +42,7 @@ const initialForm = {
   idArticulo: null,
   descripcion: '',
   medida: '',
-  tipoEnvase: '',
+  idTipoEnvase: '',
   stock: '',
   idCategoria: '',
   estado: 'Activo',
@@ -74,6 +75,7 @@ function getEstadoChipStyles(estado) {
 export default function Articulo() {
   const [articulos, setArticulos] = React.useState([]);
   const [categorias, setCategorias] = React.useState([]);
+  const [tiposEnvase, setTiposEnvase] = React.useState([]);
 
   const [loading, setLoading] = React.useState(true);
   const [catalogLoading, setCatalogLoading] = React.useState(true);
@@ -117,17 +119,23 @@ export default function Articulo() {
   const cargarCategorias = React.useCallback(async () => {
     try {
       setCatalogLoading(true);
-      const data = await categoriaService.listar();
-      setCategorias(Array.isArray(data) ? data : []);
+
+      const [categoriasData, tiposEnvaseData] = await Promise.all([
+        categoriaService.listar(),
+        tipoEnvaseService.listar(),
+      ]);
+
+      setCategorias(Array.isArray(categoriasData) ? categoriasData : []);
+      setTiposEnvase(Array.isArray(tiposEnvaseData) ? tiposEnvaseData : []);
     } catch {
-      // Si falla el catalogo, el formulario mantiene categorias vacias.
+      // Si falla algun catalogo, el formulario mantiene las opciones vacias.
     } finally {
       setCatalogLoading(false);
     }
   }, []);
 
   React.useEffect(() => {
-    // Al entrar a la pantalla se cargan articulos y categorias para el formulario.
+    // Al entrar a la pantalla se cargan articulos y catalogos para el formulario.
     cargarArticulos();
     cargarCategorias();
   }, [cargarArticulos, cargarCategorias]);
@@ -150,7 +158,7 @@ export default function Articulo() {
       idArticulo: articulo.idArticulo,
       descripcion: articulo.descripcion || '',
       medida: articulo.medida || '',
-      tipoEnvase: articulo.tipoEnvase || '',
+      idTipoEnvase: articulo.idTipoEnvase ?? '',
       stock: articulo.stock ?? '',
       idCategoria: articulo.idCategoria ?? '',
       estado: articulo.estado || 'Activo',
@@ -199,8 +207,8 @@ export default function Articulo() {
       newErrors.medida = 'La medida es obligatoria';
     }
 
-    if (!form.tipoEnvase.trim()) {
-      newErrors.tipoEnvase = 'El tipo de envase es obligatorio';
+    if (!form.idTipoEnvase) {
+      newErrors.idTipoEnvase = 'El tipo de envase es obligatorio';
     }
 
     if (form.stock !== '' && Number(form.stock) < 0) {
@@ -226,7 +234,7 @@ export default function Articulo() {
       const payload = {
         descripcion: form.descripcion.trim(),
         medida: form.medida,
-        tipoEnvase: form.tipoEnvase.trim(),
+        idTipoEnvase: Number(form.idTipoEnvase),
         stock: form.stock === '' ? null : Number(form.stock),
         idCategoria: Number(form.idCategoria),
         estado: form.estado,
@@ -492,6 +500,7 @@ export default function Articulo() {
         onChange={handleChange}
         onSubmit={handleSubmit}
         categorias={categorias}
+        tiposEnvase={tiposEnvase}
       />
 
       <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>

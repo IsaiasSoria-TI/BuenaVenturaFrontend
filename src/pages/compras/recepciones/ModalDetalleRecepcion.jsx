@@ -21,6 +21,7 @@ import {
 } from '@mui/material';
 
 import {
+    formatArticuloCode,
     formatCompraCode,
     formatDateWithCurrentTimePeru,
     formatRecepcionCode,
@@ -209,6 +210,7 @@ export default function ModalDetalleRecepcion({ open, onClose, recepcion = null 
                             <Table sx={{ minWidth: 900 }}>
                                 <TableHead>
                                     <TableRow sx={{ backgroundColor: '#f8fafc' }}>
+                                        <TableCell sx={{ fontWeight: 700 }}>CÓDIGO</TableCell>
                                         <TableCell sx={{ fontWeight: 700 }}>ARTÍCULO</TableCell>
                                         <TableCell sx={{ fontWeight: 700 }}>MEDIDA</TableCell>
                                         <TableCell sx={{ fontWeight: 700 }} align="right">
@@ -230,7 +232,7 @@ export default function ModalDetalleRecepcion({ open, onClose, recepcion = null 
                                 <TableBody>
                                     {detalles.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={7} align="center" sx={{ py: 3, color: '#64748b' }}>
+                                            <TableCell colSpan={8} align="center" sx={{ py: 3, color: '#64748b' }}>
                                                 No hay detalles registrados para esta recepción.
                                             </TableCell>
                                         </TableRow>
@@ -244,6 +246,7 @@ export default function ModalDetalleRecepcion({ open, onClose, recepcion = null 
 
                                             return (
                                                 <TableRow key={key} hover>
+                                                    <TableCell>{formatArticuloCode(detalle.idArticulo)}</TableCell>
                                                     <TableCell>{detalle.articulo || '-'}</TableCell>
                                                     <TableCell>{detalle.medida || '-'}</TableCell>
                                                     <TableCell align="right">{formatNumber(detalle.pesoComprado)}</TableCell>

@@ -125,16 +125,16 @@ function RecepcionesTable({
         overflowX: 'auto',
       }}
     >
-      <Table>
+      <Table size="small">
         <TableHead>
           <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-            <TableCell sx={{ fontWeight: 700 }}>SEL.</TableCell>
-            <TableCell sx={{ fontWeight: 700 }}>RECEPCIÓN</TableCell>
-            <TableCell sx={{ fontWeight: 700 }}>FECHA</TableCell>
-            <TableCell sx={{ fontWeight: 700 }}>RECIBIDO</TableCell>
-            <TableCell sx={{ fontWeight: 700 }}>ESTADO</TableCell>
+            <TableCell padding="checkbox" sx={{ fontWeight: 700 }}>SEL.</TableCell>
+            <TableCell sx={{ fontWeight: 700, px: 1 }}>RECEPCIÓN</TableCell>
+            <TableCell sx={{ fontWeight: 700, px: 1 }}>FECHA</TableCell>
+            <TableCell sx={{ fontWeight: 700, px: 1 }}>RECIBIDO</TableCell>
+            <TableCell sx={{ fontWeight: 700, px: 1 }}>ESTADO</TableCell>
             {mostrarFacturaPorRecepcion ? (
-              <TableCell sx={{ fontWeight: 700 }}>FACTURA</TableCell>
+              <TableCell sx={{ fontWeight: 700, px: 1 }}>FACTURA</TableCell>
             ) : null}
           </TableRow>
         </TableHead>
@@ -150,16 +150,17 @@ function RecepcionesTable({
               <TableRow key={recepcion.idRecepciones} hover>
                 <TableCell padding="checkbox">
                   <Checkbox
+                    size="small"
                     checked={seleccionada}
                     onChange={() => toggleRecepcion(recepcion)}
                   />
                 </TableCell>
 
-                <TableCell>{formatRecepcionCode(recepcion.idRecepciones)}</TableCell>
-                <TableCell>{formatDateTimePeru(recepcion.fechaRecepcion)}</TableCell>
-                <TableCell>{formatNumber(recepcion.recibido)}</TableCell>
+                <TableCell sx={{ px: 1 }}>{formatRecepcionCode(recepcion.idRecepciones)}</TableCell>
+                <TableCell sx={{ px: 1 }}>{formatDateTimePeru(recepcion.fechaRecepcion)}</TableCell>
+                <TableCell sx={{ px: 1 }}>{formatNumber(recepcion.recibido)}</TableCell>
 
-                <TableCell>
+                <TableCell sx={{ px: 1 }}>
                   <Chip
                     label={recepcion.estadoRecepcion || '-'}
                     size="small"
@@ -171,7 +172,7 @@ function RecepcionesTable({
                 </TableCell>
 
                 {mostrarFacturaPorRecepcion ? (
-                  <TableCell sx={{ minWidth: 220 }}>
+                  <TableCell sx={{ px: 1, minWidth: 170 }}>
                     {seleccionada ? (
                       <TextField
                         fullWidth

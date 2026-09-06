@@ -8,12 +8,14 @@ const Login = lazy(() => import('../pages/auth/Login'));
 const Proveedor = lazy(() => import('../pages/compras/proveedor/Proveedor'));
 const GestionarCompras = lazy(() => import('../pages/compras/gestionarcompras/GestionarCompras'));
 const Recepciones = lazy(() => import('../pages/compras/recepciones/Recepciones'));
+const HistorialCompras = lazy(() => import('../pages/compras/historial/HistorialCompras'));
 const Configuracion = lazy(() => import('../pages/configuracion/Configuracion'));
 
 const Dashboard = lazy(() => import('../pages/dashboard/Dashboard'));
 const DashboardHome = lazy(() => import('../pages/dashboard/DashboardHome'));
 
 const Articulo = lazy(() => import('../pages/inventario/articulo/Articulo'));
+const TipoEnvase = lazy(() => import('../pages/inventario/tipoenvase/TipoEnvase'));
 const ConsultaStock = lazy(() => import('../pages/inventario/kardex/consulta-stock/ConsultaStock'));
 const HistorialMovimientos = lazy(() => import('../pages/inventario/kardex/historial-movimientos/HistorialMovimientos'));
 const Transferencia = lazy(() => import('../pages/inventario/transferencia/Transferencia'));
@@ -72,6 +74,7 @@ function AppRouter() {
             <Route path="compras/proveedor" element={<Proveedor />} />
             <Route path="compras/gestionar" element={<GestionarCompras />} />
             <Route path="compras/recepciones" element={<Recepciones />} />
+            <Route path="compras/historial" element={<HistorialCompras />} />
 
             {/* Modulo de inventarios. */}
             <Route
@@ -82,6 +85,7 @@ function AppRouter() {
             <Route path="inventarios/kardex/historial-movimientos" element={<HistorialMovimientos />} />
             <Route path="inventarios/transferencia" element={<Transferencia />} />
             <Route path="inventarios/articulos" element={<Articulo />} />
+            <Route path="inventarios/tipos-envase" element={<TipoEnvase />} />
 
             {/* Modulos financieros y de configuracion. */}
             <Route path="pagar" element={<CuentasPagar />} />

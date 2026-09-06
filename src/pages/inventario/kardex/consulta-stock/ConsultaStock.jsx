@@ -21,7 +21,7 @@ import {
 import { articuloService } from '../../../../services/articuloService';
 import { consultaStockService } from '../../../../services/consultaStockService';
 import { getAutocompleteTextFieldProps } from '../../../../utils/autocompleteTextField';
-import { formatDatePeru } from '../../../../utils/formatters';
+import { formatArticuloCode, formatDatePeru } from '../../../../utils/formatters';
 import { getApiErrorMessage } from '../../../../utils/getApiErrorMessage';
 import MaterialSymbol from '../../../../components/MaterialSymbol';
 import TableSkeletonRows from '../../../../components/loading/TableSkeletonRows';
@@ -33,11 +33,6 @@ function getCurrentPeriod() {
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
   return `${year}-${month}`;
-}
-
-function formatArticuloCode(idArticulo) {
-  if (idArticulo === null || idArticulo === undefined || idArticulo === '') return '-';
-  return `ART-${String(idArticulo).padStart(4, '0')}`;
 }
 
 function formatNumber(value) {

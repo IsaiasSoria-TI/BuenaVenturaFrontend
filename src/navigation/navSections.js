@@ -39,6 +39,7 @@ export const NAV_SECTIONS = [
           },
           { to: '/dashboard/inventarios/transferencia', label: 'Transferencia' },
           { to: '/dashboard/inventarios/articulos', label: 'Articulos' },
+          { to: '/dashboard/inventarios/tipos-envase', label: 'Tipos de Envase' },
         ],
       },
       {
@@ -46,9 +47,10 @@ export const NAV_SECTIONS = [
         label: 'Compras',
         icon: 'shopping_cart',
         children: [
-          { to: '/dashboard/compras/gestionar', label: 'Gestionar Compra' },
+          { to: '/dashboard/compras/gestionar', label: 'Nueva Compra' },
           { to: '/dashboard/compras/recepciones', label: 'Recepciones' },
           { to: '/dashboard/compras/proveedor', label: 'Proveedor' },
+          { to: '/dashboard/compras/historial', label: 'Historial de Compras' },
         ],
       },
     ],

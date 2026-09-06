@@ -51,6 +51,7 @@ export default function LoginPage() {
     const [errorMessage, setErrorMessage] = React.useState('');
     const [loading, setLoading] = React.useState(false);
     const [showPassword, setShowPassword] = React.useState(false);
+    const errorTimeoutRef = React.useRef(null);
 
     const handleChange = (event) => {
         const { name, value } = event.target;
@@ -69,6 +70,25 @@ export default function LoginPage() {
         event.preventDefault();
     };
 
+    const showErrorMessage = (message) => {
+        if (errorTimeoutRef.current) {
+            clearTimeout(errorTimeoutRef.current);
+        }
+
+        setErrorMessage(message);
+
+        errorTimeoutRef.current = setTimeout(() => {
+            setErrorMessage('');
+            errorTimeoutRef.current = null;
+        }, 3000);
+    };
+
+    React.useEffect(() => () => {
+        if (errorTimeoutRef.current) {
+            clearTimeout(errorTimeoutRef.current);
+        }
+    }, []);
+
     const handleSubmit = async (event) => {
         event.preventDefault();
         setErrorMessage('');
@@ -77,7 +97,7 @@ export default function LoginPage() {
         const contrasena = form.contrasena;
 
         if (!usuario || !contrasena.trim()) {
-            setErrorMessage('Ingresa usuario y contrasena');
+            showErrorMessage('Ingresa usuario y contraseña');
             return;
         }
 
@@ -91,14 +111,14 @@ export default function LoginPage() {
             navigate('/dashboard', { replace: true });
         } catch (error) {
             if (!error.response) {
-                setErrorMessage('No se pudo conectar con el backend');
+                showErrorMessage('No se pudo conectar con el backend');
                 return;
             }
 
             const status = error.response.status;
 
             if (status === 503) {
-                setErrorMessage(
+                showErrorMessage(
                     error.response.data?.message
                     || 'El servicio no puede consultar la base de datos en este momento'
                 );
@@ -106,16 +126,16 @@ export default function LoginPage() {
             }
 
             if (status >= 500) {
-                setErrorMessage('El servidor no esta disponible en este momento');
+                showErrorMessage('El servidor no esta disponible en este momento');
                 return;
             }
 
             if (status === 403) {
-                setErrorMessage('La solicitud fue rechazada por la configuracion del servidor');
+                showErrorMessage('La solicitud fue rechazada por la configuracion del servidor');
                 return;
             }
 
-            setErrorMessage('Usuario o contrasena incorrectos');
+            showErrorMessage('Usuario o contraseña incorrectos');
         } finally {
             setLoading(false);
         }
@@ -145,7 +165,6 @@ export default function LoginPage() {
                     overflow: 'hidden',
                 }}
             >
-                {/* Contenido interno de la tarjeta: logo, textos y formulario. */}
                 <CardContent
                     sx={{
                         px: { xs: 3, sm: 4 },
@@ -167,7 +186,6 @@ export default function LoginPage() {
                                 width: 220,
                                 maxWidth: '100%',
                                 height: 'auto',
-                                objectFit: 'contain',
                                 display: 'block',
                             }}
                         />
@@ -206,25 +224,22 @@ export default function LoginPage() {
                             value={form.usuario}
                             onChange={handleChange}
                             variant="outlined"
-                            margin="normal"
-                            autoComplete="username"
                             disabled={loading}
                             sx={{
-                                mb: 1.5,
+                                mb: 0,
                                 ...textFieldSx,
                             }}
                         />
 
                         <TextField
                             fullWidth
-                            label="Contrasena"
+                            label="Contraseña"
                             name="contrasena"
                             type={showPassword ? 'text' : 'password'}
                             value={form.contrasena}
                             onChange={handleChange}
                             variant="outlined"
                             margin="normal"
-                            autoComplete="current-password"
                             disabled={loading}
                             slotProps={{
                                 input: {
@@ -245,7 +260,7 @@ export default function LoginPage() {
                                 },
                             }}
                             sx={{
-                                mb: 1,
+                                mb: 2,
                                 ...passwordFieldSx,
                             }}
                         />

@@ -21,7 +21,7 @@ import {
     Typography,
 } from '@mui/material';
 
-import { formatCompraCode, formatDateTimePeru } from '../../../utils/formatters';
+import { formatArticuloCode, formatCompraCode, formatDateTimePeru } from '../../../utils/formatters';
 import {
     DEFAULT_IGV_PERCENTAGE,
     formatCompraCurrency,
@@ -240,6 +240,7 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                             <Table sx={{ minWidth: 760 }}>
                                 <TableHead>
                                     <TableRow sx={{ backgroundColor: '#f8fafc' }}>
+                                        <TableCell sx={{ fontWeight: 700 }}>CÓDIGO</TableCell>
                                         <TableCell sx={{ fontWeight: 700 }}>ARTÍCULO</TableCell>
                                         <TableCell sx={{ fontWeight: 700 }}>MEDIDA</TableCell>
                                         <TableCell sx={{ fontWeight: 700 }} align="right">
@@ -257,13 +258,14 @@ export default function ModalDetalleCompra({ open, onClose, compra = null }) {
                                 <TableBody>
                                     {detalles.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={5} align="center" sx={{ py: 3, color: '#64748b' }}>
+                                            <TableCell colSpan={6} align="center" sx={{ py: 3, color: '#64748b' }}>
                                                 No hay artículos registrados para esta compra.
                                             </TableCell>
                                         </TableRow>
                                     ) : (
                                         detalles.map((detalle, index) => (
                                             <TableRow key={detalle.idCompraDetalle || `${detalle.idArticulo}-${index}`} hover>
+                                                <TableCell>{formatArticuloCode(detalle.idArticulo)}</TableCell>
                                                 <TableCell>{detalle.descripcionArticulo || '-'}</TableCell>
                                                 <TableCell>{detalle.medida || '-'}</TableCell>
                                                 <TableCell align="right">{formatNumber(detalle.peso)}</TableCell>

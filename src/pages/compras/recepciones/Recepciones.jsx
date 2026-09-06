@@ -156,6 +156,9 @@ export default function Recepciones() {
     const [editForm, setEditForm] = React.useState({ guiaRemision: '', tipoEnvase: '', cantidadEnvase: '' });
     const [editSaving, setEditSaving] = React.useState(false);
     const [successMessage, setSuccessMessage] = React.useState('');
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [selectedDelete, setSelectedDelete] = React.useState(null);
+    const [deleting, setDeleting] = React.useState(false);
 
     useAutoClearMessage(successMessage, setSuccessMessage);
 
@@ -315,6 +318,37 @@ export default function Recepciones() {
             setServerError(getApiErrorMessage(error, 'No se pudieron actualizar los datos de recepcion.'));
         } finally {
             setEditSaving(false);
+        }
+    };
+
+    const handleOpenDeleteDialog = (recepcion) => {
+        setSelectedDelete(recepcion);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleCloseDeleteDialog = () => {
+        if (deleting) return;
+
+        setSelectedDelete(null);
+        setDeleteDialogOpen(false);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!selectedDelete?.idRecepciones) return;
+
+        try {
+            setDeleting(true);
+            setServerError('');
+            setSuccessMessage('');
+
+            await recepcionService.eliminar(selectedDelete.idRecepciones);
+            setSuccessMessage('Recepción inactivada correctamente.');
+            handleCloseDeleteDialog();
+            await Promise.all([cargarRecepciones(), cargarComprasDisponibles()]);
+        } catch (error) {
+            setServerError(getApiErrorMessage(error, 'No se pudo inactivar la recepción.'));
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -708,6 +742,11 @@ export default function Recepciones() {
                                                         <Icon name="edit" size={20} color="#1976d2" />
                                                     </IconButton>
                                                 </Tooltip>
+                                                <Tooltip title="Inactivar">
+                                                    <IconButton onClick={() => handleOpenDeleteDialog(recepcion)}>
+                                                        <Icon name="delete" size={20} color="#ef4444" />
+                                                    </IconButton>
+                                                </Tooltip>
                                             </TableCell>
                                         </TableRow>
                                     ))
@@ -825,6 +864,34 @@ export default function Recepciones() {
                         sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
                     >
                         {editSaving ? 'Guardando...' : 'Actualizar'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
+                <DialogTitle sx={{ fontWeight: 700 }}>Confirmar inactivación</DialogTitle>
+                <DialogContent>
+                    <Typography sx={{ color: '#475569' }}>
+                        ¿Seguro que deseas inactivar esta recepción? Se revertirá el stock y el estado de la compra se recalculará.
+                    </Typography>
+                    {selectedDelete ? (
+                        <Typography sx={{ mt: 1, fontWeight: 700, color: '#0f172a' }}>
+                            {formatRecepcionCode(selectedDelete.idRecepciones)} - Compra {formatCompraCode(selectedDelete.idCompras)}
+                        </Typography>
+                    ) : null}
+                </DialogContent>
+                <DialogActions sx={{ px: 3, py: 2 }}>
+                    <Button onClick={handleCloseDeleteDialog} disabled={deleting} sx={{ textTransform: 'none' }}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        onClick={handleConfirmDelete}
+                        disabled={deleting}
+                        sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
+                    >
+                        {deleting ? 'Inactivando...' : 'Inactivar'}
                     </Button>
                 </DialogActions>
             </Dialog>
