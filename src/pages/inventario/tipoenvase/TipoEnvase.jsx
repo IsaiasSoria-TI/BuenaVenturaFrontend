@@ -39,6 +39,15 @@ const initialForm = {
   estado: 'Activo',
 };
 
+function formatStock(value) {
+  if (value === null || value === undefined || value === '') return '0';
+
+  const number = Number(value);
+  if (Number.isNaN(number)) return '0';
+
+  return String(Math.round(number));
+}
+
 function getEstadoChipStyles(estado) {
   if (estado === 'Activo') {
     return { backgroundColor: '#dcfce7', color: '#16a34a' };
@@ -216,7 +225,7 @@ export default function TipoEnvase() {
     if (!criterio) return tiposEnvase;
 
     return tiposEnvase.filter((tipoEnvase) => {
-      const valoresBusqueda = [tipoEnvase.nombre, tipoEnvase.estado];
+      const valoresBusqueda = [tipoEnvase.nombre, tipoEnvase.estado, tipoEnvase.stock];
       return valoresBusqueda.some((value) => String(value || '').toLowerCase().includes(criterio));
     });
   }, [tiposEnvase, searchTerm]);
@@ -228,13 +237,13 @@ export default function TipoEnvase() {
 
   const renderTableRows = () => {
     if (loading) {
-      return <TableSkeletonRows columns={3} />;
+      return <TableSkeletonRows columns={4} />;
     }
 
     if (tiposEnvase.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={3} align="center" sx={{ py: 4, color: '#64748b' }}>
+          <TableCell colSpan={4} align="center" sx={{ py: 4, color: '#64748b' }}>
             No hay tipos de envase registrados.
           </TableCell>
         </TableRow>
@@ -244,7 +253,7 @@ export default function TipoEnvase() {
     if (tiposEnvaseFiltrados.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={3} align="center" sx={{ py: 4, color: '#64748b' }}>
+          <TableCell colSpan={4} align="center" sx={{ py: 4, color: '#64748b' }}>
             No se encontraron tipos de envase con ese criterio.
           </TableCell>
         </TableRow>
@@ -254,6 +263,7 @@ export default function TipoEnvase() {
     return tiposEnvasePaginados.map((tipoEnvase) => (
       <TableRow key={tipoEnvase.idTipoEnvase} hover>
         <TableCell>{tipoEnvase.nombre || '-'}</TableCell>
+        <TableCell align="right">{formatStock(tipoEnvase.stock)}</TableCell>
         <TableCell>
           <Chip
             label={tipoEnvase.estado || '-'}
@@ -346,6 +356,7 @@ export default function TipoEnvase() {
               <TableHead>
                 <TableRow sx={{ backgroundColor: '#f8fafc' }}>
                   <TableCell sx={{ fontWeight: 700 }}>NOMBRE</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700 }}>STOCK</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>ESTADO</TableCell>
                   <TableCell sx={{ fontWeight: 700, textAlign: 'center' }}>ACCIONES</TableCell>
                 </TableRow>

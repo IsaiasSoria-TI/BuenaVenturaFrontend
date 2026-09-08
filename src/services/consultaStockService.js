@@ -14,4 +14,15 @@ export const consultaStockService = {
 
     return data;
   },
+
+  consultarPorTipoEnvase: async ({ periodo, idTipoEnvase }) => {
+    const { data } = await api.get(`${BASE_URL}/por-envase`, {
+      params: {
+        periodo,
+        idTipoEnvase,
+      },
+    });
+
+    return data;
+  },
 };
