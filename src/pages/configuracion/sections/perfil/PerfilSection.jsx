@@ -21,7 +21,7 @@ function getUsuarioIdActual() {
     return getUser().idUsuario;
 }
 
-// Sincroniza localStorage para que Topbar muestre el nombre actualizado sin reloguear.
+// Sincroniza localStorage para que el sidebar muestre el nombre actualizado sin reloguear.
 function actualizarUsuarioLocal(data) {
     updateUser({
         usuario: data.usuario || '',

@@ -1,10 +1,10 @@
 import React from 'react';
-import { Box, Card, CardContent, Stack } from '@mui/material';
+import { Box, Card, CardContent } from '@mui/material';
+import { useParams } from 'react-router-dom';
 
-import ConfiguracionMenu from './components/ConfiguracionMenu';
+import { SECCIONES_CONFIGURACION } from './configuracionSecciones';
 
 import PerfilSection from './sections/perfil/PerfilSection';
-import SeguridadSection from './sections/seguridad/SeguridadSection';
 import CuentasContablesSection from './sections/cuentascontables/CuentasContablesSection';
 import TiposProveedorSection from './sections/tiposproveedor/TiposProveedorSection';
 import CategoriasSection from './sections/categorias/CategoriasSection';
@@ -13,17 +13,16 @@ import ImpuestosSection from './sections/impuestos/ImpuestosSection';
 import TipoCambioSection from './sections/tipocambio/TipoCambioSection';
 
 export default function Configuracion() {
-    // Guarda que opcion del menu lateral esta activa dentro de Configuracion.
-    const [seccionActiva, setSeccionActiva] = React.useState('perfil');
+    const { seccion } = useParams();
+
+    // La navegacion entre secciones vive en el desplegable del sidebar; aqui solo se resuelve el contenido.
+    const seccionActiva = SECCIONES_CONFIGURACION.includes(seccion) ? seccion : 'perfil';
 
     // Mapea cada clave del menu con el componente que debe renderizarse.
     const renderContenido = () => {
         switch (seccionActiva) {
             case 'perfil':
                 return <PerfilSection />;
-
-            case 'seguridad':
-                return <SeguridadSection />;
 
             case 'cuentas-contables':
                 return <CuentasContablesSection />;
@@ -58,29 +57,7 @@ export default function Configuracion() {
                 }}
             >
                 <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                    <Stack
-                        direction={{ xs: 'column', lg: 'row' }}
-                        spacing={3}
-                        sx={{ alignItems: 'stretch' }}
-                    >
-                        <Box
-                            sx={{
-                                width: { xs: '100%', lg: 320 },
-                                flexShrink: 0,
-                                display: 'flex',
-                                justifyContent: 'center',
-                            }}
-                        >
-                            <ConfiguracionMenu
-                                seccionActiva={seccionActiva}
-                                onChangeSeccion={setSeccionActiva}
-                            />
-                        </Box>
-
-                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                            {renderContenido()}
-                        </Box>
-                    </Stack>
+                    {renderContenido()}
                 </CardContent>
             </Card>
         </Box>

@@ -1,39 +1,12 @@
-import React from 'react';
-import {
-    Alert,
-    Box,
-    Button,
-    Card,
-    CardContent,
-    Chip,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    IconButton,
-    Paper,
-    Stack,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TablePagination,
-    TableRow,
-    Typography,
-} from '@mui/material';
+import * as React from 'react';
+import { Chip } from '@mui/material';
 
 import { categoriaService } from '../../../../services/categoriaService';
 import { cuentaContableService } from '../../../../services/cuentaContableService';
 import ModalCategoria from './ModalCategoria';
-import { useAutoClearMessage } from '../../../../utils/useAutoClearMessage';
-import { getApiErrorMessage } from '../../../../utils/getApiErrorMessage';
-import MaterialSymbol from '../../../../components/MaterialSymbol';
-import TableSkeletonRows from '../../../../components/loading/TableSkeletonRows';
+import { useCrudCatalogo } from '../../../../utils/useCrudCatalogo';
+import CatalogoTableSection from '../../../../components/catalogo/CatalogoTableSection';
 
-const Icon = MaterialSymbol;
-
-// Estado base de la categoria; se reutiliza al abrir el modal en modo creacion.
 const initialForm = {
     idCategoria: null,
     descripcion: '',
@@ -42,383 +15,119 @@ const initialForm = {
 };
 
 function getEstadoChipStyles(estado) {
-    if (estado === 'Activo') {
-        return {
-            backgroundColor: '#dcfce7',
-            color: '#16a34a',
-        };
-    }
-
-    return {
-        backgroundColor: '#fee2e2',
-        color: '#dc2626',
-    };
+    return estado === 'Activo'
+        ? { backgroundColor: '#dcfce7', color: '#16a34a' }
+        : { backgroundColor: '#fee2e2', color: '#dc2626' };
 }
 
 export default function CategoriasSection() {
-    const [categorias, setCategorias] = React.useState([]);
+    // Las cuentas contables alimentan el selector del modal; no forman parte del CRUD de categorias.
     const [cuentasContables, setCuentasContables] = React.useState([]);
-
-    const [loading, setLoading] = React.useState(true);
     const [catalogLoading, setCatalogLoading] = React.useState(true);
-    const [saving, setSaving] = React.useState(false);
-
-    const [open, setOpen] = React.useState(false);
-    const [editing, setEditing] = React.useState(false);
-
-    const [form, setForm] = React.useState(initialForm);
-    const [errors, setErrors] = React.useState({});
-    const [serverError, setServerError] = React.useState('');
-    const [successMessage, setSuccessMessage] = React.useState('');
-
-    useAutoClearMessage(successMessage, setSuccessMessage);
-
-    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
-    const [selectedDelete, setSelectedDelete] = React.useState(null);
-
-    const [page, setPage] = React.useState(0);
-    const [rowsPerPage, setRowsPerPage] = React.useState(5);
-
-    // Carga las categorias que se listan en la tabla principal.
-    const cargarCategorias = React.useCallback(async () => {
-        try {
-            setLoading(true);
-            setServerError('');
-
-            const data = await categoriaService.listar();
-            setCategorias(Array.isArray(data) ? data : []);
-            setPage(0);
-        } catch (error) {
-
-            setServerError(getApiErrorMessage(error, 'No se pudo listar las categorias.'));
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    const cargarCatalogos = React.useCallback(async () => {
-        // Las cuentas contables alimentan el selector del modal de categoria.
-        try {
-            setCatalogLoading(true);
-            const data = await cuentaContableService.listar();
-            setCuentasContables(Array.isArray(data) ? data : []);
-        } catch {
-            // Si falla este catalogo, el formulario conserva el selector vacio.
-        } finally {
-            setCatalogLoading(false);
-        }
-    }, []);
 
     React.useEffect(() => {
-        cargarCategorias();
-        cargarCatalogos();
-    }, [cargarCategorias, cargarCatalogos]);
+        let activo = true;
 
-    const handleOpenCreate = () => {
-        setEditing(false);
-        setForm(initialForm);
-        setErrors({});
-        setServerError('');
-        setSuccessMessage('');
-        setOpen(true);
-    };
+        cuentaContableService
+            .listar()
+            .then((data) => {
+                if (activo) setCuentasContables(Array.isArray(data) ? data : []);
+            })
+            .catch(() => {
+                // Si falla este catalogo, el formulario conserva el selector vacio.
+            })
+            .finally(() => {
+                if (activo) setCatalogLoading(false);
+            });
 
-    const handleOpenEdit = (categoria) => {
-        setEditing(true);
-        setForm({
+        return () => {
+            activo = false;
+        };
+    }, []);
+
+    const crud = useCrudCatalogo({
+        service: categoriaService,
+        listMethod: 'listar',
+        idField: 'idCategoria',
+        initialForm,
+        mapRegistroToForm: (categoria) => ({
             idCategoria: categoria.idCategoria,
             descripcion: categoria.descripcion || '',
             idCuentaContable: categoria.idCuentaContable ?? '',
             estado: categoria.estado || 'Activo',
-        });
-        setErrors({});
-        setServerError('');
-        setSuccessMessage('');
-        setOpen(true);
-    };
-
-    const handleClose = () => {
-        if (saving) return;
-
-        setOpen(false);
-        setForm(initialForm);
-        setErrors({});
-    };
-
-    const handleChange = (field) => (event) => {
-        setForm((prev) => ({
-            ...prev,
-            [field]: event.target.value,
-        }));
-
-        if (errors[field]) {
-            setErrors((prev) => ({
-                ...prev,
-                [field]: '',
-            }));
-        }
-
-        if (serverError) {
-            setServerError('');
-        }
-
-        if (successMessage) {
-            setSuccessMessage('');
-        }
-    };
-
-    const validate = () => {
-        const newErrors = {};
-
-        if (!form.descripcion.trim()) {
-            newErrors.descripcion = 'La descripción es obligatoria';
-        }
-
-        if (!form.idCuentaContable) {
-            newErrors.idCuentaContable = 'La cuenta contable es obligatoria';
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const handleSubmit = async () => {
-        if (!validate()) return;
-
-        try {
-            setSaving(true);
-            setServerError('');
-            setSuccessMessage('');
-
-            const payload = {
-                descripcion: form.descripcion.trim(),
-                idCuentaContable: Number(form.idCuentaContable),
-                estado: form.estado,
-            };
-
-            if (editing && form.idCategoria) {
-                await categoriaService.actualizar(form.idCategoria, payload);
-                setSuccessMessage('Categoría actualizada correctamente.');
-            } else {
-                await categoriaService.crear(payload);
-                setSuccessMessage('Categoría registrada correctamente.');
-            }
-
-            handleClose();
-            await cargarCategorias();
-        } catch (error) {
-
-            setServerError(getApiErrorMessage(error, 'No se pudo guardar la categoria.'));
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const handleOpenDeleteDialog = (categoria) => {
-        setSelectedDelete(categoria);
-        setDeleteDialogOpen(true);
-    };
-
-    const handleCloseDeleteDialog = () => {
-        setSelectedDelete(null);
-        setDeleteDialogOpen(false);
-    };
-
-    const handleConfirmDelete = async () => {
-        if (!selectedDelete?.idCategoria) return;
-
-        try {
-            await categoriaService.eliminar(selectedDelete.idCategoria);
-            setSuccessMessage('Categoría inactivada correctamente.');
-            handleCloseDeleteDialog();
-            await cargarCategorias();
-        } catch (error) {
-
-            setServerError(getApiErrorMessage(error, 'No se pudo eliminar la categoria.'));
-        }
-    };
-
-    const handleChangePage = (_event, newPage) => {
-        setPage(newPage);
-    };
-
-    const handleChangeRowsPerPage = (event) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
-    };
-
-    const categoriasPaginadas = React.useMemo(() => {
-        const inicio = page * rowsPerPage;
-        const fin = inicio + rowsPerPage;
-        return categorias.slice(inicio, fin);
-    }, [categorias, page, rowsPerPage]);
-
-    const renderTableRows = () => {
-        if (loading || catalogLoading) {
-            return <TableSkeletonRows columns={4} />;
-        }
-
-        if (categorias.length === 0) {
-            return (
-                <TableRow>
-                    <TableCell colSpan={4} align="center" sx={{ py: 4, color: '#64748b' }}>
-                        No hay categorias registradas.
-                    </TableCell>
-                </TableRow>
-            );
-        }
-
-        return categoriasPaginadas.map((categoria) => (
-            <TableRow key={categoria.idCategoria} hover>
-                <TableCell>{categoria.descripcion}</TableCell>
-                <TableCell>{categoria.codigoCuentaContable}</TableCell>
-                <TableCell>
-                    <Chip
-                        label={categoria.estado || '-'}
-                        size="small"
-                        sx={{
-                            fontWeight: 700,
-                            ...getEstadoChipStyles(categoria.estado),
-                        }}
-                    />
-                </TableCell>
-                <TableCell align="center" sx={{ width: 112 }}>
-                    <IconButton onClick={() => handleOpenEdit(categoria)} sx={{ width: 36, height: 36 }}>
-                        <Icon name="edit" size={20} color="#1976d2" />
-                    </IconButton>
-
-                    <IconButton
-                        onClick={() => handleOpenDeleteDialog(categoria)}
-                        sx={{ width: 36, height: 36 }}
-                    >
-                        <Icon name="delete" size={20} color="#ef4444" />
-                    </IconButton>
-                </TableCell>
-            </TableRow>
-        ));
-    };
+        }),
+        buildPayload: (form) => ({
+            descripcion: form.descripcion.trim(),
+            idCuentaContable: Number(form.idCuentaContable),
+            estado: form.estado,
+        }),
+        validate: (form) => {
+            const errors = {};
+            if (!form.descripcion.trim()) errors.descripcion = 'La descripción es obligatoria';
+            if (!form.idCuentaContable) errors.idCuentaContable = 'La cuenta contable es obligatoria';
+            return errors;
+        },
+        mensajes: {
+            crear: 'Categoría registrada correctamente.',
+            actualizar: 'Categoría actualizada correctamente.',
+            inactivar: 'Categoría inactivada correctamente.',
+            errorCargar: 'No se pudo listar las categorias.',
+            errorGuardar: 'No se pudo guardar la categoria.',
+            errorEliminar: 'No se pudo eliminar la categoria.',
+        },
+    });
 
     return (
-        <Box>
-            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e2e8f0' }}>
-                <CardContent>
-                    <Stack
-                        direction={{ xs: 'column', md: 'row' }}
-                        spacing={2}
-                        sx={{
-                            mb: 2.5,
-                            alignItems: { xs: 'stretch', md: 'center' },
-                            justifyContent: 'flex-end',
-                        }}
-                    >
-                        <Button
-                            variant="contained"
-                            onClick={handleOpenCreate}
-                            startIcon={<Icon name="add" size={18} color="#fff" />}
-                            sx={{
-                                textTransform: 'none',
-                                fontWeight: 700,
-                                borderRadius: '8px',
-                                boxShadow: 'none',
-                            }}
-                        >
-                            Nueva categoría
-                        </Button>
-                    </Stack>
-
-                    {successMessage && (
-                        <Alert severity="success" sx={{ mb: 2 }}>
-                            {successMessage}
-                        </Alert>
-                    )}
-
-                    {serverError && (
-                        <Alert severity="error" sx={{ mb: 2 }}>
-                            {serverError}
-                        </Alert>
-                    )}
-
-                    <TableContainer
-                        component={Paper}
-                        elevation={0}
-                        sx={{
-                            border: '1px solid #e2e8f0',
-                            borderRadius: 2.5,
-                            overflowX: 'auto',
-                        }}
-                    >
-                        <Table>
-                            <TableHead>
-                                <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                                    <TableCell sx={{ fontWeight: 700 }}>DESCRIPCIÓN</TableCell>
-                                    <TableCell sx={{ fontWeight: 700 }}>CUENTA CONTABLE</TableCell>
-                                    <TableCell sx={{ fontWeight: 700 }}>ESTADO</TableCell>
-                                    <TableCell sx={{ width: 112, fontWeight: 700, textAlign: 'center' }}>
-                                        ACCIONES
-                                    </TableCell>
-                                </TableRow>
-                            </TableHead>
-
-                            <TableBody>{renderTableRows()}</TableBody>
-                        </Table>
-
-                        {!loading && !catalogLoading && categorias.length > 0 && (
-                            <TablePagination
-                                component="div"
-                                count={categorias.length}
-                                page={page}
-                                onPageChange={handleChangePage}
-                                rowsPerPage={rowsPerPage}
-                                onRowsPerPageChange={handleChangeRowsPerPage}
-                                rowsPerPageOptions={[5, 10, 20]}
-                                labelRowsPerPage="Filas por página:"
-                            />
-                        )}
-                    </TableContainer>
-                </CardContent>
-            </Card>
-
+        <CatalogoTableSection
+            idField="idCategoria"
+            loading={crud.loading || catalogLoading}
+            items={crud.items}
+            itemsPaginados={crud.itemsPaginados}
+            page={crud.page}
+            rowsPerPage={crud.rowsPerPage}
+            onPageChange={crud.setPage}
+            onRowsPerPageChange={crud.setRowsPerPage}
+            serverError={crud.serverError}
+            success={crud.success}
+            createLabel="Nueva categoría"
+            onCreate={crud.handleOpenCreate}
+            onEdit={crud.handleOpenEdit}
+            onDelete={crud.handleOpenDeleteDialog}
+            deleteDialogOpen={crud.deleteDialog}
+            deleteDialogTitle="Confirmar eliminación"
+            deleteDialogText={
+                crud.selectedDelete
+                    ? `¿Seguro que deseas inactivar esta categoría? Categoría: ${crud.selectedDelete.descripcion}`
+                    : '¿Seguro que deseas inactivar esta categoría?'
+            }
+            onCloseDeleteDialog={crud.handleCloseDeleteDialog}
+            onConfirmDelete={crud.handleConfirmDelete}
+            columns={[
+                { header: 'Descripción', render: (categoria) => categoria.descripcion },
+                { header: 'Cuenta contable', render: (categoria) => categoria.codigoCuentaContable },
+                {
+                    header: 'Estado',
+                    render: (categoria) => (
+                        <Chip
+                            label={categoria.estado || '-'}
+                            size="small"
+                            sx={{ fontWeight: 700, ...getEstadoChipStyles(categoria.estado) }}
+                        />
+                    ),
+                },
+            ]}
+        >
             <ModalCategoria
-                open={open}
-                onClose={handleClose}
-                editing={editing}
-                form={form}
-                errors={errors}
-                saving={saving}
+                open={crud.open}
+                onClose={crud.handleClose}
+                editing={crud.editing}
+                form={crud.form}
+                errors={crud.errors}
+                saving={crud.saving}
                 cuentasContables={cuentasContables}
-                handleChange={handleChange}
-                handleSubmit={handleSubmit}
+                handleChange={crud.handleChange}
+                handleSubmit={crud.handleSubmit}
             />
-
-            <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
-                <DialogTitle sx={{ fontWeight: 700 }}>Confirmar eliminación</DialogTitle>
-                <DialogContent>
-                    <Typography sx={{ color: '#475569' }}>
-                        ¿Seguro que deseas inactivar esta categoría?
-                    </Typography>
-
-                    {selectedDelete && (
-                        <Typography sx={{ mt: 1, fontWeight: 700, color: '#0f172a' }}>
-                            Categoría: {selectedDelete.descripcion}
-                        </Typography>
-                    )}
-                </DialogContent>
-
-                <DialogActions sx={{ px: 3, py: 2 }}>
-                    <Button onClick={handleCloseDeleteDialog} sx={{ textTransform: 'none' }}>
-                        Cancelar
-                    </Button>
-
-                    <Button
-                        variant="contained"
-                        color="error"
-                        onClick={handleConfirmDelete}
-                        sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
-                    >
-                        Inactivar
-                    </Button>
-                </DialogActions>
-            </Dialog>
-        </Box>
+        </CatalogoTableSection>
     );
 }

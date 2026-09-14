@@ -11,6 +11,12 @@ const Recepciones = lazy(() => import('../pages/compras/recepciones/Recepciones'
 const HistorialCompras = lazy(() => import('../pages/compras/historial/HistorialCompras'));
 const Configuracion = lazy(() => import('../pages/configuracion/Configuracion'));
 
+const CuentasCobrar = lazy(() => import('../pages/cobrar/CuentasCobrar'));
+const Costos = lazy(() => import('../pages/costos/Costos'));
+const Sunat = lazy(() => import('../pages/sunat/Sunat'));
+const Reportes = lazy(() => import('../pages/reportes/Reportes'));
+const Integraciones = lazy(() => import('../pages/integraciones/Integraciones'));
+
 const Dashboard = lazy(() => import('../pages/dashboard/Dashboard'));
 const DashboardHome = lazy(() => import('../pages/dashboard/DashboardHome'));
 
@@ -76,6 +82,13 @@ function AppRouter() {
             <Route path="compras/recepciones" element={<Recepciones />} />
             <Route path="compras/historial" element={<HistorialCompras />} />
 
+            {/* Modulos aun no desarrollados: muestran una pantalla en blanco en vez de redirigir al login. */}
+            <Route path="cobrar" element={<CuentasCobrar />} />
+            <Route path="costos" element={<Costos />} />
+            <Route path="sunat" element={<Sunat />} />
+            <Route path="reportes" element={<Reportes />} />
+            <Route path="integraciones" element={<Integraciones />} />
+
             {/* Modulo de inventarios. */}
             <Route
               path="inventarios/kardex"
@@ -89,7 +102,11 @@ function AppRouter() {
 
             {/* Modulos financieros y de configuracion. */}
             <Route path="pagar" element={<CuentasPagar />} />
-            <Route path="configuracion" element={<Configuracion />} />
+            <Route
+              path="configuracion"
+              element={<Navigate to="/dashboard/configuracion/perfil" replace />}
+            />
+            <Route path="configuracion/:seccion" element={<Configuracion />} />
           </Route>
 
           {/* Redirecciones por defecto para entradas no reconocidas. */}

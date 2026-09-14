@@ -3,8 +3,11 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import AddIcon from '@mui/icons-material/Add';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import CloseIcon from '@mui/icons-material/Close';
+import ConstructionIcon from '@mui/icons-material/Construction';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DonutLargeIcon from '@mui/icons-material/DonutLarge';
@@ -33,8 +36,11 @@ const ICONS = {
   account_balance: AccountBalanceIcon,
   add: AddIcon,
   add_circle: AddCircleIcon,
+  arrow_downward: ArrowDownwardIcon,
+  arrow_upward: ArrowUpwardIcon,
   bar_chart: BarChartIcon,
   close: CloseIcon,
+  construction: ConstructionIcon,
   dashboard: DashboardIcon,
   delete: DeleteIcon,
   donut_large: DonutLargeIcon,

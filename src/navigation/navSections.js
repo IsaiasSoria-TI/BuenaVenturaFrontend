@@ -1,5 +1,5 @@
-// Estructura central de navegacion usada por Sidebar y Topbar.
-// Mantenerla en un solo lugar evita que los titulos y el menu lateral se desalineen.
+// Estructura central de navegacion usada por Sidebar.
+// Mantenerla en un solo lugar evita que el menu lateral se desalinee con las rutas.
 export const NAV_SECTIONS = [
   {
     label: 'Principal',
@@ -63,7 +63,20 @@ export const NAV_SECTIONS = [
     label: 'Sistema',
     items: [
       { to: '/dashboard/integraciones', label: 'Integraciones', icon: 'hub' },
-      { to: '/dashboard/configuracion', label: 'Configuracion', icon: 'settings' },
+      {
+        key: 'configuracion',
+        label: 'Configuracion',
+        icon: 'settings',
+        children: [
+          { to: '/dashboard/configuracion/perfil', label: 'Perfil' },
+          { to: '/dashboard/configuracion/cuentas-contables', label: 'Cuentas contables' },
+          { to: '/dashboard/configuracion/tipos-proveedor', label: 'Tipos de proveedor' },
+          { to: '/dashboard/configuracion/categorias', label: 'Categorias' },
+          { to: '/dashboard/configuracion/bancos', label: 'Bancos' },
+          { to: '/dashboard/configuracion/impuestos', label: 'Impuestos' },
+          { to: '/dashboard/configuracion/tipo-cambio', label: 'Tipo de cambio' },
+        ],
+      },
     ],
   },
 ];
@@ -74,32 +87,4 @@ export function itemMatchesPath(item, pathname) {
   }
 
   return Boolean(item.children?.some((child) => itemMatchesPath(child, pathname)));
-}
-
-export function getTitleFromPath(pathname) {
-  const findTitle = (items) => {
-    for (const item of items) {
-      if (item.to && pathname === item.to) {
-        return item.label;
-      }
-
-      if (item.children) {
-        const childTitle = findTitle(item.children);
-        if (childTitle) {
-          return childTitle;
-        }
-      }
-    }
-
-    return '';
-  };
-
-  for (const section of NAV_SECTIONS) {
-    const title = findTitle(section.items);
-    if (title) {
-      return title;
-    }
-  }
-
-  return 'Panel Principal';
 }

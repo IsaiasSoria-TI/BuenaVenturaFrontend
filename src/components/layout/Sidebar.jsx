@@ -201,6 +201,7 @@ export default function Sidebar({ onNavigate }) {
     inventarios: pathname.startsWith('/dashboard/inventarios'),
     kardex: pathname.startsWith('/dashboard/inventarios/kardex'),
     compras: pathname.startsWith('/dashboard/compras'),
+    configuracion: pathname.startsWith('/dashboard/configuracion'),
   });
 
   // Si el usuario navega por URL directa, abre automaticamente el grupo correcto.
@@ -210,6 +211,7 @@ export default function Sidebar({ onNavigate }) {
       inventarios: pathname.startsWith('/dashboard/inventarios') || prev.inventarios,
       kardex: pathname.startsWith('/dashboard/inventarios/kardex') || prev.kardex,
       compras: pathname.startsWith('/dashboard/compras') || prev.compras,
+      configuracion: pathname.startsWith('/dashboard/configuracion') || prev.configuracion,
     }));
   }, [pathname]);
 
